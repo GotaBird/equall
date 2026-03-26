@@ -1,0 +1,65 @@
+{
+  "name": "equall-cli",
+  "version": "0.1.1",
+  "description": "Open-source accessibility scoring CLI — aggregates axe-core, eslint-plugin-jsx-a11y, and more into a unified score.",
+  "keywords": [
+    "accessibility",
+    "a11y",
+    "wcag",
+    "scoring",
+    "cli",
+    "axe-core",
+    "eslint",
+    "audit"
+  ],
+  "license": "MIT",
+  "author": "GotaBird",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/GotaBird/equall"
+  },
+  "type": "module",
+  "bin": {
+    "equall": "./dist/cli.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup src/cli.ts src/index.ts --format esm --dts --clean",
+    "dev": "tsup src/cli.ts src/index.ts --format esm --dts --watch",
+    "scan": "tsx src/cli.ts",
+    "lint": "eslint src/",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@typescript-eslint/parser": "^8.57.2",
+    "axe-core": "^4.10.0",
+    "commander": "^12.1.0",
+    "eslint": "^9.0.0",
+    "eslint-plugin-jsx-a11y": "^6.10.0",
+    "globby": "^14.0.0",
+    "jsdom": "^25.0.0",
+    "ora": "^9.3.0"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^21.1.7",
+    "@types/node": "^22.0.0",
+    "tsup": "^8.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.9.3",
+    "vitest": "^2.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
