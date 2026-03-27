@@ -76,6 +76,7 @@ function computeSummary(issues: GladosIssue[], filesScanned: number): ScanSummar
     by_scanner: byScanner,
     criteria_tested: [...criteriaSet].sort(),
     criteria_failed: [...failedCriteriaSet].sort(),
+    ignored_count: 0,
   }
 }
 

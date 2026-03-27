@@ -89,7 +89,11 @@ function bar(value: number | null, width: number = 20): string {
   return `${color}${'█'.repeat(filled)}${DIM}${'░'.repeat(empty)}${RESET} ${color}${value}${RESET}`
 }
 
-export function printResult(result: ScanResult): void {
+export interface PrintOptions {
+  showIgnored?: boolean
+}
+
+export function printResult(result: ScanResult, options: PrintOptions = {}): void {
   const { score, conformance_level, pour_scores, summary, scanners_used, duration_ms } = result
 
   console.log()
@@ -115,6 +119,9 @@ export function printResult(result: ScanResult): void {
   const bpIssuesCount = result.issues.length - wcagIssuesCount
   console.log(`  ${summary.files_scanned} files scanned  ·  ${wcagIssuesCount} WCAG violations · ${bpIssuesCount} best-practice issues`)
   console.log(`  ${RED}${summary.by_severity.critical} critical${RESET}  ${YELLOW}${summary.by_severity.serious} serious${RESET}  ${CYAN}${summary.by_severity.moderate} moderate${RESET}  ${DIM}${summary.by_severity.minor} minor${RESET}`)
+  if (summary.ignored_count > 0) {
+    console.log(`  ${DIM}${summary.ignored_count} issue${summary.ignored_count > 1 ? 's' : ''} ignored via equall-ignore${RESET}`)
+  }
 
   // Coverage line(s)
   if (result.criteria_total > 0) {
@@ -153,8 +160,10 @@ export function printResult(result: ScanResult): void {
   printCoaching(result)
   console.log()
 
-  const wcagIssues = result.issues.filter(i => i.wcag_criteria.length > 0)
-  const bpIssues = result.issues.filter(i => i.wcag_criteria.length === 0)
+  // Only display non-ignored issues in terminal output
+  const visibleIssues = result.issues.filter(i => !i.ignored)
+  const wcagIssues = visibleIssues.filter(i => i.wcag_criteria.length > 0)
+  const bpIssues = visibleIssues.filter(i => i.wcag_criteria.length === 0)
 
   // Top issues (WCAG Violations)
   if (wcagIssues.length > 0) {
@@ -202,6 +211,19 @@ export function printResult(result: ScanResult): void {
       console.log(`  ${severityIcon(topSeverity)} ${BOLD}${criterion}${RESET} ${DIM}— ${group.issues.length} issue${group.issues.length > 1 ? 's' : ''}${RESET}${hintSuffix}`)
     }
     console.log()
+  }
+
+  // Ignored issues (verbose only)
+  if (options.showIgnored) {
+    const ignoredIssues = result.issues.filter(i => i.ignored)
+    if (ignoredIssues.length > 0) {
+      console.log(`  ${BOLD}Ignored${RESET}`)
+      for (const issue of ignoredIssues) {
+        const location = issue.line ? `:${issue.line}` : ''
+        console.log(`  ${DIM}⊘${RESET} ${DIM}${issue.file_path}${location}${RESET}  ${issue.scanner_rule_id}`)
+      }
+      console.log()
+    }
   }
 
   // Scanners used

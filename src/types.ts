@@ -22,6 +22,9 @@ export interface GladosIssue {
 
   // Fix
   suggestion: string | null          // How to fix it
+
+  // Suppression
+  ignored?: boolean                  // true if suppressed by equall-ignore comment
 }
 
 export type WcagLevel = 'A' | 'AA' | 'AAA'
@@ -89,6 +92,7 @@ export interface ScanSummary {
   by_scanner: Record<string, number>
   criteria_tested: string[]            // WCAG criteria IDs that were evaluated
   criteria_failed: string[]            // WCAG criteria IDs that had violations
+  ignored_count: number                // Issues suppressed via equall-ignore comments
 }
 
 export interface ScannerInfo {

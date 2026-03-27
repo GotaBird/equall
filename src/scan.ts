@@ -2,7 +2,7 @@ import { resolve } from 'node:path'
 import { discoverFiles } from './discover.js'
 import { getAvailableScanners } from './scanners/index.js'
 import { computeScanResult } from './scoring/score.js'
-import type { ScanOptions, ScanResult, ScannerInfo, GladosIssue, WcagLevel } from './types.js'
+import type { ScanOptions, ScanResult, ScannerInfo, GladosIssue, WcagLevel, FileEntry } from './types.js'
 
 export interface RunScanOptions {
   path?: string
@@ -70,16 +70,88 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
   // 5. Deduplicate issues (same file + same rule + same line = one issue)
   const deduped = deduplicateIssues(allIssues)
 
-  // 6. Merge coverage from all active scanners
+  // 6. Apply equall-ignore comments
+  const { active, ignored } = applyIgnoreComments(deduped, files)
+
+  // 7. Merge coverage from all active scanners
   const criteriaCovered = [...new Set(scanners.flatMap(s => s.coveredCriteria))].sort()
 
   // Total WCAG 2.2 criteria per level
   const WCAG_TOTAL: Record<string, number> = { A: 30, AA: 57, AAA: 78 }
   const criteriaTotal = WCAG_TOTAL[scanOptions.wcag_level] ?? 57
 
-  // 7. Compute score
+  // 8. Compute score (only active issues affect scoring)
   const durationMs = Date.now() - startTime
-  return computeScanResult(deduped, files.length, scannersUsed, durationMs, scanOptions.wcag_level, criteriaCovered, criteriaTotal)
+  const result = computeScanResult(active, files.length, scannersUsed, durationMs, scanOptions.wcag_level, criteriaCovered, criteriaTotal)
+
+  // Include ignored issues in output for transparency, update count
+  result.issues = [...active, ...ignored]
+  result.summary.ignored_count = ignored.length
+
+  return result
+}
+
+// Apply equall-ignore comments to suppress known false positives.
+// Issues with ignored: true are excluded from scoring but included in JSON output.
+export function applyIgnoreComments(
+  issues: GladosIssue[],
+  files: FileEntry[]
+): { active: GladosIssue[]; ignored: GladosIssue[] } {
+  // Build a map of file contents for quick lookup
+  const fileContentMap = new Map<string, string[]>()
+  for (const file of files) {
+    const lines = file.content.split('\n')
+    fileContentMap.set(file.path, lines)
+  }
+
+  // Check which files have equall-ignore-file in the first 5 lines
+  const ignoredFiles = new Set<string>()
+  for (const [filePath, lines] of fileContentMap) {
+    const header = lines.slice(0, 5)
+    if (header.some(line => line.includes('equall-ignore-file'))) {
+      ignoredFiles.add(filePath)
+    }
+  }
+
+  const active: GladosIssue[] = []
+  const ignored: GladosIssue[] = []
+
+  for (const issue of issues) {
+    // File-level ignore
+    if (ignoredFiles.has(issue.file_path)) {
+      ignored.push({ ...issue, ignored: true })
+      continue
+    }
+
+    // Line-level ignore (only if issue has a line number)
+    if (issue.line != null && issue.line > 1) {
+      const lines = fileContentMap.get(issue.file_path)
+      if (lines) {
+        const prevLine = lines[issue.line - 2] ?? '' // -2 because lines are 0-indexed in array
+        if (prevLine.includes('equall-ignore-next-line')) {
+          // Check if a specific rule-id is specified
+          // Strip comment closing tokens (-->, */, */}) before matching
+          const stripped = prevLine.replace(/\s*(?:-->|\*\/\}?)\s*$/g, '')
+          const match = stripped.match(/equall-ignore-next-line\s+([\w\-/.]+)/)
+          if (match) {
+            // Only ignore if rule-id matches
+            if (match[1] === issue.scanner_rule_id) {
+              ignored.push({ ...issue, ignored: true })
+              continue
+            }
+          } else {
+            // No rule-id = ignore all issues on that line
+            ignored.push({ ...issue, ignored: true })
+            continue
+          }
+        }
+      }
+    }
+
+    active.push(issue)
+  }
+
+  return { active, ignored }
 }
 
 // Deduplicate issues from multiple scanners that flag the same problem.

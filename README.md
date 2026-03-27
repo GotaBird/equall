@@ -11,17 +11,26 @@ equall scan .
 ```
   ◆ EQUALL — Accessibility Score
 
-  58   ~A   WCAG 2.2
+  56   ~A   WCAG 2.2
 
   POUR Breakdown
-  P Perceivable    ███████████████████░ 97
-  O Operable       █████████░░░░░░░░░░░ 46
+  P Perceivable    ██████████████████░░ 89
+  O Operable       ███████████████░░░░░ 76
   U Understandable ░░░░░░░░░░░░░░░░░░░░ n/a
-  R Robust         ██████████████████░░ 91
+  R Robust         █████████████████░░░ 85
 
   Summary
-  33 files scanned  ·  18 WCAG violations · 5 best-practice issues
-  2 critical  2 serious  19 moderate  0 minor
+  33 files scanned  ·  15 WCAG violations · 19 best-practice issues
+  2 critical  11 serious  19 moderate  0 minor
+  2 issues ignored via equall-ignore
+  Score 56/100  ·  18/30 Level A criteria checked (60%)  ·  5 failed
+                   29/57 Level AA criteria checked (51%)  ·  6 failed
+
+  ⓘ You're failing 5 Level A criteria (1.3.1, 2.1.1, 2.4.2, 2.4.4, 4.1.2).
+    Level A is the legal minimum — fix these first.
+
+  Scanners: axe-core@4.11.1 (23 issues), eslint-jsx-a11y@6.10.2 (13 issues)
+  Completed in 0.8s
 ```
 
 ## Install
@@ -102,6 +111,40 @@ The POUR metrics (Perceivable, Operable, Understandable, Robust) strictly follow
 ### Conformance Level
 Conformance (A / AA / AAA) is evaluated strictly against your `--level` target. If you target `AA`, any `AAA` rules incidentally flagged by the scanners will not downgrade your conformance status.
 
+## Ignoring issues
+
+Some issues are false positives (e.g. an orphan `<li>` in a component that's always rendered inside a `<ul>`). Suppress them with inline comments:
+
+```tsx
+// equall-ignore-next-line
+<li>{item.name}</li>
+
+// equall-ignore-next-line jsx-a11y/alt-text
+<img src={logo} />
+
+{/* equall-ignore-next-line */}
+<div onClick={handler}>...</div>
+```
+
+```html
+<!-- equall-ignore-next-line -->
+<img src="decorative.png" />
+```
+
+Add `// equall-ignore-file` in the first 5 lines to ignore an entire file.
+
+Or use the CLI to inject/manage comments without opening the file:
+
+```bash
+equall ignore src/Modal.tsx:89                          # ignore all rules at line 89
+equall ignore src/Modal.tsx:89 jsx-a11y/alt-text        # ignore a specific rule
+equall ignore .                                         # list all ignores
+equall ignore --remove src/Modal.tsx:89                 # remove an ignore
+equall ignore --clear                                   # remove all ignores
+```
+
+Ignored issues are excluded from the score. Use `equall scan . -i` to show them, or `--json` to get them with `"ignored": true`.
+
 ## Programmatic API
 
 ```typescript
@@ -123,6 +166,10 @@ console.log(result.issues.length)      // 12
 - `0` — score >= 50
 - `1` — score < 50 (useful for CI gates)
 - `2` — scan error
+
+## Contributing
+
+Issues and PRs welcome — https://github.com/GotaBird/equall/issues
 
 ## License
 

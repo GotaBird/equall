@@ -5,6 +5,7 @@ import { Command } from 'commander'
 import ora from 'ora'
 import { runScan } from './scan.js'
 import { printResult, printJson } from './output/terminal.js'
+import { findIgnores, removeIgnore, clearAllIgnores, addIgnore } from './ignores.js'
 import type { WcagLevel } from './types.js'
 
 const program = new Command()
@@ -22,8 +23,9 @@ program
   .option('--include <patterns...>', 'Glob patterns to include')
   .option('--exclude <patterns...>', 'Glob patterns to exclude')
   .option('--json', 'Output results as JSON')
+  .option('-i, --show-ignored', 'Show ignored issues in output')
   .option('--no-color', 'Disable colored output')
-  .action(async (path: string, opts: { level: string; include?: string[]; exclude?: string[]; json?: boolean }) => {
+  .action(async (path: string, opts: { level: string; include?: string[]; exclude?: string[]; json?: boolean; showIgnored?: boolean }) => {
     const level = opts.level.toUpperCase() as WcagLevel
     if (!['A', 'AA', 'AAA'].includes(level)) {
       console.error(`Invalid level "${opts.level}". Use A, AA, or AAA.`)
@@ -59,7 +61,7 @@ program
       if (opts.json) {
         printJson(result)
       } else {
-        printResult(result)
+        printResult(result, { showIgnored: opts.showIgnored })
       }
 
       // Exit code based on score
@@ -70,6 +72,80 @@ program
       console.error(`\n  Error: ${msg}\n`)
       process.exit(2)
     }
+  })
+
+const DIM = '\x1b[2m'
+const BOLD = '\x1b[1m'
+const RESET = '\x1b[0m'
+const GREEN = '\x1b[32m'
+const YELLOW = '\x1b[33m'
+
+program
+  .command('ignore')
+  .description('Add, list, or remove equall-ignore comments')
+  .argument('[target]', 'File:line to ignore (e.g. src/Modal.tsx:89)')
+  .argument('[rule-id]', 'Optional rule ID (e.g. jsx-a11y/alt-text)')
+  .option('-p, --path <path>', 'Path to project root', '.')
+  .option('--remove <target>', 'Remove ignore at file:line or all ignores in a file')
+  .option('--clear', 'Remove all equall-ignore comments from the project')
+  .option('--list', 'List all equall-ignore comments')
+  .action(async (target: string | undefined, ruleId: string | undefined, opts: { path: string; remove?: string; clear?: boolean; list?: boolean }) => {
+    const rootPath = resolve(opts.path)
+
+    if (opts.clear) {
+      const removed = await clearAllIgnores(rootPath)
+      if (removed.length === 0) {
+        console.log('\n  No equall-ignore comments found.\n')
+      } else {
+        console.log(`\n  ${GREEN}Removed ${removed.length} ignore comment${removed.length > 1 ? 's' : ''}${RESET}\n`)
+      }
+      return
+    }
+
+    if (opts.remove) {
+      const { removed, notFound } = await removeIgnore(rootPath, opts.remove)
+      if (notFound) {
+        console.error(`\n  No equall-ignore found at ${opts.remove}\n`)
+        process.exit(1)
+      }
+      for (const entry of removed) {
+        const location = entry.type === 'file' ? '' : `:${entry.line}`
+        console.log(`  ${GREEN}Removed${RESET} ${entry.file_path}${location}  ${DIM}${entry.raw}${RESET}`)
+      }
+      console.log()
+      return
+    }
+
+    // Add an ignore
+    if (target && target.includes(':')) {
+      const result = await addIgnore(rootPath, target, ruleId)
+      if (!result) {
+        console.error(`\n  Could not add ignore at ${target}. Check that the file and line exist.\n`)
+        process.exit(1)
+      }
+      console.log(`\n  ${GREEN}Added${RESET} ${result.file}:${result.line}`)
+      console.log(`  ${DIM}${result.comment.trim()}${RESET}\n`)
+      return
+    }
+
+    // List all ignores (default, or --list, or bare path)
+    const listPath = target ? resolve(target) : rootPath
+    const ignores = await findIgnores(listPath)
+    if (ignores.length === 0) {
+      console.log('\n  No equall-ignore comments found.\n')
+      return
+    }
+
+    console.log(`\n  ${BOLD}${ignores.length} ignore${ignores.length > 1 ? 's' : ''}${RESET}\n`)
+    for (const entry of ignores) {
+      const location = `:${entry.line}`
+      const type = entry.type === 'file'
+        ? `${YELLOW}equall-ignore-file${RESET}`
+        : `equall-ignore-next-line`
+      const rule = entry.rule_id ? `  ${DIM}${entry.rule_id}${RESET}` : `  ${DIM}(all rules)${RESET}`
+      console.log(`  ${entry.file_path}${location}${' '.repeat(Math.max(1, 40 - entry.file_path.length - location.length))}${type}${rule}`)
+    }
+    console.log()
   })
 
 program.parse()
