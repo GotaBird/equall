@@ -131,15 +131,15 @@ Some issues are false positives (e.g. an orphan `<li>` in a component that's alw
 <img src="decorative.png" />
 ```
 
-Add `// equall-ignore-file` in the first 5 lines to ignore an entire file.
-
 Or use the CLI to inject/manage comments without opening the file:
 
 ```bash
+equall ignore src/Modal.tsx                             # ignore an entire file
 equall ignore src/Modal.tsx:89                          # ignore all rules at line 89
 equall ignore src/Modal.tsx:89 jsx-a11y/alt-text        # ignore a specific rule
 equall ignore .                                         # list all ignores
 equall ignore --remove src/Modal.tsx:89                 # remove an ignore
+equall ignore --remove src/Modal.tsx                    # remove all ignores in a file
 equall ignore --clear                                   # remove all ignores
 ```
 
