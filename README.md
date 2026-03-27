@@ -71,8 +71,41 @@ equall scan . --json > report.json
 ```bash
 equall scan . --include "src/**/*.tsx"
 equall scan . --exclude "**/*.stories.*"
+equall scan . --verbose              # show ignored issues
 equall scan . --no-color             # disable colored output
 ```
+
+### Ignoring issues
+
+Some issues are false positives (e.g. an orphan `<li>` in a component that's always rendered inside a `<ul>`). Suppress them with inline comments:
+
+```tsx
+// equall-ignore-next-line
+<li>{item.name}</li>
+
+// equall-ignore-next-line jsx-a11y/alt-text
+<img src={logo} />
+
+{/* equall-ignore-next-line */}
+<div onClick={handler}>...</div>
+
+<!-- equall-ignore-next-line -->
+<img src="decorative.png" />
+```
+
+Add `// equall-ignore-file` in the first 5 lines to ignore an entire file.
+
+Or use the CLI to inject/manage comments without opening the file:
+
+```bash
+equall ignore src/Modal.tsx:89                          # ignore all rules at line 89
+equall ignore src/Modal.tsx:89 jsx-a11y/alt-text        # ignore a specific rule
+equall ignores .                                        # list all ignores
+equall ignores . --remove src/Modal.tsx:89              # remove an ignore
+equall ignores . --clear                                # remove all ignores
+```
+
+Ignored issues are excluded from the score but still appear in `--json` output with `"ignored": true`.
 
 ## What gets scanned
 
