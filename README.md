@@ -11,17 +11,26 @@ equall scan .
 ```
   ◆ EQUALL — Accessibility Score
 
-  58   ~A   WCAG 2.2
+  56   ~A   WCAG 2.2
 
   POUR Breakdown
-  P Perceivable    ███████████████████░ 97
-  O Operable       █████████░░░░░░░░░░░ 46
+  P Perceivable    ██████████████████░░ 89
+  O Operable       ███████████████░░░░░ 76
   U Understandable ░░░░░░░░░░░░░░░░░░░░ n/a
-  R Robust         ██████████████████░░ 91
+  R Robust         █████████████████░░░ 85
 
   Summary
-  33 files scanned  ·  18 WCAG violations · 5 best-practice issues
-  2 critical  2 serious  19 moderate  0 minor
+  33 files scanned  ·  15 WCAG violations · 19 best-practice issues
+  2 critical  11 serious  19 moderate  0 minor
+  2 issues ignored via equall-ignore
+  Score 56/100  ·  18/30 Level A criteria checked (60%)  ·  5 failed
+                   29/57 Level AA criteria checked (51%)  ·  6 failed
+
+  ⓘ You're failing 5 Level A criteria (1.3.1, 2.1.1, 2.4.2, 2.4.4, 4.1.2).
+    Level A is the legal minimum — fix these first.
+
+  Scanners: axe-core@4.11.1 (23 issues), eslint-jsx-a11y@6.10.2 (13 issues)
+  Completed in 0.8s
 ```
 
 ## Install
