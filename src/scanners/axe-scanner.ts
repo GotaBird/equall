@@ -1,4 +1,5 @@
-import type { JSDOM } from 'jsdom'
+import axeModule from 'axe-core'
+import { JSDOM, VirtualConsole } from 'jsdom'
 import type {
   ScannerAdapter,
   ScanContext,
@@ -7,6 +8,8 @@ import type {
   PourPrinciple,
   WcagLevel,
 } from '../types.js'
+
+const axe = (axeModule as any).default ?? axeModule
 
 // axe-core WCAG tag format: "wcag111" → "1.1.1", "wcag2a" → level A, etc.
 // WCAG criterion numbers follow the pattern: Principle(1-4).Guideline(single digit).SC(1+ digits)
@@ -89,20 +92,10 @@ export class AxeScanner implements ScannerAdapter {
   ]
 
   async isAvailable(): Promise<boolean> {
-    try {
-      await import('axe-core')
-      await import('jsdom')
-      return true
-    } catch {
-      return false
-    }
+    return true
   }
 
   async scan(context: ScanContext): Promise<GladosIssue[]> {
-    const axeModule = await import('axe-core') as any
-    const axe = axeModule.default ?? axeModule
-    const { JSDOM } = await import('jsdom')
-
     this.version = axe.version ?? 'unknown'
 
     const htmlFiles = context.files.filter(
@@ -129,7 +122,7 @@ export class AxeScanner implements ScannerAdapter {
         const html = extractHtml(file.content, file.type)
         if (!html.trim()) continue
 
-        const issues = await this.scanHtml(axe, JSDOM, html, file.path, runTags)
+        const issues = await this.scanHtml(html, file.path, runTags)
         allIssues.push(...issues)
       } catch (error) {
         // Skip files that fail to parse — don't crash the whole scan
@@ -142,8 +135,6 @@ export class AxeScanner implements ScannerAdapter {
   }
 
   private async scanHtml(
-    axe: any,
-    JSDOMClass: typeof JSDOM,
     html: string,
     filePath: string,
     runTags: string[]
@@ -165,10 +156,10 @@ export class AxeScanner implements ScannerAdapter {
       originalConsoleError(...args)
     }
 
-    const dom = new JSDOMClass(fullHtml, {
+    const dom = new JSDOM(fullHtml, {
       runScripts: 'outside-only',
       pretendToBeVisual: true,
-      virtualConsole: new (await import('jsdom')).VirtualConsole(),
+      virtualConsole: new VirtualConsole(),
     })
 
     try {

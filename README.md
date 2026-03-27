@@ -24,6 +24,18 @@ equall scan .
   2 critical  2 serious  19 moderate  0 minor
 ```
 
+## Install
+
+```bash
+npm install -g equall-cli
+```
+
+Or run directly with npx:
+
+```bash
+npx equall scan .
+```
+
 ## Why Equall?
 
 Accessibility tools today fall into two camps: dev tools that show violations without context (axe, Lighthouse), and enterprise platforms that cost $75K+/year (Deque, Siteimprove). Nothing in between.
@@ -93,7 +105,7 @@ Conformance (A / AA / AAA) is evaluated strictly against your `--level` target. 
 ## Programmatic API
 
 ```typescript
-import { runScan } from 'equall'
+import { runScan } from 'equall-cli'
 
 const result = await runScan({
   path: './my-project',

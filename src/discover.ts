@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises'
-import { resolve, relative, extname } from 'node:path'
+import { resolve, extname } from 'node:path'
+import { globby } from 'globby'
 import type { FileEntry, FileType, ScanOptions } from './types.js'
 
 // Map file extensions to our FileType
@@ -43,8 +44,6 @@ export async function discoverFiles(
   rootPath: string,
   options: ScanOptions
 ): Promise<FileEntry[]> {
-  const { globby } = await import('globby')
-
   const includePatterns = options.include_patterns.length > 0
     ? options.include_patterns
     : DEFAULT_INCLUDE
