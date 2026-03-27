@@ -23,9 +23,9 @@ program
   .option('--include <patterns...>', 'Glob patterns to include')
   .option('--exclude <patterns...>', 'Glob patterns to exclude')
   .option('--json', 'Output results as JSON')
-  .option('--verbose', 'Show ignored issues and extra details')
+  .option('-i, --show-ignored', 'Show ignored issues in output')
   .option('--no-color', 'Disable colored output')
-  .action(async (path: string, opts: { level: string; include?: string[]; exclude?: string[]; json?: boolean; verbose?: boolean }) => {
+  .action(async (path: string, opts: { level: string; include?: string[]; exclude?: string[]; json?: boolean; showIgnored?: boolean }) => {
     const level = opts.level.toUpperCase() as WcagLevel
     if (!['A', 'AA', 'AAA'].includes(level)) {
       console.error(`Invalid level "${opts.level}". Use A, AA, or AAA.`)
@@ -61,7 +61,7 @@ program
       if (opts.json) {
         printJson(result)
       } else {
-        printResult(result, { verbose: opts.verbose })
+        printResult(result, { showIgnored: opts.showIgnored })
       }
 
       // Exit code based on score
@@ -82,31 +82,15 @@ const YELLOW = '\x1b[33m'
 
 program
   .command('ignore')
-  .description('Add an equall-ignore comment above a specific line')
-  .argument('<target>', 'File and line to ignore (e.g. components/Modal.tsx:89)')
-  .argument('[rule-id]', 'Optional rule ID to ignore (e.g. jsx-a11y/alt-text)')
+  .description('Add, list, or remove equall-ignore comments')
+  .argument('[target]', 'File:line to ignore (e.g. src/Modal.tsx:89)')
+  .argument('[rule-id]', 'Optional rule ID (e.g. jsx-a11y/alt-text)')
   .option('-p, --path <path>', 'Path to project root', '.')
-  .action(async (target: string, ruleId: string | undefined, opts: { path: string }) => {
-    const rootPath = resolve(opts.path)
-
-    const result = await addIgnore(rootPath, target, ruleId)
-    if (!result) {
-      console.error(`\n  Could not add ignore at ${target}. Check that the file and line exist.\n`)
-      process.exit(1)
-    }
-
-    console.log(`\n  ${GREEN}Added${RESET} ${result.file}:${result.line}`)
-    console.log(`  ${DIM}${result.comment.trim()}${RESET}\n`)
-  })
-
-program
-  .command('ignores')
-  .description('List and manage equall-ignore comments')
-  .argument('[path]', 'Path to project root', '.')
   .option('--remove <target>', 'Remove ignore at file:line or all ignores in a file')
   .option('--clear', 'Remove all equall-ignore comments from the project')
-  .action(async (path: string, opts: { remove?: string; clear?: boolean }) => {
-    const rootPath = resolve(path)
+  .option('--list', 'List all equall-ignore comments')
+  .action(async (target: string | undefined, ruleId: string | undefined, opts: { path: string; remove?: string; clear?: boolean; list?: boolean }) => {
+    const rootPath = resolve(opts.path)
 
     if (opts.clear) {
       const removed = await clearAllIgnores(rootPath)
@@ -132,8 +116,21 @@ program
       return
     }
 
-    // Default: list all ignores
-    const ignores = await findIgnores(rootPath)
+    // Add an ignore
+    if (target && target.includes(':')) {
+      const result = await addIgnore(rootPath, target, ruleId)
+      if (!result) {
+        console.error(`\n  Could not add ignore at ${target}. Check that the file and line exist.\n`)
+        process.exit(1)
+      }
+      console.log(`\n  ${GREEN}Added${RESET} ${result.file}:${result.line}`)
+      console.log(`  ${DIM}${result.comment.trim()}${RESET}\n`)
+      return
+    }
+
+    // List all ignores (default, or --list, or bare path)
+    const listPath = target ? resolve(target) : rootPath
+    const ignores = await findIgnores(listPath)
     if (ignores.length === 0) {
       console.log('\n  No equall-ignore comments found.\n')
       return

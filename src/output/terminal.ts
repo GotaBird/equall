@@ -90,7 +90,7 @@ function bar(value: number | null, width: number = 20): string {
 }
 
 export interface PrintOptions {
-  verbose?: boolean
+  showIgnored?: boolean
 }
 
 export function printResult(result: ScanResult, options: PrintOptions = {}): void {
@@ -214,7 +214,7 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
   }
 
   // Ignored issues (verbose only)
-  if (options.verbose) {
+  if (options.showIgnored) {
     const ignoredIssues = result.issues.filter(i => i.ignored)
     if (ignoredIssues.length > 0) {
       console.log(`  ${BOLD}Ignored${RESET}`)

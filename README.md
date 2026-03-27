@@ -80,7 +80,7 @@ equall scan . --json > report.json
 ```bash
 equall scan . --include "src/**/*.tsx"
 equall scan . --exclude "**/*.stories.*"
-equall scan . --verbose              # show ignored issues
+equall scan . -i                     # show ignored issues
 equall scan . --no-color             # disable colored output
 ```
 
@@ -109,9 +109,9 @@ Or use the CLI to inject/manage comments without opening the file:
 ```bash
 equall ignore src/Modal.tsx:89                          # ignore all rules at line 89
 equall ignore src/Modal.tsx:89 jsx-a11y/alt-text        # ignore a specific rule
-equall ignores .                                        # list all ignores
-equall ignores . --remove src/Modal.tsx:89              # remove an ignore
-equall ignores . --clear                                # remove all ignores
+equall ignore .                                         # list all ignores
+equall ignore --remove src/Modal.tsx:89                 # remove an ignore
+equall ignore --clear                                   # remove all ignores
 ```
 
 Ignored issues are excluded from the score but still appear in `--json` output with `"ignored": true`.
