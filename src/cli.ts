@@ -7,7 +7,7 @@ import { Command } from 'commander'
 import ora from 'ora'
 import { runScan } from './scan.js'
 import { printResult, printJson } from './output/terminal.js'
-import { findIgnores, removeIgnore, clearAllIgnores, addIgnore } from './ignores.js'
+import { findIgnores, removeIgnore, clearAllIgnores, addIgnore, addIgnoreFile } from './ignores.js'
 import type { WcagLevel } from './types.js'
 
 const __dir = resolve(fileURLToPath(import.meta.url), '..')
@@ -133,11 +133,17 @@ program
       return
     }
 
-    // Target looks like a file path without :line — user error
+    // Target looks like a file path without :line — add equall-ignore-file
     const isDirectory = target && existsSync(resolve(rootPath, target)) && statSync(resolve(rootPath, target)).isDirectory()
     if (target && !isDirectory && (target.includes('/') || target.match(/\.\w+$/))) {
-      console.error(`\n  Missing line number. Usage: equall ignore ${target}:<line>\n`)
-      process.exit(1)
+      const result = await addIgnoreFile(rootPath, target)
+      if (!result) {
+        console.error(`\n  Could not ignore ${target}. File not found or already ignored.\n`)
+        process.exit(1)
+      }
+      console.log(`\n  ${GREEN}Added${RESET} ${result.file}`)
+      console.log(`  ${DIM}${result.comment}${RESET}\n`)
+      return
     }
 
     // List all ignores (default, or --list, or bare path)

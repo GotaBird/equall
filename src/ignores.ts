@@ -57,6 +57,34 @@ export async function findIgnores(rootPath: string): Promise<IgnoreEntry[]> {
   return entries.sort((a, b) => a.file_path.localeCompare(b.file_path) || a.line - b.line)
 }
 
+// Add equall-ignore-file at the top of a file
+export async function addIgnoreFile(rootPath: string, filePath: string): Promise<{ file: string; comment: string } | null> {
+  const absolutePath = resolve(rootPath, filePath)
+  let content: string
+  try {
+    content = await readFile(absolutePath, 'utf-8')
+  } catch {
+    return null
+  }
+
+  // Check if already ignored
+  const lines = content.split('\n')
+  if (lines.slice(0, 5).some(l => l.includes('equall-ignore-file'))) {
+    return null
+  }
+
+  const ext = filePath.split('.').pop()?.toLowerCase()
+  let comment: string
+  if (ext === 'html' || ext === 'htm') {
+    comment = '<!-- equall-ignore-file -->'
+  } else {
+    comment = '// equall-ignore-file'
+  }
+
+  await writeFile(absolutePath, comment + '\n' + content, 'utf-8')
+  return { file: filePath, comment }
+}
+
 // Remove an ignore comment by file path, or file:line
 export async function removeIgnore(rootPath: string, target: string): Promise<{ removed: IgnoreEntry[], notFound: boolean }> {
   const ignores = await findIgnores(rootPath)
