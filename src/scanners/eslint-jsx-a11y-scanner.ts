@@ -1,3 +1,7 @@
+import { ESLint } from 'eslint'
+import jsxA11yModule from 'eslint-plugin-jsx-a11y'
+import * as tsParser from '@typescript-eslint/parser'
+import { createRequire } from 'node:module'
 import type {
   ScannerAdapter,
   ScanContext,
@@ -6,6 +10,8 @@ import type {
   PourPrinciple,
   WcagLevel,
 } from '../types.js'
+
+const jsxA11y = (jsxA11yModule as any).default ?? jsxA11yModule
 
 // Mapping eslint-plugin-jsx-a11y rules → WCAG criteria + POUR
 // Source: https://github.com/jsx-eslint/eslint-plugin-jsx-a11y#supported-rules
@@ -69,25 +75,14 @@ export class EslintJsxA11yScanner implements ScannerAdapter {
   ]
 
   async isAvailable(): Promise<boolean> {
-    try {
-      await import('eslint')
-      await import('eslint-plugin-jsx-a11y')
-      return true
-    } catch {
-      return false
-    }
+    return true
   }
 
   async scan(context: ScanContext): Promise<GladosIssue[]> {
-    const { ESLint } = await import('eslint')
-    const jsxA11yModule = await import('eslint-plugin-jsx-a11y') as any
-    const jsxA11y = jsxA11yModule.default ?? jsxA11yModule
-
     // Read version from the plugin's package.json (meta.version is unreliable)
     try {
-      const { createRequire } = await import('node:module')
-      const require = createRequire(import.meta.url)
-      const pluginPkg = require('eslint-plugin-jsx-a11y/package.json')
+      const req = createRequire(import.meta.url)
+      const pluginPkg = req('eslint-plugin-jsx-a11y/package.json')
       this.version = pluginPkg.version ?? 'unknown'
     } catch {
       this.version = jsxA11y?.meta?.version ?? 'unknown'
@@ -96,9 +91,6 @@ export class EslintJsxA11yScanner implements ScannerAdapter {
     // Only scan JSX/TSX files
     const jsxFiles = context.files.filter((f) => f.type === 'jsx' || f.type === 'tsx')
     if (jsxFiles.length === 0) return []
-
-    // Import TypeScript parser so ESLint can handle TSX files
-    const tsParser = await import('@typescript-eslint/parser')
 
     // Build flat config with jsx-a11y recommended rules
     const eslint = new ESLint({

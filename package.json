@@ -1,6 +1,6 @@
 {
   "name": "equall-cli",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Open-source accessibility scoring CLI — aggregates axe-core, eslint-plugin-jsx-a11y, and more into a unified score.",
   "keywords": [
     "accessibility",
@@ -35,7 +35,7 @@
     "README.md"
   ],
   "scripts": {
-    "build": "tsup src/cli.ts src/index.ts --format esm --dts --clean",
+    "build": "tsup",
     "dev": "tsup src/cli.ts src/index.ts --format esm --dts --watch",
     "scan": "tsx src/cli.ts",
     "lint": "eslint src/",
@@ -43,17 +43,20 @@
   },
   "dependencies": {
     "@typescript-eslint/parser": "^8.57.2",
+    "eslint": "^9.0.0",
+    "eslint-plugin-jsx-a11y": "^6.10.0",
+    "jsdom": "^25.0.0"
+  },
+  "devDependencies": {
+    "@types/jsdom": "^21.1.7",
+    "@types/node": "^22.0.0",
     "axe-core": "^4.10.0",
     "commander": "^12.1.0",
     "eslint": "^9.0.0",
     "eslint-plugin-jsx-a11y": "^6.10.0",
     "globby": "^14.0.0",
     "jsdom": "^25.0.0",
-    "ora": "^9.3.0"
-  },
-  "devDependencies": {
-    "@types/jsdom": "^21.1.7",
-    "@types/node": "^22.0.0",
+    "ora": "^9.3.0",
     "tsup": "^8.0.0",
     "tsx": "^4.0.0",
     "typescript": "^5.9.3",

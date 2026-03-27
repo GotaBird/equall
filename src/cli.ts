@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 
+import { resolve, basename } from 'node:path'
 import { Command } from 'commander'
+import ora from 'ora'
 import { runScan } from './scan.js'
 import { printResult, printJson } from './output/terminal.js'
 import type { WcagLevel } from './types.js'
@@ -28,10 +30,8 @@ program
       process.exit(1)
     }
 
-    const { resolve, basename } = await import('node:path')
     const displayName = basename(resolve(path))
 
-    const ora = (await import('ora')).default
     const spinner = opts.json
       ? null
       : ora({ text: `Scanning ${displayName}`, indent: 2 }).start()
