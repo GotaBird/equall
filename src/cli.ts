@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { resolve, basename } from 'node:path'
-import { readFileSync } from 'node:fs'
+import { readFileSync, existsSync, statSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { Command } from 'commander'
 import ora from 'ora'
@@ -131,6 +131,13 @@ program
       console.log(`\n  ${GREEN}Added${RESET} ${result.file}:${result.line}`)
       console.log(`  ${DIM}${result.comment.trim()}${RESET}\n`)
       return
+    }
+
+    // Target looks like a file path without :line — user error
+    const isDirectory = target && existsSync(resolve(rootPath, target)) && statSync(resolve(rootPath, target)).isDirectory()
+    if (target && !isDirectory && (target.includes('/') || target.match(/\.\w+$/))) {
+      console.error(`\n  Missing line number. Usage: equall ignore ${target}:<line>\n`)
+      process.exit(1)
     }
 
     // List all ignores (default, or --list, or bare path)
