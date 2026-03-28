@@ -118,6 +118,14 @@ export class AxeScanner implements ScannerAdapter {
     // Determine axe run tags based on target level
     const runTags = buildRunTags(context.options.wcag_level)
 
+    // Configure once before the file loop (not per-file)
+    axe.configure({
+      rules: [
+        { id: 'color-contrast', enabled: false },
+        { id: 'color-contrast-enhanced', enabled: false },
+      ],
+    })
+
     for (const file of scannableFiles) {
       try {
         const html = extractHtml(file.content, file.type)
@@ -159,14 +167,6 @@ export class AxeScanner implements ScannerAdapter {
 
     try {
       const document = dom.window.document
-
-      // Disable color-contrast rule (needs real browser rendering)
-      axe.configure({
-        rules: [
-          { id: 'color-contrast', enabled: false },
-          { id: 'color-contrast-enhanced', enabled: false },
-        ],
-      })
 
       const results = await axe.run(document.documentElement, {
         runOnly: {

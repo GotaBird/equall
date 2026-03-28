@@ -6,6 +6,7 @@ import type {
   ScanContext,
   GladosIssue,
   Severity,
+  PourPrinciple,
 } from '../types.js'
 import { extractHtml } from '../utils/html-extract.js'
 
@@ -16,11 +17,10 @@ try {
   const trPkgPath = req.resolve('text-readability/package.json')
   const trPkg = req(trPkgPath)
   trVersion = trPkg.version ?? 'unknown'
-} catch (e) {
-  // Ignored
+} catch {
+  // version stays 'unknown'
 }
 
-// Calculate the median of an array of numbers
 function calculateMedian(numbers: number[]): number {
   if (numbers.length === 0) return 0
   const sorted = [...numbers].sort((a, b) => a - b)
@@ -31,14 +31,13 @@ function calculateMedian(numbers: number[]): number {
   return sorted[middle]
 }
 
-// Map the median grade to a GladosIssue Severity
 function mapSeverity(grade: number): Severity {
   if (grade > 14) return 'critical' // College level
   if (grade > 12) return 'serious'  // Advanced high school
   return 'moderate'                 // High school
 }
 
-// Block tags that should be spaced out to prevent words from sticking together
+// Spacing around block tags prevents words from adjacent elements sticking together during text extraction
 const BLOCK_TAGS_SELECTOR = 'div, p, br, li, h1, h2, h3, h4, h5, h6, section, article, td, th'
 
 export class ReadabilityScanner implements ScannerAdapter {
@@ -67,13 +66,9 @@ export class ReadabilityScanner implements ScannerAdapter {
         const html = extractHtml(file.content, file.type)
         if (!html.trim()) continue
 
-        // Load into cheerio for fast static parsing
         const $ = cheerio.load(html)
-
-        // Remove non-visible content before text extraction
         $('style, script, svg, noscript').remove()
 
-        // Find the html tag to detect the language
         const langAttr = $('html').attr('lang')
         if (langAttr && !langAttr.toLowerCase().startsWith('en')) {
           // If language is explicitly set to non-English, readability formulas will be skewed based on English syllables
@@ -82,13 +77,11 @@ export class ReadabilityScanner implements ScannerAdapter {
           continue
         }
 
-        // Add spaces around block tags so words from different blocks don't stick together
         $(BLOCK_TAGS_SELECTOR).each(function() {
           $(this).prepend(' ')
           $(this).append(' ')
         })
 
-        // Extract raw text and clean up whitespace
         const text = $.root().text().replace(/\s+/g, ' ').trim()
         if (!text) continue
 
@@ -97,7 +90,6 @@ export class ReadabilityScanner implements ScannerAdapter {
         const wordCount = text.split(' ').length
         if (wordCount < 30) continue
 
-        // Calculate readability grades using named scores for robustness
         const scores: Record<string, number | null> = {
           'Flesch-Kincaid': textReadability.fleschKincaidGrade(text),
           'Coleman-Liau': textReadability.colemanLiauIndex(text),
@@ -127,7 +119,6 @@ export class ReadabilityScanner implements ScannerAdapter {
           scores['Dale-Chall'] = Math.max(1, daleChallGrade)
         }
 
-        // Collect valid grade-level values for median calculation
         const gradeValues = Object.values(scores).filter(
           (v): v is number => v !== null && !isNaN(v)
         )
@@ -146,7 +137,7 @@ export class ReadabilityScanner implements ScannerAdapter {
             scanner_rule_id: 'reading-level-high',
             wcag_criteria: ['3.1.5'],
             wcag_level: 'AAA',
-            pour: 'understandable',
+            pour: 'understandable' as PourPrinciple,
             file_path: file.path,
             line: null,
             column: null,
