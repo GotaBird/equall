@@ -1,6 +1,6 @@
 # Equall
 
-Open-source accessibility scoring for dev teams. Aggregates axe-core, eslint-plugin-jsx-a11y, and more into a unified score.
+Open-source accessibility scoring for dev teams. Aggregates axe-core, eslint-plugin-jsx-a11y, text-readability, and more into a unified score.
 
 **One command. Real score. No config.**
 
@@ -94,7 +94,18 @@ It automatically skips: `node_modules`, `dist`, `build`, `.next`, test files, st
 | Scanner | What it checks | WCAG criteria covered |
 |---------|---------------|----------------------|
 | **axe-core** | HTML structure, ARIA, landmarks, forms, media | 24 |
-| **eslint-plugin-jsx-a11y** | JSX/React-specific a11y patterns | 17 |
+| **eslint-plugin-jsx-a11y** | JSX/React-specific a11y patterns | 16 |
+| **readability** | Required reading level of text content (Flesch, ARI, SMOG, etc.) | 1 (WCAG 3.1.5 AAA) |
+
+### Readability scoring
+
+The readability scanner checks [WCAG 3.1.5 (Reading Level)](https://www.w3.org/WAI/WCAG22/Understanding/reading-level) — text should be understandable at a lower secondary education level (approximately Grade 9).
+
+It runs 6 formulas (Flesch-Kincaid, Coleman-Liau, ARI, Gunning Fog, SMOG, Dale-Chall) and uses the **median grade** across all formulas to reduce single-formula bias. If the median exceeds Grade 9, an issue is reported with the full breakdown.
+
+- Scans `.html` and `.vue` files only — JSX/TSX excluded because regex extraction captures `className` attributes and `{expressions}` that pollute scores
+- Skips files with fewer than 30 words (formulas are statistically invalid on short text)
+- Skips non-English files (detected via `lang` attribute) — formulas are English-calibrated
 
 ## Scoring
 
@@ -131,15 +142,15 @@ Some issues are false positives (e.g. an orphan `<li>` in a component that's alw
 <img src="decorative.png" />
 ```
 
-Add `// equall-ignore-file` in the first 5 lines to ignore an entire file.
-
 Or use the CLI to inject/manage comments without opening the file:
 
 ```bash
+equall ignore src/Modal.tsx                             # ignore an entire file
 equall ignore src/Modal.tsx:89                          # ignore all rules at line 89
 equall ignore src/Modal.tsx:89 jsx-a11y/alt-text        # ignore a specific rule
 equall ignore .                                         # list all ignores
 equall ignore --remove src/Modal.tsx:89                 # remove an ignore
+equall ignore --remove src/Modal.tsx                    # remove all ignores in a file
 equall ignore --clear                                   # remove all ignores
 ```
 

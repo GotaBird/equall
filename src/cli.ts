@@ -1,19 +1,24 @@
 #!/usr/bin/env node
 
 import { resolve, basename } from 'node:path'
+import { readFileSync, existsSync, statSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import { Command } from 'commander'
 import ora from 'ora'
 import { runScan } from './scan.js'
 import { printResult, printJson } from './output/terminal.js'
-import { findIgnores, removeIgnore, clearAllIgnores, addIgnore } from './ignores.js'
+import { findIgnores, removeIgnore, clearAllIgnores, addIgnore, addIgnoreFile } from './ignores.js'
 import type { WcagLevel } from './types.js'
+
+const __dir = resolve(fileURLToPath(import.meta.url), '..')
+const pkg = JSON.parse(readFileSync(resolve(__dir, '..', 'package.json'), 'utf-8'))
 
 const program = new Command()
 
 program
   .name('equall')
   .description('Open-source accessibility scoring — aggregates axe-core, eslint-plugin-jsx-a11y, and more.')
-  .version('0.1.0')
+  .version(pkg.version)
 
 program
   .command('scan')
@@ -125,6 +130,19 @@ program
       }
       console.log(`\n  ${GREEN}Added${RESET} ${result.file}:${result.line}`)
       console.log(`  ${DIM}${result.comment.trim()}${RESET}\n`)
+      return
+    }
+
+    // Target looks like a file path without :line — add equall-ignore-file
+    const isDirectory = target && existsSync(resolve(rootPath, target)) && statSync(resolve(rootPath, target)).isDirectory()
+    if (target && !isDirectory && (target.includes('/') || target.match(/\.\w+$/))) {
+      const result = await addIgnoreFile(rootPath, target)
+      if (!result) {
+        console.error(`\n  Could not ignore ${target}. File not found or already ignored.\n`)
+        process.exit(1)
+      }
+      console.log(`\n  ${GREEN}Added${RESET} ${result.file}`)
+      console.log(`  ${DIM}${result.comment}${RESET}\n`)
       return
     }
 
