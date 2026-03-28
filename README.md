@@ -94,7 +94,7 @@ It automatically skips: `node_modules`, `dist`, `build`, `.next`, test files, st
 | Scanner | What it checks | WCAG criteria covered |
 |---------|---------------|----------------------|
 | **axe-core** | HTML structure, ARIA, landmarks, forms, media | 24 |
-| **eslint-plugin-jsx-a11y** | JSX/React-specific a11y patterns | 17 |
+| **eslint-plugin-jsx-a11y** | JSX/React-specific a11y patterns | 16 |
 | **readability** | Required reading level of text content (Flesch, ARI, SMOG, etc.) | 1 (WCAG 3.1.5 AAA) |
 
 ## Scoring
