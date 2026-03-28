@@ -97,6 +97,16 @@ It automatically skips: `node_modules`, `dist`, `build`, `.next`, test files, st
 | **eslint-plugin-jsx-a11y** | JSX/React-specific a11y patterns | 16 |
 | **readability** | Required reading level of text content (Flesch, ARI, SMOG, etc.) | 1 (WCAG 3.1.5 AAA) |
 
+### Readability scoring
+
+The readability scanner checks [WCAG 3.1.5 (Reading Level)](https://www.w3.org/WAI/WCAG22/Understanding/reading-level) — text should be understandable at a lower secondary education level (approximately Grade 9).
+
+It runs 6 formulas (Flesch-Kincaid, Coleman-Liau, ARI, Gunning Fog, SMOG, Dale-Chall) and uses the **median grade** across all formulas to reduce single-formula bias. If the median exceeds Grade 9, an issue is reported with the full breakdown.
+
+- Scans `.html` and `.vue` files only — JSX/TSX excluded because regex extraction captures `className` attributes and `{expressions}` that pollute scores
+- Skips files with fewer than 30 words (formulas are statistically invalid on short text)
+- Skips non-English files (detected via `lang` attribute) — formulas are English-calibrated
+
 ## Scoring
 
 The score (0-100) is designed to be fair and scalable, whether you are scanning 5 files or 5,000. It is calculated using a **density-based asymptotic algorithm**:
