@@ -157,7 +157,7 @@ export function applyIgnoreComments(
 // Deduplicate issues from multiple scanners that flag the same problem.
 // Two issues are considered duplicates if they target the same file, same WCAG criteria,
 // and same location (line or HTML element).
-function deduplicateIssues(issues: GladosIssue[]): GladosIssue[] {
+export function deduplicateIssues(issues: GladosIssue[]): GladosIssue[] {
   const seen = new Set<string>()
   const result: GladosIssue[] = []
 
