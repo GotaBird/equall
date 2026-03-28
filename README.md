@@ -1,6 +1,6 @@
 # Equall
 
-Open-source accessibility scoring for dev teams. Aggregates axe-core, eslint-plugin-jsx-a11y, and more into a unified score.
+Open-source accessibility scoring for dev teams. Aggregates axe-core, eslint-plugin-jsx-a11y, text-readability, and more into a unified score.
 
 **One command. Real score. No config.**
 
@@ -95,6 +95,7 @@ It automatically skips: `node_modules`, `dist`, `build`, `.next`, test files, st
 |---------|---------------|----------------------|
 | **axe-core** | HTML structure, ARIA, landmarks, forms, media | 24 |
 | **eslint-plugin-jsx-a11y** | JSX/React-specific a11y patterns | 17 |
+| **readability** | Required reading level of text content (Flesch, ARI, SMOG, etc.) | 1 (WCAG 3.1.5 AAA) |
 
 ## Scoring
 
