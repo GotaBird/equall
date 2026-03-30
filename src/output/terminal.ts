@@ -1,15 +1,16 @@
 import type { ScanResult, GladosIssue, Severity, PourPrinciple, WcagLevel } from '../types.js'
+import { getCriteriaForLevel } from '../wcag-catalog.js'
 
-// WCAG 2.2 Level A criteria (30 total)
+// WCAG 2.2 Level A criteria (32 total, 4.1.1 Parsing excluded — obsolete in 2.2)
 // Used to partition coverage and failures by level in the summary display
 const WCAG_A_CRITERIA = new Set([
   '1.1.1', '1.2.1', '1.2.2', '1.2.3', '1.3.1', '1.3.2', '1.3.3', '1.4.1', '1.4.2',
   '2.1.1', '2.1.2', '2.1.4', '2.2.1', '2.2.2', '2.3.1',
-  '2.4.1', '2.4.2', '2.4.3', '2.4.4', '2.5.1', '2.5.2', '2.5.3', '2.5.4',
-  '3.1.1', '3.2.1', '3.2.2', '3.2.6', '3.3.1', '3.3.7',
+  '2.4.1', '2.4.2', '2.4.3', '2.4.4', '2.5.1', '2.5.2', '2.5.3', '2.5.4', '2.5.6',
+  '3.1.1', '3.2.1', '3.2.2', '3.2.6', '3.3.1', '3.3.2', '3.3.7',
   '4.1.2',
 ])
-const WCAG_A_TOTAL = 30
+const WCAG_A_TOTAL = 32
 
 // Best-practice rule explanations
 const BP_HINTS: Record<string, string> = {
@@ -92,6 +93,8 @@ function bar(value: number | null, width: number = 20): string {
 export interface PrintOptions {
   showIgnored?: boolean
   verbose?: boolean
+  showManual?: boolean
+  targetLevel?: WcagLevel
 }
 
 export function printResult(result: ScanResult, options: PrintOptions = {}): void {
@@ -241,6 +244,23 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
       for (const issue of ignoredIssues) {
         const location = issue.line ? `:${issue.line}` : ''
         console.log(`  ${DIM}⊘${RESET} ${DIM}${issue.file_path}${location}${RESET}  ${issue.scanner_rule_id}`)
+      }
+      console.log()
+    }
+  }
+
+  // Manual review criteria
+  if (options.showManual) {
+    const level = options.targetLevel ?? 'AA'
+    const allForLevel = getCriteriaForLevel(level)
+    const coveredSet = new Set(result.criteria_covered)
+    const untested = allForLevel.filter(c => !coveredSet.has(c.id))
+
+    if (untested.length > 0) {
+      console.log(`  ${BOLD}Manual review needed${RESET} ${DIM}(${untested.length} criteria)${RESET}`)
+      for (const c of untested) {
+        const principle = c.pour.charAt(0).toUpperCase() + c.pour.slice(1)
+        console.log(`  ${DIM}${c.id}${RESET}  ${c.name} ${DIM}— ${principle}${RESET}`)
       }
       console.log()
     }
