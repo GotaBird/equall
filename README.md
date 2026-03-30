@@ -86,9 +86,9 @@ equall scan . --json > report.json
 ```bash
 equall scan . --include "src/**/*.tsx"
 equall scan . --exclude "**/*.stories.*"
-equall scan . -v                     # show all files per best-practice rule
-equall scan . -i                     # show ignored issues
-equall scan . -m                     # list untested criteria needing manual review
+equall scan . --verbose              # show all files per best-practice rule
+equall scan . --show-ignored         # show ignored issues
+equall scan . --show-manual          # list untested criteria needing manual review
 equall scan . --no-color             # disable colored output
 ```
 
