@@ -29,6 +29,12 @@ equall scan .
   ⓘ You're failing 5 Level A criteria (1.3.1, 2.1.1, 2.4.2, 2.4.4, 4.1.2).
     Level A is the legal minimum — fix these first.
 
+  Best Practices
+  ● region — 26 issues  Landmarks help screen reader users navigate page sections
+    src/app/layout.tsx
+    src/components/Navigation.tsx
+    ... and 24 more (use --verbose to see all)
+
   Scanners: axe-core@4.11.1 (23 issues), eslint-jsx-a11y@6.10.2 (13 issues)
   Completed in 0.8s
 ```
@@ -75,11 +81,13 @@ equall scan . --json             # pipe to other tools
 equall scan . --json > report.json
 ```
 
-### Filter files
+### Options
 
 ```bash
 equall scan . --include "src/**/*.tsx"
 equall scan . --exclude "**/*.stories.*"
+equall scan . -v                     # show all files per best-practice rule
+equall scan . -i                     # show ignored issues
 equall scan . --no-color             # disable colored output
 ```
 

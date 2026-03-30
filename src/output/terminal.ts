@@ -91,6 +91,7 @@ function bar(value: number | null, width: number = 20): string {
 
 export interface PrintOptions {
   showIgnored?: boolean
+  verbose?: boolean
 }
 
 export function printResult(result: ScanResult, options: PrintOptions = {}): void {
@@ -209,6 +210,25 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
       const hint = BP_HINTS[criterion]
       const hintSuffix = hint ? `  ${DIM}${hint}${RESET}` : ''
       console.log(`  ${severityIcon(topSeverity)} ${BOLD}${criterion}${RESET} ${DIM}— ${group.issues.length} issue${group.issues.length > 1 ? 's' : ''}${RESET}${hintSuffix}`)
+
+      // Show affected files: all in verbose mode, first 2 otherwise
+      const maxFiles = options.verbose ? group.issues.length : 2
+      const seen = new Set<string>()
+      const uniqueIssues: GladosIssue[] = []
+      for (const issue of group.issues) {
+        if (!seen.has(issue.file_path)) {
+          seen.add(issue.file_path)
+          uniqueIssues.push(issue)
+        }
+      }
+
+      for (const issue of uniqueIssues.slice(0, maxFiles)) {
+        const location = issue.line ? `:${issue.line}` : ''
+        console.log(`    ${DIM}${issue.file_path}${location}${RESET}`)
+      }
+      if (!options.verbose && uniqueIssues.length > 2) {
+        console.log(`    ${DIM}... and ${uniqueIssues.length - 2} more (use --verbose to see all)${RESET}`)
+      }
     }
     console.log()
   }
