@@ -76,9 +76,9 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
   // 7. Merge coverage from all active scanners
   const criteriaCovered = [...new Set(scanners.flatMap(s => s.coveredCriteria))].sort()
 
-  // Total WCAG 2.2 criteria per level
-  const WCAG_TOTAL: Record<string, number> = { A: 30, AA: 57, AAA: 78 }
-  const criteriaTotal = WCAG_TOTAL[scanOptions.wcag_level] ?? 57
+  // Total WCAG 2.2 criteria per level (4.1.1 Parsing excluded — obsolete in 2.2)
+  const WCAG_TOTAL: Record<string, number> = { A: 32, AA: 56, AAA: 86 }
+  const criteriaTotal = WCAG_TOTAL[scanOptions.wcag_level] ?? 56
 
   // 8. Compute score (only active issues affect scoring)
   const durationMs = Date.now() - startTime

@@ -29,8 +29,10 @@ program
   .option('--exclude <patterns...>', 'Glob patterns to exclude')
   .option('--json', 'Output results as JSON')
   .option('-i, --show-ignored', 'Show ignored issues in output')
+  .option('-v, --verbose', 'Show all occurrences for best-practice issues')
+  .option('-m, --show-manual', 'List WCAG criteria that require manual review')
   .option('--no-color', 'Disable colored output')
-  .action(async (path: string, opts: { level: string; include?: string[]; exclude?: string[]; json?: boolean; showIgnored?: boolean }) => {
+  .action(async (path: string, opts: { level: string; include?: string[]; exclude?: string[]; json?: boolean; showIgnored?: boolean; verbose?: boolean; showManual?: boolean }) => {
     const level = opts.level.toUpperCase() as WcagLevel
     if (!['A', 'AA', 'AAA'].includes(level)) {
       console.error(`Invalid level "${opts.level}". Use A, AA, or AAA.`)
@@ -66,7 +68,7 @@ program
       if (opts.json) {
         printJson(result)
       } else {
-        printResult(result, { showIgnored: opts.showIgnored })
+        printResult(result, { showIgnored: opts.showIgnored, verbose: opts.verbose, showManual: opts.showManual, targetLevel: level })
       }
 
       // Exit code based on score
