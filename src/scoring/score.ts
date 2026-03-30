@@ -32,7 +32,7 @@ export function computeScanResult(
 ): ScanResult {
   const summary = computeSummary(issues, filesScanned)
   const score = computeScore(issues, filesScanned)
-  const pourScores = computePourScores(issues, filesScanned)
+  const pourScores = computePourScores(issues, filesScanned, criteriaCovered)
   const conformanceLevel = computeConformanceLevel(issues, summary, targetLevel)
 
   return {
@@ -113,26 +113,30 @@ function computeScore(issues: GladosIssue[], filesScanned: number): number {
   return Math.max(0, Math.round(score))
 }
 
-function computePourScores(issues: GladosIssue[], filesScanned: number): PourScores {
+function computePourScores(issues: GladosIssue[], filesScanned: number, criteriaCovered: string[] = []): PourScores {
   const pourIssues: Record<PourPrinciple, GladosIssue[]> = {
     perceivable: [],
     operable: [],
     understandable: [],
     robust: [],
   }
-  const pourCriteria: Record<PourPrinciple, Set<string>> = {
-    perceivable: new Set(),
-    operable: new Set(),
-    understandable: new Set(),
-    robust: new Set(),
+
+  // Map covered criteria to POUR principles (first digit: 1=P, 2=O, 3=U, 4=R)
+  const POUR_BY_PREFIX: Record<string, PourPrinciple> = { '1': 'perceivable', '2': 'operable', '3': 'understandable', '4': 'robust' }
+  const pourCovered: Record<PourPrinciple, boolean> = {
+    perceivable: false,
+    operable: false,
+    understandable: false,
+    robust: false,
+  }
+  for (const c of criteriaCovered) {
+    const principle = POUR_BY_PREFIX[c[0]]
+    if (principle) pourCovered[principle] = true
   }
 
   for (const issue of issues) {
     if (!issue.pour) continue
     pourIssues[issue.pour].push(issue)
-    for (const c of issue.wcag_criteria) {
-      pourCriteria[issue.pour].add(c)
-    }
   }
 
   const scaleFactor = 1 / (1 + Math.log10(Math.max(1, filesScanned)))
@@ -141,9 +145,8 @@ function computePourScores(issues: GladosIssue[], filesScanned: number): PourSco
   // Score per POUR: Same formula as global score but isolated to the principle
   function pourScore(principle: PourPrinciple): number | null {
     const principleIssues = pourIssues[principle]
-    const criteriaCount = pourCriteria[principle].size
 
-    if (criteriaCount === 0 && principleIssues.length === 0) return null
+    if (!pourCovered[principle] && principleIssues.length === 0) return null
     if (principleIssues.length === 0) return 100
 
     const penaltyByCriterion = new Map<string, number>()
