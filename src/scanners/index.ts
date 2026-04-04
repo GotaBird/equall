@@ -2,6 +2,7 @@ import type { ScannerAdapter } from '../types.js'
 import { AxeScanner } from './axe-scanner.js'
 import { EslintJsxA11yScanner } from './eslint-jsx-a11y-scanner.js'
 import { ReadabilityScanner } from './readability-scanner.js'
+import { ErrorIdentificationScanner } from './error-identification-scanner.js'
 
 // Registry of all available scanner adapters
 // Adding a new scanner = import + add to this array
@@ -9,6 +10,7 @@ const ALL_SCANNERS: ScannerAdapter[] = [
   new AxeScanner(),
   new EslintJsxA11yScanner(),
   new ReadabilityScanner(),
+  new ErrorIdentificationScanner(),
 ]
 
 // Returns only scanners that are available (dependencies installed)
@@ -25,4 +27,4 @@ export async function getAvailableScanners(): Promise<ScannerAdapter[]> {
     .map((c) => c.scanner)
 }
 
-export { AxeScanner, EslintJsxA11yScanner, ReadabilityScanner }
+export { AxeScanner, EslintJsxA11yScanner, ReadabilityScanner, ErrorIdentificationScanner }
