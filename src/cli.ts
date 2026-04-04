@@ -17,7 +17,7 @@ const program = new Command()
 
 program
   .name('equall')
-  .description('Open-source accessibility scoring — aggregates axe-core, eslint-plugin-jsx-a11y, and more.')
+  .description('WCAG accessibility scanner for HTML, JSX, TSX, Vue, Svelte & Astro files')
   .version(pkg.version)
 
 program
@@ -32,6 +32,16 @@ program
   .option('-v, --verbose', 'Show all occurrences for best-practice issues')
   .option('-m, --show-manual', 'List WCAG criteria that require manual review')
   .option('--no-color', 'Disable colored output')
+  .addHelpText('after', `
+Examples:
+  equall scan .                        Scan current directory (Level AA)
+  equall scan ./public --level A       Scan HTML files, Level A only
+  equall scan . --json > report.json   Export JSON report
+  equall scan . --show-manual          List criteria needing manual review
+  equall scan . --include "src/**"     Scan only src/ folder
+
+Supported files: .html .htm .jsx .tsx .vue .svelte .astro
+`)
   .action(async (path: string, opts: { level: string; include?: string[]; exclude?: string[]; json?: boolean; showIgnored?: boolean; verbose?: boolean; showManual?: boolean }) => {
     const level = opts.level.toUpperCase() as WcagLevel
     if (!['A', 'AA', 'AAA'].includes(level)) {
@@ -58,6 +68,7 @@ program
       if (result.summary.files_scanned === 0) {
         if (opts.json) {
           printJson(result)
+          console.error(`✓ JSON report written (${result.issues.length} issues)`)
         } else {
           console.log('\n  No scannable files found (.html, .jsx, .tsx, .vue, .svelte, .astro)')
           console.log('  Check the path or use --include to specify patterns.\n')
@@ -67,6 +78,7 @@ program
 
       if (opts.json) {
         printJson(result)
+        console.error(`✓ JSON report written (${result.issues.length} issues)`)
       } else {
         printResult(result, { showIgnored: opts.showIgnored, verbose: opts.verbose, showManual: opts.showManual, targetLevel: level })
       }

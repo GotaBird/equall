@@ -17,6 +17,20 @@ export function extractHtml(content: string, type: string): string {
     return singleReturn?.[1] ?? ''
   }
 
+  if (type === 'svelte') {
+    // Remove script and style blocks, keep the HTML template
+    return content
+      .replace(/<script[\s\S]*?<\/script>/g, '')
+      .replace(/<style[\s\S]*?<\/style>/g, '')
+      .trim()
+  }
+
+  if (type === 'astro') {
+    // Remove frontmatter (everything between --- delimiters)
+    const withoutFrontmatter = content.replace(/^---[\s\S]*?---\n?/, '')
+    return withoutFrontmatter.trim()
+  }
+
   return content
 }
 
