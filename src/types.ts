@@ -1,5 +1,5 @@
 // Unified issue format — all scanners normalize to this
-export interface GladosIssue {
+export interface EquallIssue {
   // Source scanner
   scanner: string                    // 'axe-core' | 'eslint-jsx-a11y' | 'html-validate' | ...
   scanner_rule_id: string            // Original rule ID from the scanner
@@ -36,7 +36,7 @@ export interface ScannerAdapter {
   name: string
   version: string
   coveredCriteria: string[]            // WCAG criteria this scanner is capable of testing
-  scan(context: ScanContext): Promise<GladosIssue[]>
+  scan(context: ScanContext): Promise<EquallIssue[]>
   isAvailable(): Promise<boolean>     // Can this scanner run? (e.g., are deps installed?)
 }
 
@@ -67,7 +67,7 @@ export interface ScanResult {
   score: number                        // 0-100
   conformance_level: ConformanceLevel
   pour_scores: PourScores
-  issues: GladosIssue[]
+  issues: EquallIssue[]
   summary: ScanSummary
   scanners_used: ScannerInfo[]
   criteria_covered: string[]           // Union of all scanner coveredCriteria

@@ -2,7 +2,7 @@ import * as cheerio from 'cheerio'
 import type {
   ScannerAdapter,
   ScanContext,
-  GladosIssue,
+  EquallIssue,
 } from '../types.js'
 import { extractHtml } from '../utils/html-extract.js'
 
@@ -15,12 +15,12 @@ export class ErrorIdentificationScanner implements ScannerAdapter {
     return true // cheerio is bundled
   }
 
-  async scan(context: ScanContext): Promise<GladosIssue[]> {
+  async scan(context: ScanContext): Promise<EquallIssue[]> {
     const scannableFiles = context.files.filter(
       (f) => f.type === 'html' || f.type === 'vue' || f.type === 'svelte' || f.type === 'astro'
     )
 
-    const allIssues: GladosIssue[] = []
+    const allIssues: EquallIssue[] = []
 
     for (const file of scannableFiles) {
       try {

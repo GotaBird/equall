@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { applyIgnoreComments } from '../scan.js'
-import type { GladosIssue, FileEntry } from '../types.js'
+import type { EquallIssue, FileEntry } from '../types.js'
 
-function makeIssue(overrides: Partial<GladosIssue> = {}): GladosIssue {
+function makeIssue(overrides: Partial<EquallIssue> = {}): EquallIssue {
   return {
     scanner: 'test-scanner',
     scanner_rule_id: 'test-rule',

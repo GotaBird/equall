@@ -4,7 +4,7 @@ import textReadability from 'text-readability'
 import type {
   ScannerAdapter,
   ScanContext,
-  GladosIssue,
+  EquallIssue,
   Severity,
   PourPrinciple,
 } from '../types.js'
@@ -49,7 +49,7 @@ export class ReadabilityScanner implements ScannerAdapter {
     return true // bundled
   }
 
-  async scan(context: ScanContext): Promise<GladosIssue[]> {
+  async scan(context: ScanContext): Promise<EquallIssue[]> {
     // Only scan HTML and Vue files — JSX/TSX extraction via regex captures
     // className attributes and {expressions} which pollute readability scores.
     // A real JSX parser would fix this but is overkill for v1.
@@ -59,7 +59,7 @@ export class ReadabilityScanner implements ScannerAdapter {
       return false
     })
 
-    const allIssues: GladosIssue[] = []
+    const allIssues: EquallIssue[] = []
 
     for (const file of scannableFiles) {
       try {

@@ -1,4 +1,4 @@
-import type { ScanResult, GladosIssue, Severity, PourPrinciple, WcagLevel } from '../types.js'
+import type { ScanResult, EquallIssue, Severity, PourPrinciple, WcagLevel } from '../types.js'
 import { getCriteriaForLevel } from '../wcag-catalog.js'
 
 // WCAG 2.2 Level A criteria (32 total, 4.1.1 Parsing excluded — obsolete in 2.2)
@@ -217,7 +217,7 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
       // Show affected files: all in verbose mode, first 2 otherwise
       const maxFiles = options.verbose ? group.issues.length : 2
       const seen = new Set<string>()
-      const uniqueIssues: GladosIssue[] = []
+      const uniqueIssues: EquallIssue[] = []
       for (const issue of group.issues) {
         if (!seen.has(issue.file_path)) {
           seen.add(issue.file_path)
@@ -313,11 +313,11 @@ function printCoaching(result: ScanResult): void {
 }
 
 interface CriterionGroup {
-  issues: GladosIssue[]
+  issues: EquallIssue[]
   weight: number
 }
 
-function groupByCriterion(issues: GladosIssue[]): Map<string, CriterionGroup> {
+function groupByCriterion(issues: EquallIssue[]): Map<string, CriterionGroup> {
   const map = new Map<string, CriterionGroup>()
   const severityWeight: Record<Severity, number> = {
     critical: 100,

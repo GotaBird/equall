@@ -5,7 +5,7 @@ import { createRequire } from 'node:module'
 import type {
   ScannerAdapter,
   ScanContext,
-  GladosIssue,
+  EquallIssue,
   Severity,
   PourPrinciple,
   WcagLevel,
@@ -78,7 +78,7 @@ export class EslintJsxA11yScanner implements ScannerAdapter {
     return true
   }
 
-  async scan(context: ScanContext): Promise<GladosIssue[]> {
+  async scan(context: ScanContext): Promise<EquallIssue[]> {
     // Read version from the plugin's package.json (meta.version is unreliable)
     try {
       const req = createRequire(import.meta.url)
@@ -115,7 +115,7 @@ export class EslintJsxA11yScanner implements ScannerAdapter {
       cwd: context.root_path,
     })
 
-    const allIssues: GladosIssue[] = []
+    const allIssues: EquallIssue[] = []
 
     // Lint files in batches to avoid memory issues
     const filePaths = jsxFiles.map((f) => f.absolute_path)

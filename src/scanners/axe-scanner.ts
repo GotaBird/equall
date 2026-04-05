@@ -3,7 +3,7 @@ import { JSDOM, VirtualConsole } from 'jsdom'
 import type {
   ScannerAdapter,
   ScanContext,
-  GladosIssue,
+  EquallIssue,
   Severity,
   PourPrinciple,
   WcagLevel,
@@ -96,7 +96,7 @@ export class AxeScanner implements ScannerAdapter {
     return true
   }
 
-  async scan(context: ScanContext): Promise<GladosIssue[]> {
+  async scan(context: ScanContext): Promise<EquallIssue[]> {
     this.version = axe.version ?? 'unknown'
 
     const htmlFiles = context.files.filter(
@@ -113,7 +113,7 @@ export class AxeScanner implements ScannerAdapter {
       )
     })
 
-    const allIssues: GladosIssue[] = []
+    const allIssues: EquallIssue[] = []
 
     // Determine axe run tags based on target level
     const runTags = buildRunTags(context.options.wcag_level)
@@ -147,7 +147,7 @@ export class AxeScanner implements ScannerAdapter {
     html: string,
     filePath: string,
     runTags: string[]
-  ): Promise<GladosIssue[]> {
+  ): Promise<EquallIssue[]> {
     // Wrap fragment in a basic HTML document if needed
     const fullHtml = wrapFragment(html)
 
@@ -176,7 +176,7 @@ export class AxeScanner implements ScannerAdapter {
         resultTypes: ['violations'],
       })
 
-      const issues: GladosIssue[] = []
+      const issues: EquallIssue[] = []
 
       for (const violation of results.violations) {
         const { criteria, level, pour } = parseWcagTags(violation.tags)

@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { computeScanResult } from '../scoring/score.js'
-import type { GladosIssue, Severity, PourPrinciple, WcagLevel } from '../types.js'
+import type { EquallIssue, Severity, PourPrinciple, WcagLevel } from '../types.js'
 
-function makeIssue(overrides: Partial<GladosIssue> = {}): GladosIssue {
+function makeIssue(overrides: Partial<EquallIssue> = {}): EquallIssue {
   return {
     scanner: 'test',
     scanner_rule_id: 'test-rule',

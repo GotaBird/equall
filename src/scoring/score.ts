@@ -1,5 +1,5 @@
 import type {
-  GladosIssue,
+  EquallIssue,
   PourScores,
   PourPrinciple,
   ConformanceLevel,
@@ -22,7 +22,7 @@ const SEVERITY_WEIGHT: Record<Severity, number> = {
 const MAX_PENALTY_PER_CRITERION = 15
 
 export function computeScanResult(
-  issues: GladosIssue[],
+  issues: EquallIssue[],
   filesScanned: number,
   scannersUsed: ScannerInfo[],
   durationMs: number,
@@ -49,7 +49,7 @@ export function computeScanResult(
   }
 }
 
-function computeSummary(issues: GladosIssue[], filesScanned: number): ScanSummary {
+function computeSummary(issues: EquallIssue[], filesScanned: number): ScanSummary {
   const bySeverity: Record<Severity, number> = {
     critical: 0,
     serious: 0,
@@ -80,7 +80,7 @@ function computeSummary(issues: GladosIssue[], filesScanned: number): ScanSummar
   }
 }
 
-function computeScore(issues: GladosIssue[], filesScanned: number): number {
+function computeScore(issues: EquallIssue[], filesScanned: number): number {
   if (issues.length === 0) return 100
 
   // Group issues by WCAG criterion and compute penalty per criterion
@@ -113,8 +113,8 @@ function computeScore(issues: GladosIssue[], filesScanned: number): number {
   return Math.max(0, Math.round(score))
 }
 
-function computePourScores(issues: GladosIssue[], filesScanned: number, criteriaCovered: string[] = []): PourScores {
-  const pourIssues: Record<PourPrinciple, GladosIssue[]> = {
+function computePourScores(issues: EquallIssue[], filesScanned: number, criteriaCovered: string[] = []): PourScores {
+  const pourIssues: Record<PourPrinciple, EquallIssue[]> = {
     perceivable: [],
     operable: [],
     understandable: [],
@@ -179,7 +179,7 @@ function computePourScores(issues: GladosIssue[], filesScanned: number, criteria
 }
 
 function computeConformanceLevel(
-  issues: GladosIssue[],
+  issues: EquallIssue[],
   summary: ScanSummary,
   targetLevel: WcagLevel
 ): ConformanceLevel {
