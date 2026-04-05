@@ -2,7 +2,7 @@ import { resolve } from 'node:path'
 import { discoverFiles } from './discover.js'
 import { getAvailableScanners } from './scanners/index.js'
 import { computeScanResult } from './scoring/score.js'
-import type { ScanOptions, ScanResult, ScannerInfo, GladosIssue, WcagLevel, FileEntry } from './types.js'
+import type { ScanOptions, ScanResult, ScannerInfo, EquallIssue, WcagLevel, FileEntry } from './types.js'
 
 export interface RunScanOptions {
   path?: string
@@ -48,7 +48,7 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
   )
 
   // 4. Aggregate results
-  const allIssues: GladosIssue[] = []
+  const allIssues: EquallIssue[] = []
   const scannersUsed: ScannerInfo[] = []
 
   for (const result of scannerResults) {
@@ -94,9 +94,9 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
 // Apply equall-ignore comments to suppress known false positives.
 // Issues with ignored: true are excluded from scoring but included in JSON output.
 export function applyIgnoreComments(
-  issues: GladosIssue[],
+  issues: EquallIssue[],
   files: FileEntry[]
-): { active: GladosIssue[]; ignored: GladosIssue[] } {
+): { active: EquallIssue[]; ignored: EquallIssue[] } {
   // Build a map of file contents for quick lookup
   const fileContentMap = new Map<string, string[]>()
   for (const file of files) {
@@ -113,8 +113,8 @@ export function applyIgnoreComments(
     }
   }
 
-  const active: GladosIssue[] = []
-  const ignored: GladosIssue[] = []
+  const active: EquallIssue[] = []
+  const ignored: EquallIssue[] = []
 
   for (const issue of issues) {
     // File-level ignore
@@ -157,9 +157,9 @@ export function applyIgnoreComments(
 // Deduplicate issues from multiple scanners that flag the same problem.
 // Two issues are considered duplicates if they target the same file, same WCAG criteria,
 // and same location (line or HTML element).
-export function deduplicateIssues(issues: GladosIssue[]): GladosIssue[] {
+export function deduplicateIssues(issues: EquallIssue[]): EquallIssue[] {
   const seen = new Set<string>()
-  const result: GladosIssue[] = []
+  const result: EquallIssue[] = []
 
   for (const issue of issues) {
     // Sort criteria so ["4.1.2", "2.4.4"] and ["2.4.4", "4.1.2"] produce the same key
