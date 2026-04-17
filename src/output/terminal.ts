@@ -27,7 +27,9 @@ const BP_HINTS: Record<string, string> = {
 
 // ANSI color helpers (chalk-free fallback for minimal deps)
 const BOLD = '\x1b[1m'
-const DIM = '\x1b[2m'
+// Use bright black (\x1b[90m) rather than the DIM attribute (\x1b[2m) —
+// DIM renders inconsistently and near-invisible on many terminals
+const GRAY = '\x1b[90m'
 const RESET = '\x1b[0m'
 const RED = '\x1b[31m'
 const YELLOW = '\x1b[33m'
@@ -58,7 +60,7 @@ function severityIcon(s: Severity): string {
     case 'critical': return `${RED}${BOLD}■${RESET}`
     case 'serious': return `${YELLOW}${BOLD}▲${RESET}`
     case 'moderate': return `${CYAN}●${RESET}`
-    case 'minor': return `${DIM}○${RESET}`
+    case 'minor': return `${GRAY}○${RESET}`
   }
 }
 
@@ -67,7 +69,7 @@ function severityLabel(s: Severity): string {
     case 'critical': return `${RED}${BOLD}CRITICAL${RESET}`
     case 'serious': return `${YELLOW}${BOLD}SERIOUS${RESET}`
     case 'moderate': return `${CYAN}MODERATE${RESET}`
-    case 'minor': return `${DIM}MINOR${RESET}`
+    case 'minor': return `${GRAY}MINOR${RESET}`
   }
 }
 
@@ -104,7 +106,7 @@ function formatSuggestion(raw: string, indent: string): string[] {
     if (isHeader(line)) {
       mode = /fix any/i.test(line) ? 'any' : 'all'
       const label = mode === 'any' ? 'Do any one of these:' : 'Do all of these:'
-      out.push(`${indent}${GREEN}How to fix${RESET} ${DIM}(${label})${RESET}`)
+      out.push(`${indent}${GREEN}How to fix${RESET} ${GRAY}(${label})${RESET}`)
     } else {
       out.push(`${indent}  ${GREEN}·${RESET} ${line}`)
     }
@@ -142,11 +144,11 @@ function describeConformance(level: string): string {
 }
 
 function bar(value: number | null, width: number = 20): string {
-  if (value === null) return `${DIM}${'░'.repeat(width)} n/a${RESET}`
+  if (value === null) return `${GRAY}${'░'.repeat(width)} n/a${RESET}`
   const filled = Math.round((value / 100) * width)
   const empty = width - filled
   const color = scoreColor(value)
-  return `${color}${'█'.repeat(filled)}${DIM}${'░'.repeat(empty)}${RESET} ${color}${value}${RESET}`
+  return `${color}${'█'.repeat(filled)}${GRAY}${'░'.repeat(empty)}${RESET} ${color}${value}${RESET}`
 }
 
 export interface PrintOptions {
@@ -165,34 +167,26 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
 
   // Big score display with plain-language conformance explainer
   const conformanceExplainer = describeConformance(conformance_level)
-  console.log(`  ${scoreBg(score)}${BOLD}${WHITE}  ${score}  ${RESET}  ${conformanceBadge(conformance_level)}  ${DIM}WCAG 2.2${RESET}`)
-  console.log(`  ${DIM}${conformanceExplainer}${RESET}`)
-  console.log()
-
-  // POUR breakdown
-  console.log(`  ${BOLD}POUR Breakdown${RESET}`)
-  console.log(`  ${MAGENTA}P${RESET} Perceivable    ${bar(pour_scores.perceivable)}`)
-  console.log(`  ${MAGENTA}O${RESET} Operable       ${bar(pour_scores.operable)}`)
-  console.log(`  ${MAGENTA}U${RESET} Understandable ${bar(pour_scores.understandable)}`)
-  console.log(`  ${MAGENTA}R${RESET} Robust         ${bar(pour_scores.robust)}`)
+  console.log(`  ${scoreBg(score)}${BOLD}${WHITE}  ${score}  ${RESET}  ${conformanceBadge(conformance_level)}  ${GRAY}WCAG 2.2${RESET}`)
+  console.log(`  ${GRAY}${conformanceExplainer}${RESET}`)
   console.log()
 
   // Summary stats
   console.log(`  ${BOLD}Summary${RESET}`)
   const wcagIssuesCount = result.issues.filter(i => i.wcag_criteria.length > 0).length
   const bpIssuesCount = result.issues.length - wcagIssuesCount
-  console.log(`  ${summary.files_scanned} file${summary.files_scanned === 1 ? '' : 's'} scanned  ·  ${BOLD}${wcagIssuesCount}${RESET} WCAG violation${wcagIssuesCount === 1 ? '' : 's'}  ·  ${DIM}${bpIssuesCount} best-practice recommendation${bpIssuesCount === 1 ? '' : 's'}${RESET}`)
+  console.log(`  ${summary.files_scanned} file${summary.files_scanned === 1 ? '' : 's'} scanned  ·  ${BOLD}${wcagIssuesCount}${RESET} WCAG violation${wcagIssuesCount === 1 ? '' : 's'}  ·  ${GRAY}${bpIssuesCount} best-practice recommendation${bpIssuesCount === 1 ? '' : 's'}${RESET}`)
 
   // Severity breakdown with a one-line legend so "critical/serious/moderate/minor" isn't just a color soup
   console.log(
     `  ${severityIcon('critical')} ${RED}${summary.by_severity.critical} critical${RESET}   ` +
     `${severityIcon('serious')} ${YELLOW}${summary.by_severity.serious} serious${RESET}   ` +
     `${severityIcon('moderate')} ${CYAN}${summary.by_severity.moderate} moderate${RESET}   ` +
-    `${severityIcon('minor')} ${DIM}${summary.by_severity.minor} minor${RESET}`
+    `${severityIcon('minor')} ${GRAY}${summary.by_severity.minor} minor${RESET}`
   )
-  console.log(`  ${DIM}critical/serious = fix before shipping · moderate/minor = fix in next iteration${RESET}`)
+  console.log(`  ${GRAY}critical/serious = fix before shipping · moderate/minor = fix in next iteration${RESET}`)
   if (summary.ignored_count > 0) {
-    console.log(`  ${DIM}${summary.ignored_count} issue${summary.ignored_count > 1 ? 's' : ''} suppressed via equall-ignore${RESET}`)
+    console.log(`  ${GRAY}${summary.ignored_count} issue${summary.ignored_count > 1 ? 's' : ''} suppressed via equall-ignore${RESET}`)
   }
 
   // Coverage line(s) — "X/Y criteria checked" makes coverage transparent.
@@ -228,6 +222,14 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
   }
   console.log()
 
+  // POUR breakdown
+  console.log(`  ${BOLD}POUR Breakdown${RESET}`)
+  console.log(`  ${MAGENTA}P${RESET} Perceivable    ${bar(pour_scores.perceivable)}`)
+  console.log(`  ${MAGENTA}O${RESET} Operable       ${bar(pour_scores.operable)}`)
+  console.log(`  ${MAGENTA}U${RESET} Understandable ${bar(pour_scores.understandable)}`)
+  console.log(`  ${MAGENTA}R${RESET} Robust         ${bar(pour_scores.robust)}`)
+  console.log()
+
   // Contextual coaching
   printCoaching(result)
   console.log()
@@ -239,7 +241,7 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
 
   // Top issues (WCAG Violations) — these count against conformance
   if (wcagIssues.length > 0) {
-    console.log(`  ${BOLD}WCAG Violations${RESET} ${DIM}— must fix to reach conformance${RESET}`)
+    console.log(`  ${BOLD}WCAG Violations${RESET} ${GRAY}— must fix to reach conformance${RESET}`)
     console.log()
 
     const grouped = groupByCriterion(wcagIssues)
@@ -250,14 +252,14 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
     for (const [criterion, group] of sorted) {
       const topSeverity = group.issues[0].severity
       const name = criterionName(criterion)
-      const levelSuffix = group.issues[0].wcag_level ? ` ${DIM}Level ${group.issues[0].wcag_level}${RESET}` : ''
+      const levelSuffix = group.issues[0].wcag_level ? ` ${GRAY}Level ${group.issues[0].wcag_level}${RESET}` : ''
       const nameSuffix = name ? ` ${BOLD}${name}${RESET}` : ''
       const count = group.issues.length
       // Header: severity icon · criterion ID · plain-language name · level · issue count
       console.log(
         `  ${severityIcon(topSeverity)} ${severityLabel(topSeverity)}  ` +
         `${BOLD}WCAG ${criterion}${RESET}${nameSuffix}${levelSuffix}  ` +
-        `${DIM}(${count} occurrence${count > 1 ? 's' : ''})${RESET}`
+        `${GRAY}(${count} occurrence${count > 1 ? 's' : ''})${RESET}`
       )
 
       // Collapse duplicate file+line entries so the same issue isn't repeated.
@@ -275,7 +277,7 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
       for (const issue of uniqueIssues.slice(0, 2)) {
         const location = issue.line ? `:${issue.line}` : ''
         const col = issue.column ? `:${issue.column}` : ''
-        console.log(`    ${DIM}↳${RESET} ${CYAN}${issue.file_path}${location}${col}${RESET}`)
+        console.log(`    ${GRAY}↳${RESET} ${CYAN}${issue.file_path}${location}${col}${RESET}`)
         console.log(`      ${cleanMessage(issue.message)}`)
         if (issue.suggestion) {
           for (const line of formatSuggestion(issue.suggestion, '      ')) {
@@ -283,11 +285,11 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
           }
         }
         if (issue.help_url) {
-          console.log(`      ${DIM}Learn more: ${issue.help_url}${RESET}`)
+          console.log(`      ${GRAY}Learn more: ${issue.help_url}${RESET}`)
         }
       }
       if (uniqueIssues.length > 2) {
-        console.log(`    ${DIM}↳ and ${uniqueIssues.length - 2} more occurrence${uniqueIssues.length - 2 > 1 ? 's' : ''} of the same issue${RESET}`)
+        console.log(`    ${GRAY}↳ and ${uniqueIssues.length - 2} more occurrence${uniqueIssues.length - 2 > 1 ? 's' : ''} of the same issue${RESET}`)
       }
       console.log()
     }
@@ -295,7 +297,7 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
 
   // Best Practices — recommendations, NOT WCAG violations. Kept visually quieter.
   if (bpIssues.length > 0) {
-    console.log(`  ${BOLD}Best-Practice Recommendations${RESET} ${DIM}— not WCAG failures, but improve usability${RESET}`)
+    console.log(`  ${BOLD}Best-Practice Recommendations${RESET} ${GRAY}— not WCAG failures, but improve usability${RESET}`)
     console.log()
 
     const grouped = groupByCriterion(bpIssues)
@@ -308,7 +310,7 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
       const count = group.issues.length
       console.log(
         `  ${severityIcon(topSeverity)} ${BOLD}${criterion}${RESET}  ` +
-        `${DIM}${count} occurrence${count > 1 ? 's' : ''}${RESET}`
+        `${GRAY}${count} occurrence${count > 1 ? 's' : ''}${RESET}`
       )
       console.log(`      ${hint}`)
 
@@ -325,10 +327,10 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
 
       for (const issue of uniqueIssues.slice(0, maxFiles)) {
         const location = issue.line ? `:${issue.line}` : ''
-        console.log(`      ${DIM}↳${RESET} ${CYAN}${issue.file_path}${location}${RESET}`)
+        console.log(`      ${GRAY}↳${RESET} ${CYAN}${issue.file_path}${location}${RESET}`)
       }
       if (!options.verbose && uniqueIssues.length > 2) {
-        console.log(`      ${DIM}↳ and ${uniqueIssues.length - 2} more file${uniqueIssues.length - 2 > 1 ? 's' : ''} (run with --verbose to list all)${RESET}`)
+        console.log(`      ${GRAY}↳ and ${uniqueIssues.length - 2} more file${uniqueIssues.length - 2 > 1 ? 's' : ''} (run with --verbose to list all)${RESET}`)
       }
       console.log()
     }
@@ -341,7 +343,7 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
       console.log(`  ${BOLD}Ignored${RESET}`)
       for (const issue of ignoredIssues) {
         const location = issue.line ? `:${issue.line}` : ''
-        console.log(`  ${DIM}⊘${RESET} ${DIM}${issue.file_path}${location}${RESET}  ${issue.scanner_rule_id}`)
+        console.log(`  ${GRAY}⊘${RESET} ${GRAY}${issue.file_path}${location}${RESET}  ${issue.scanner_rule_id}`)
       }
       console.log()
     }
@@ -355,10 +357,10 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
     const untested = allForLevel.filter(c => !coveredSet.has(c.id))
 
     if (untested.length > 0) {
-      console.log(`  ${BOLD}Needs manual review${RESET} ${DIM}— ${untested.length} criteria automation can't verify${RESET}`)
+      console.log(`  ${BOLD}Needs manual review${RESET} ${GRAY}— ${untested.length} criteria automation can't verify${RESET}`)
       for (const c of untested) {
         const principle = c.pour.charAt(0).toUpperCase() + c.pour.slice(1)
-        console.log(`  ${DIM}${c.id}${RESET}  ${c.name} ${DIM}— ${principle}${RESET}`)
+        console.log(`  ${GRAY}${c.id}${RESET}  ${c.name} ${GRAY}— ${principle}${RESET}`)
       }
       console.log()
     }
@@ -366,10 +368,17 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
 
   // Scanners used — transparency about what ran
   const scannerLine = scanners_used
-    .map((s) => `${s.name} ${DIM}v${s.version}${RESET} ${DIM}(${s.issues_found})${RESET}`)
-    .join(`${DIM} · ${RESET}`)
-  console.log(`  ${DIM}Scanners:${RESET} ${scannerLine}`)
-  console.log(`  ${DIM}Completed in ${(duration_ms / 1000).toFixed(1)}s${RESET}`)
+    .map((s) => `${s.name} ${GRAY}v${s.version}${RESET} ${GRAY}(${s.issues_found})${RESET}`)
+    .join(`${GRAY} · ${RESET}`)
+  console.log(`  ${GRAY}Scanners:${RESET} ${scannerLine}`)
+
+  // Readability disclaimer — the scanner uses English-calibrated Flesch-Kincaid,
+  // so non-English documents are skipped and the grade is approximate.
+  if (scanners_used.some(s => s.name === 'readability')) {
+    console.log(`  ${GRAY}Note: readability uses Flesch-Kincaid on English text only. Non-English files are skipped. Grades are indicative — disable with --no-readability.${RESET}`)
+  }
+
+  console.log(`  ${GRAY}Completed in ${(duration_ms / 1000).toFixed(1)}s${RESET}`)
   console.log()
 }
 
@@ -399,23 +408,23 @@ function printCoaching(result: ScanResult): void {
     const sorted = [...ids].sort()
     const shown = sorted.slice(0, max).map(id => {
       const name = criterionName(id)
-      return name ? `${id} ${DIM}${name}${RESET}` : id
+      return name ? `${id} ${GRAY}${name}${RESET}` : id
     })
     const extra = sorted.length - max
-    return extra > 0 ? `${shown.join(', ')}, ${DIM}+${extra} more${RESET}` : shown.join(', ')
+    return extra > 0 ? `${shown.join(', ')}, ${GRAY}+${extra} more${RESET}` : shown.join(', ')
   }
 
   if (levelAFailed.length > 0) {
     // Level A failures — most urgent
     console.log(`  ${RED}${BOLD}▲ Action needed${RESET}  You're failing ${BOLD}${levelAFailed.length} Level A criteri${levelAFailed.length > 1 ? 'a' : 'on'}${RESET}.`)
     console.log(`    Level A is the legal minimum — without it, some users literally cannot use your product.`)
-    console.log(`    ${DIM}Failing:${RESET} ${formatCriteria(levelAFailed)}`)
+    console.log(`    ${GRAY}Failing:${RESET} ${formatCriteria(levelAFailed)}`)
     console.log(`    ${GREEN}Next step:${RESET} scroll to ${BOLD}WCAG Violations${RESET} below and fix the critical/serious items first.`)
   } else if (levelAAFailed.length > 0) {
     // Level A passes, Level AA fails
     console.log(`  ${GREEN}✓${RESET} ${BOLD}Level A passed.${RESET} Now working toward ${BOLD}AA${RESET} — ${levelAAFailed.length} criteri${levelAAFailed.length > 1 ? 'a' : 'on'} still failing.`)
     console.log(`    Level AA is what most regulations (EAA, Section 508, RGAA) require in practice.`)
-    console.log(`    ${DIM}Failing:${RESET} ${formatCriteria(levelAAFailed)}`)
+    console.log(`    ${GRAY}Failing:${RESET} ${formatCriteria(levelAAFailed)}`)
   } else {
     // All pass
     console.log(`  ${GREEN}${BOLD}✓ All automated checks pass.${RESET} Nothing to fix in code right now.`)
@@ -423,7 +432,7 @@ function printCoaching(result: ScanResult): void {
   }
 
   if (remaining > 0) {
-    console.log(`    ${DIM}${remaining} criteria still need manual testing — automation can't verify them.${RESET}`)
+    console.log(`    ${GRAY}${remaining} criteria still need manual testing — automation can't verify them.${RESET}`)
   }
 }
 

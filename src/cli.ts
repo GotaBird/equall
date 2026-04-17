@@ -32,6 +32,7 @@ program
   .option('-v, --verbose', 'Show all occurrences for best-practice issues')
   .option('-m, --show-manual', 'List WCAG criteria that require manual review')
   .option('--no-color', 'Disable colored output')
+  .option('--no-readability', 'Disable readability (Flesch-Kincaid) scanner — English-only, experimental')
   .addHelpText('after', `
 Examples:
   equall scan .                        Scan current directory (Level AA)
@@ -39,10 +40,11 @@ Examples:
   equall scan . --json > report.json   Export JSON report
   equall scan . --show-manual          List criteria needing manual review
   equall scan . --include "src/**"     Scan only src/ folder
+  equall scan . --no-readability       Skip reading-grade (Flesch-Kincaid) checks
 
 Supported files: .html .htm .jsx .tsx .vue .svelte .astro
 `)
-  .action(async (path: string, opts: { level: string; include?: string[]; exclude?: string[]; json?: boolean; showIgnored?: boolean; verbose?: boolean; showManual?: boolean }) => {
+  .action(async (path: string, opts: { level: string; include?: string[]; exclude?: string[]; json?: boolean; showIgnored?: boolean; verbose?: boolean; showManual?: boolean; readability?: boolean }) => {
     const level = opts.level.toUpperCase() as WcagLevel
     if (!['A', 'AA', 'AAA'].includes(level)) {
       console.error(`Invalid level "${opts.level}". Use A, AA, or AAA.`)
@@ -61,6 +63,7 @@ Supported files: .html .htm .jsx .tsx .vue .svelte .astro
         level,
         include: opts.include,
         exclude: opts.exclude,
+        disableScanners: opts.readability === false ? ['readability'] : [],
       })
 
       spinner?.stop()
