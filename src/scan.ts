@@ -9,6 +9,7 @@ export interface RunScanOptions {
   level?: WcagLevel
   include?: string[]
   exclude?: string[]
+  disableScanners?: string[]
 }
 
 export async function runScan(options: RunScanOptions = {}): Promise<ScanResult> {
@@ -27,8 +28,9 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
     return computeScanResult([], 0, [], Date.now() - startTime, scanOptions.wcag_level)
   }
 
-  // 2. Get available scanners
-  const scanners = await getAvailableScanners()
+  // 2. Get available scanners (minus any the user disabled via CLI flag)
+  const disabled = new Set(options.disableScanners ?? [])
+  const scanners = (await getAvailableScanners()).filter(s => !disabled.has(s.name))
   if (scanners.length === 0) {
     console.warn('No scanners available. Install axe-core and jsdom for HTML scanning.')
     return computeScanResult([], files.length, [], Date.now() - startTime, scanOptions.wcag_level)

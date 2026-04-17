@@ -1,6 +1,6 @@
 {
   "name": "equall-cli",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Open-source accessibility scoring CLI — aggregates axe-core, eslint-plugin-jsx-a11y, and more into a unified score.",
   "keywords": [
     "accessibility",
@@ -62,7 +62,7 @@
     "tsup": "^8.0.0",
     "tsx": "^4.0.0",
     "typescript": "^5.9.3",
-    "vitest": "^2.0.0"
+    "vitest": "^3.2.4"
   },
   "engines": {
     "node": ">=18.0.0"

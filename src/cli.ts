@@ -32,6 +32,7 @@ program
   .option('-v, --verbose', 'Show all occurrences for best-practice issues')
   .option('-m, --show-manual', 'List WCAG criteria that require manual review')
   .option('--no-color', 'Disable colored output')
+  .option('--no-readability', 'Disable readability (Flesch-Kincaid) scanner — English-only, experimental')
   .addHelpText('after', `
 Examples:
   equall scan .                        Scan current directory (Level AA)
@@ -39,10 +40,11 @@ Examples:
   equall scan . --json > report.json   Export JSON report
   equall scan . --show-manual          List criteria needing manual review
   equall scan . --include "src/**"     Scan only src/ folder
+  equall scan . --no-readability       Skip reading-grade (Flesch-Kincaid) checks
 
 Supported files: .html .htm .jsx .tsx .vue .svelte .astro
 `)
-  .action(async (path: string, opts: { level: string; include?: string[]; exclude?: string[]; json?: boolean; showIgnored?: boolean; verbose?: boolean; showManual?: boolean }) => {
+  .action(async (path: string, opts: { level: string; include?: string[]; exclude?: string[]; json?: boolean; showIgnored?: boolean; verbose?: boolean; showManual?: boolean; readability?: boolean }) => {
     const level = opts.level.toUpperCase() as WcagLevel
     if (!['A', 'AA', 'AAA'].includes(level)) {
       console.error(`Invalid level "${opts.level}". Use A, AA, or AAA.`)
@@ -61,6 +63,7 @@ Supported files: .html .htm .jsx .tsx .vue .svelte .astro
         level,
         include: opts.include,
         exclude: opts.exclude,
+        disableScanners: opts.readability === false ? ['readability'] : [],
       })
 
       spinner?.stop()
@@ -93,7 +96,7 @@ Supported files: .html .htm .jsx .tsx .vue .svelte .astro
     }
   })
 
-const DIM = '\x1b[2m'
+const GRAY = '\x1b[90m'
 const BOLD = '\x1b[1m'
 const RESET = '\x1b[0m'
 const GREEN = '\x1b[32m'
@@ -129,7 +132,7 @@ program
       }
       for (const entry of removed) {
         const location = entry.type === 'file' ? '' : `:${entry.line}`
-        console.log(`  ${GREEN}Removed${RESET} ${entry.file_path}${location}  ${DIM}${entry.raw}${RESET}`)
+        console.log(`  ${GREEN}Removed${RESET} ${entry.file_path}${location}  ${GRAY}${entry.raw}${RESET}`)
       }
       console.log()
       return
@@ -143,7 +146,7 @@ program
         process.exit(1)
       }
       console.log(`\n  ${GREEN}Added${RESET} ${result.file}:${result.line}`)
-      console.log(`  ${DIM}${result.comment.trim()}${RESET}\n`)
+      console.log(`  ${GRAY}${result.comment.trim()}${RESET}\n`)
       return
     }
 
@@ -156,7 +159,7 @@ program
         process.exit(1)
       }
       console.log(`\n  ${GREEN}Added${RESET} ${result.file}`)
-      console.log(`  ${DIM}${result.comment}${RESET}\n`)
+      console.log(`  ${GRAY}${result.comment}${RESET}\n`)
       return
     }
 
@@ -174,7 +177,7 @@ program
       const type = entry.type === 'file'
         ? `${YELLOW}equall-ignore-file${RESET}`
         : `equall-ignore-next-line`
-      const rule = entry.rule_id ? `  ${DIM}${entry.rule_id}${RESET}` : `  ${DIM}(all rules)${RESET}`
+      const rule = entry.rule_id ? `  ${GRAY}${entry.rule_id}${RESET}` : `  ${GRAY}(all rules)${RESET}`
       console.log(`  ${entry.file_path}${location}${' '.repeat(Math.max(1, 40 - entry.file_path.length - location.length))}${type}${rule}`)
     }
     console.log()
