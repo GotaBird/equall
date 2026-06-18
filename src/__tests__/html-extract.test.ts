@@ -76,4 +76,25 @@ const title = "Hello"
     const result = extractHtml(astroFile, 'astro')
     expect(result).toBe('<p>Content</p>')
   })
+
+  it('strips client script and scoped style blocks, keeps the markup', () => {
+    const astroFile = `---
+const title = "Hi"
+---
+<Layout>
+  <h1>{title}</h1>
+  <img src="photo.jpg" />
+  <style>h1 { color: red; }</style>
+  <script>console.log('hydrate')</script>
+</Layout>`
+
+    const result = extractHtml(astroFile, 'astro')
+    expect(result).not.toContain('const title')   // frontmatter gone
+    expect(result).not.toContain('<style')
+    expect(result).not.toContain('color: red')
+    expect(result).not.toContain('<script')
+    expect(result).not.toContain('hydrate')
+    expect(result).toContain('<h1>{title}</h1>')  // markup + expressions kept
+    expect(result).toContain('<img src="photo.jpg" />')
+  })
 })

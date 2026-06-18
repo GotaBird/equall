@@ -26,9 +26,17 @@ export function extractHtml(content: string, type: string): string {
   }
 
   if (type === 'astro') {
-    // Remove frontmatter (everything between --- delimiters)
-    const withoutFrontmatter = content.replace(/^---[\s\S]*?---\n?/, '')
-    return withoutFrontmatter.trim()
+    // Remove the component-script frontmatter (everything between the leading
+    // --- delimiters), then drop client <script>/<style> blocks the same way we
+    // do for svelte — they carry no a11y-relevant markup and only add noise.
+    // Component tags (<Layout>) and expressions ({title}) are left as-is: axe
+    // treats unknown tags as inert custom elements and expressions as text, which
+    // is the same best-effort tradeoff as JSX extraction.
+    return content
+      .replace(/^---[\s\S]*?---\n?/, '')
+      .replace(/<script[\s\S]*?<\/script>/g, '')
+      .replace(/<style[\s\S]*?<\/style>/g, '')
+      .trim()
   }
 
   return content

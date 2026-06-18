@@ -105,13 +105,23 @@ export class AxeScanner implements ScannerAdapter {
     this.version = axe.version ?? 'unknown'
 
     const htmlFiles = context.files.filter(
-      (f) => f.type === 'html' || f.type === 'jsx' || f.type === 'tsx' || f.type === 'vue'
+      (f) =>
+        f.type === 'html' ||
+        f.type === 'jsx' ||
+        f.type === 'tsx' ||
+        f.type === 'vue' ||
+        f.type === 'astro' ||
+        f.type === 'svelte'
     )
 
-    // For JSX/TSX/Vue, we only scan files that contain HTML-like content
+    // Only scan files that actually contain renderable HTML.
     const scannableFiles = htmlFiles.filter((f) => {
       if (f.type === 'html') return true
-      // For component files, check if they contain renderable HTML
+      // Astro/Svelte are markup-first: the template lives at the top level (no
+      // `return`), so scan as soon as there's a tag. extractHtml strips their
+      // frontmatter/script/style blocks before axe sees the content.
+      if (f.type === 'astro' || f.type === 'svelte') return f.content.includes('<')
+      // JSX/TSX/Vue component files: only those that actually render HTML.
       return f.content.includes('<') && (
         f.content.includes('return') ||
         f.content.includes('<template')
