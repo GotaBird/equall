@@ -2,6 +2,7 @@
 export { runScan } from './scan.js'
 export type { RunScanOptions } from './scan.js'
 export { computeScanResult } from './scoring/score.js'
+export { fingerprint } from './utils/fingerprint.js'
 export type {
   EquallIssue,
   ScanResult,

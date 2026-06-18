@@ -1,4 +1,4 @@
-import { ESLint } from 'eslint'
+import { ESLint, type Linter } from 'eslint'
 import jsxA11yModule from 'eslint-plugin-jsx-a11y'
 import * as tsParser from '@typescript-eslint/parser'
 import { createRequire } from 'node:module'
@@ -63,6 +63,33 @@ function mapSeverity(eslintSeverity: number): Severity {
 // AA criteria in our RULE_WCAG_MAP — all others are Level A
 const AA_CRITERIA = new Set(['1.3.5', '2.4.6', '2.4.7', '3.1.2', '3.3.2'])
 
+// Slice the offending source token out of the file, using the message's reported
+// span (line/column → endLine/endColumn). The text is what gives the issue a stable
+// fingerprint (BUR-106); the positions are only used here to find it, never stored.
+function extractTokenContext(content: string, msg: Linter.LintMessage): string | null {
+  if (!msg.line) return null
+  const lines = content.split('\n')
+  if (msg.line < 1 || msg.line > lines.length) return null
+
+  const startLine = msg.line
+  const endLine = msg.endLine ?? msg.line
+  const startCol = (msg.column ?? 1) - 1
+  const endCol = (msg.endColumn ?? (lines[endLine - 1]?.length ?? 0) + 1) - 1
+
+  let raw: string
+  if (endLine === startLine) {
+    raw = lines[startLine - 1].slice(startCol, endCol)
+  } else {
+    const parts = [lines[startLine - 1].slice(startCol)]
+    for (let i = startLine; i < endLine - 1; i++) parts.push(lines[i])
+    parts.push((lines[endLine - 1] ?? '').slice(0, endCol))
+    raw = parts.join(' ')
+  }
+
+  const trimmed = raw.trim()
+  return trimmed ? trimmed.slice(0, 200) : null
+}
+
 
 export class EslintJsxA11yScanner implements ScannerAdapter {
   name = 'eslint-jsx-a11y'
@@ -124,9 +151,8 @@ export class EslintJsxA11yScanner implements ScannerAdapter {
       const results = await eslint.lintFiles(filePaths)
 
       for (const result of results) {
-        const relativePath = jsxFiles.find(
-          (f) => f.absolute_path === result.filePath
-        )?.path ?? result.filePath
+        const fileEntry = jsxFiles.find((f) => f.absolute_path === result.filePath)
+        const relativePath = fileEntry?.path ?? result.filePath
 
         for (const msg of result.messages) {
           if (!msg.ruleId || !msg.ruleId.startsWith('jsx-a11y/')) continue
@@ -134,6 +160,12 @@ export class EslintJsxA11yScanner implements ScannerAdapter {
           const wcagMapping = RULE_WCAG_MAP[msg.ruleId]
           const criteria = wcagMapping?.criteria ?? []
           const pour = wcagMapping?.pour ?? null
+
+          // Capture the offending source token so the issue gets a stable identity
+          // (BUR-106). We use line/column only to *locate* the token at scan time —
+          // the fingerprint hashes the token text, not its position, so a reformat
+          // that moves the line keeps the identity stable.
+          const tokenContext = fileEntry ? extractTokenContext(fileEntry.content, msg) : null
 
           // Split criteria by WCAG level so each issue has a single level
           const aCriteria = criteria.filter(c => !AA_CRITERIA.has(c))
@@ -153,7 +185,7 @@ export class EslintJsxA11yScanner implements ScannerAdapter {
               file_path: relativePath,
               line: msg.line ?? null,
               column: msg.column ?? null,
-              html_snippet: null,
+              html_snippet: tokenContext,
               severity: mapSeverity(msg.severity),
               message: `${msg.message} (${msg.ruleId})`,
               help_url: `https://github.com/jsx-eslint/eslint-plugin-jsx-a11y/blob/main/docs/rules/${msg.ruleId.replace('jsx-a11y/', '')}.md`,
