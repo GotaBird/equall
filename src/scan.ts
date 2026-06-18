@@ -2,6 +2,7 @@ import { resolve } from 'node:path'
 import { discoverFiles } from './discover.js'
 import { getAvailableScanners } from './scanners/index.js'
 import { computeScanResult } from './scoring/score.js'
+import { fingerprint } from './utils/fingerprint.js'
 import type { ScanOptions, ScanResult, ScannerInfo, EquallIssue, WcagLevel, FileEntry } from './types.js'
 
 export interface RunScanOptions {
@@ -86,8 +87,13 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
   const durationMs = Date.now() - startTime
   const result = computeScanResult(active, files.length, scannersUsed, durationMs, scanOptions.wcag_level, criteriaCovered, criteriaTotal)
 
+  // 9. Attach stable fingerprints — identity for diff-aware scanning (BUR-106).
+  // Metadata only: does not affect scoring (computed above from `active`).
+  const withFingerprint = (list: EquallIssue[]): EquallIssue[] =>
+    list.map((issue) => ({ ...issue, fingerprint: fingerprint(issue) }))
+
   // Include ignored issues in output for transparency, update count
-  result.issues = [...active, ...ignored]
+  result.issues = [...withFingerprint(active), ...withFingerprint(ignored)]
   result.summary.ignored_count = ignored.length
 
   return result
