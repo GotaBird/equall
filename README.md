@@ -28,6 +28,7 @@ Accessibility tools today fall into two camps: dev tools that show violations wi
 Equall sits in that gap. It wraps existing open-source scanners and adds what they're missing — a **score**, a **trend**, and a **POUR breakdown** that tells you where to focus.
 
 - **Aggregator, not reinventor** — wraps axe-core, eslint-plugin-jsx-a11y, and more. We don't rewrite rules, we unify their results.
+- **Framework-aware** — scans HTML, JSX/TSX, Vue, Svelte and **Astro**. `.astro` is **full multi-engine** (axe-core + jsx-a11y via `astro-eslint-parser` + readability), not axe-only.
 - **Score 0–100** — weighted by severity, grouped by WCAG criterion, with a conformance level (A / AA / AAA).
 - **POUR breakdown** — see which principle (Perceivable, Operable, Understandable, Robust) is your weakest.
 - **Zero config** — point it at a folder, get a score. No setup, no account, no signup.

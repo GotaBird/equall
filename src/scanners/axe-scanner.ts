@@ -84,7 +84,7 @@ function pourFromCriterion(criterion: string): PourPrinciple | null {
 export class AxeScanner implements ScannerAdapter {
   name = 'axe-core'
   version = ''
-  fileTypes: FileType[] = ['html', 'jsx', 'tsx', 'vue']
+  fileTypes: FileType[] = ['html', 'jsx', 'tsx', 'vue', 'astro', 'svelte']
   // Contrast rules (color-contrast / color-contrast-enhanced) are disabled below —
   // they need real rendering — so 1.4.3 is only partially testable statically.
   partialCriteria = ['1.4.3']

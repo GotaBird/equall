@@ -14,7 +14,11 @@ export default defineConfig({
   format: ['esm'],
   dts: true,
   clean: true,
-  noExternal: [/^(?!(jsdom|eslint|@eslint|eslint-plugin-jsx-a11y|@typescript-eslint|esquery|espree))/],
+  // Keep the eslint-family parsers external (loaded from node_modules at runtime):
+  // bundling them breaks interop between the parser and the external eslint/ts-eslint.
+  // astro-eslint-parser (+ its @astrojs/compiler dep) must stay external for the same
+  // reason — otherwise .astro linting fails silently (T1.8).
+  noExternal: [/^(?!(jsdom|eslint|@eslint|eslint-plugin-jsx-a11y|@typescript-eslint|esquery|espree|astro-eslint-parser|@astrojs))/],
   platform: 'node',
   banner: { js: esmShims },
   esbuildOptions(options) {

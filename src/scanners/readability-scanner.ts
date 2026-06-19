@@ -44,7 +44,7 @@ const BLOCK_TAGS_SELECTOR = 'div, p, br, li, h1, h2, h3, h4, h5, h6, section, ar
 export class ReadabilityScanner implements ScannerAdapter {
   name = 'readability'
   version = trVersion
-  fileTypes: FileType[] = ['html', 'vue']
+  fileTypes: FileType[] = ['html', 'vue', 'astro']
   coveredCriteria = ['3.1.5'] // WCAG AAA: Reading Level
 
   async isAvailable(): Promise<boolean> {
@@ -58,6 +58,9 @@ export class ReadabilityScanner implements ScannerAdapter {
     const scannableFiles = context.files.filter((f) => {
       if (f.type === 'html') return true
       if (f.type === 'vue') return f.content.includes('<template')
+      // Astro is markup-first (template at top level) — extractHtml strips its
+      // frontmatter/script/style, leaving prose to grade (T1.8).
+      if (f.type === 'astro') return true
       return false
     })
 
