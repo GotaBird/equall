@@ -50,6 +50,9 @@ export interface ScanContext {
   root_path: string                   // Absolute path to the project root
   files: FileEntry[]                  // Files to scan
   options: ScanOptions
+  in_memory?: boolean                 // true when files come from buffers (T1.1) and
+                                      // do not exist on disk — scanners that read the
+                                      // filesystem (eslint) must use their in-memory path
 }
 
 export interface FileEntry {

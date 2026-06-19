@@ -144,11 +144,23 @@ export class EslintJsxA11yScanner implements ScannerAdapter {
 
     const allIssues: EquallIssue[] = []
 
-    // Lint files in batches to avoid memory issues
-    const filePaths = jsxFiles.map((f) => f.absolute_path)
-
     try {
-      const results = await eslint.lintFiles(filePaths)
+      // Disk mode: lintFiles reads from the filesystem (unchanged behavior).
+      // In-memory mode (T1.1): buffers don't exist on disk, so lint the content
+      // directly via lintText. warnIgnored:false stops a virtual path that looks
+      // ignored from being silently skipped (the false-negative trap); the filePath
+      // keeps a real extension so the flat config still parses it as JSX/TSX.
+      let results: ESLint.LintResult[]
+      if (context.in_memory) {
+        const perFile = await Promise.all(
+          jsxFiles.map((f) =>
+            eslint.lintText(f.content, { filePath: f.absolute_path, warnIgnored: false })
+          )
+        )
+        results = perFile.flat()
+      } else {
+        results = await eslint.lintFiles(jsxFiles.map((f) => f.absolute_path))
+      }
 
       for (const result of results) {
         const fileEntry = jsxFiles.find((f) => f.absolute_path === result.filePath)
