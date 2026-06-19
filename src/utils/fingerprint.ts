@@ -1,6 +1,12 @@
 import { createHash } from 'node:crypto'
 import type { EquallIssue } from '../types.js'
 
+// One level of brace nesting: matches `{ ... }` including a single nested `{ ... }`, so
+// JSX `style={{ ... }}` is consumed whole (a bare `[^}]*` would mangle nested braces).
+// Shared regex fragment — reused by the axe extraction path (utils/html-extract.ts) so
+// both sites match expressions identically.
+export const ONE_LEVEL_BRACE_EXPR = '\\{(?:[^{}]|\\{[^{}]*\\})*\\}'
+
 // Stable identity for an issue (BUR-106).
 //
 // The fingerprint must survive cosmetic churn so diff-aware scanning (T1.2) and
@@ -32,7 +38,10 @@ export function normalizeSnippet(snippet: string | null | undefined): string {
   if (!snippet) return ''
   return snippet
     // drop cosmetic attributes entirely (HTML class / JSX className / inline style)
-    .replace(/\s+(?:class|className|style)\s*=\s*(?:"[^"]*"|'[^']*'|\{(?:[^{}]|\{[^{}]*\})*\}|[^\s>]+)/gi, '')
+    .replace(
+      new RegExp(`\\s+(?:class|className|style)\\s*=\\s*(?:"[^"]*"|'[^']*'|${ONE_LEVEL_BRACE_EXPR}|[^\\s>]+)`, 'gi'),
+      ''
+    )
     // normalize quote style (Prettier may rewrite ' -> ")
     .replace(/['"]/g, '"')
     // collapse all whitespace runs to a single space
