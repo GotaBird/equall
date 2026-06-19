@@ -7,6 +7,7 @@ import type {
   EquallIssue,
   Severity,
   PourPrinciple,
+  FileType,
 } from '../types.js'
 import { extractHtml } from '../utils/html-extract.js'
 
@@ -43,6 +44,7 @@ const BLOCK_TAGS_SELECTOR = 'div, p, br, li, h1, h2, h3, h4, h5, h6, section, ar
 export class ReadabilityScanner implements ScannerAdapter {
   name = 'readability'
   version = trVersion
+  fileTypes: FileType[] = ['html', 'vue']
   coveredCriteria = ['3.1.5'] // WCAG AAA: Reading Level
 
   async isAvailable(): Promise<boolean> {

@@ -9,6 +9,7 @@ import type {
   Severity,
   PourPrinciple,
   WcagLevel,
+  FileType,
 } from '../types.js'
 
 const jsxA11y = (jsxA11yModule as any).default ?? jsxA11yModule
@@ -94,6 +95,7 @@ function extractTokenContext(content: string, msg: Linter.LintMessage): string |
 export class EslintJsxA11yScanner implements ScannerAdapter {
   name = 'eslint-jsx-a11y'
   version = ''
+  fileTypes: FileType[] = ['jsx', 'tsx']
   coveredCriteria = [
     '1.1.1', '1.2.2', '1.2.3', '1.3.1', '1.3.5',
     '2.1.1', '2.3.1', '2.4.1', '2.4.3', '2.4.4', '2.4.6', '2.4.7',

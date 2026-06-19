@@ -176,3 +176,10 @@ export async function runDiffScan(options: DiffScanOptions): Promise<DiffScanRes
     },
   }
 }
+
+// Always-formulated diff guardrail (T1.3): a single line that never claims "clean/done",
+// even at zero new — it always names the legacy debt, the untested files, and the next step.
+export function formatDiffGuardrail(result: DiffScanResult): string {
+  const { new_count, legacy_count, not_testable_count } = result.summary
+  return `${new_count} new · ${legacy_count} legacy · ${not_testable_count} not statically testable → run the rendered check`
+}

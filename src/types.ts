@@ -40,9 +40,32 @@ export type Severity = 'critical' | 'serious' | 'moderate' | 'minor'
 export interface ScannerAdapter {
   name: string
   version: string
+  fileTypes: FileType[]                // File types this scanner consumes — drives honest
+                                       // coverage: a scanner only counts if the scan had files
+                                       // of one of these types (T1.3)
   coveredCriteria: string[]            // WCAG criteria this scanner is capable of testing
+  partialCriteria?: string[]           // Criteria it only partially tests statically (e.g.
+                                       // contrast disabled) → reported `partial`, never `auto`
   scan(context: ScanContext): Promise<EquallIssue[]>
   isAvailable(): Promise<boolean>     // Can this scanner run? (e.g., are deps installed?)
+}
+
+// Honest coverage (T1.3) — a criterion's real, exercised status on THIS scan.
+// `auto`: genuinely tested (a scanner that received eligible files exercised it).
+// `partial`: nominally covered but statically incomplete (e.g. contrast) → needs the rendered check.
+// `manual`: a scanner is capable of it but received no eligible files here → verify another way.
+export type CoverageStatus = 'auto' | 'partial' | 'manual'
+
+export interface CriterionCoverage {
+  criterion: string
+  status: CoverageStatus
+  scanners: string[]                   // scanners that exercised it (empty for `manual`)
+}
+
+export interface CoverageReport {
+  criteria: CriterionCoverage[]
+  counts: Record<CoverageStatus, number>
+  auto_criteria: string[]              // criteria with status `auto` — the genuinely-checked set
 }
 
 // What we pass to each scanner
@@ -80,6 +103,7 @@ export interface ScanResult {
   scanners_used: ScannerInfo[]
   criteria_covered: string[]           // Union of all scanner coveredCriteria
   criteria_total: number               // Total WCAG criteria for the target level
+  coverage?: CoverageReport            // Honest, exercised coverage (T1.3) — attached by runScan
   scanned_at: string                   // ISO timestamp
   duration_ms: number
 }

@@ -2,6 +2,7 @@ import { resolve } from 'node:path'
 import { discoverFiles, fileTypeForPath, sanitizeVirtualPath } from './discover.js'
 import { getAvailableScanners } from './scanners/index.js'
 import { computeScanResult } from './scoring/score.js'
+import { computeCoverage } from './coverage.js'
 import { fingerprint } from './utils/fingerprint.js'
 import type { ScanOptions, ScanResult, ScannerInfo, EquallIssue, WcagLevel, FileEntry } from './types.js'
 
@@ -121,6 +122,10 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
   // Include ignored issues in output for transparency, update count
   result.issues = [...withFingerprint(active), ...withFingerprint(ignored)]
   result.summary.ignored_count = ignored.length
+
+  // 10. Honest coverage (T1.3) — exercised criteria only, never "capable" as "tested".
+  // Additive: does NOT touch criteria_covered (which feeds POUR scoring).
+  result.coverage = computeCoverage(scanners, files)
 
   return result
 }

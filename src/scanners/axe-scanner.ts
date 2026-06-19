@@ -7,6 +7,7 @@ import type {
   Severity,
   PourPrinciple,
   WcagLevel,
+  FileType,
 } from '../types.js'
 import { extractHtml, wrapFragment } from '../utils/html-extract.js'
 
@@ -83,6 +84,10 @@ function pourFromCriterion(criterion: string): PourPrinciple | null {
 export class AxeScanner implements ScannerAdapter {
   name = 'axe-core'
   version = ''
+  fileTypes: FileType[] = ['html', 'jsx', 'tsx', 'vue']
+  // Contrast rules (color-contrast / color-contrast-enhanced) are disabled below —
+  // they need real rendering — so 1.4.3 is only partially testable statically.
+  partialCriteria = ['1.4.3']
   coveredCriteria = [
     '1.1.1', '1.2.1', '1.2.2', '1.3.1', '1.3.4', '1.3.5',
     '1.4.1', '1.4.2', '1.4.3', '1.4.4', '1.4.12',

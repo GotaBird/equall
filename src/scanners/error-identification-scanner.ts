@@ -3,12 +3,14 @@ import type {
   ScannerAdapter,
   ScanContext,
   EquallIssue,
+  FileType,
 } from '../types.js'
 import { extractHtml } from '../utils/html-extract.js'
 
 export class ErrorIdentificationScanner implements ScannerAdapter {
   name = 'error-identification'
   version = '1.0.0'
+  fileTypes: FileType[] = ['html', 'vue', 'svelte', 'astro']
   coveredCriteria = ['3.3.1']
 
   async isAvailable(): Promise<boolean> {
