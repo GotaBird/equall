@@ -7,40 +7,87 @@ on:
   pull_request:
     branches: [main]
 
+# Least-privilege by default; the publish job widens its own scope below.
+permissions:
+  contents: read
+
+# Cancel superseded runs on PRs only — never cancel a main/tag (release) run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   ci:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ['18', '20', '22']
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ matrix.node-version }}
           cache: 'npm'
 
       - run: npm ci
       - run: npm run build
       - run: npm test
-      # - run: npm run lint  # uncomment when eslint.config.js is added
+      - run: npm run lint
 
   publish:
     needs: ci
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
+    # Trusted publishing: configure the npmjs trusted publisher for this repo,
+    # workflow (publish.yml) and the `npm` environment. No NPM_TOKEN needed.
     environment: npm
     permissions:
-      contents: read
-      id-token: write
+      contents: write # create the GitHub release
+      id-token: write # OIDC token for npm provenance / trusted publishing
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
           registry-url: 'https://registry.npmjs.org'
 
       - run: npm ci
       - run: npm run build
       - run: npm test
-      - run: npm publish --provenance --access public
+
+      - name: Verify tag matches package.json
+        run: |
+          TAG=${GITHUB_REF_NAME#v}
+          PKG=$(node -p "require('./package.json').version")
+          test "$TAG" = "$PKG" || { echo "tag $TAG != pkg $PKG"; exit 1; }
+
+      - name: Smoke-test packed tarball
+        run: |
+          set -euo pipefail
+          npm pack
+          TARBALL="$PWD/$(ls equall-cli-*.tgz)"
+          WORK="$(mktemp -d)"
+          mkdir -p "$WORK/fixture"
+          printf '<!doctype html><html lang="en"><body><main><img src="x.png"></main></body></html>\n' > "$WORK/fixture/index.html"
+          cd "$WORK"
+          npm init -y >/dev/null 2>&1
+          npm install "$TARBALL"
+          BIN="$WORK/node_modules/.bin/equall"
+          VER="$("$BIN" --version)"
+          test "$VER" = "${GITHUB_REF_NAME#v}" || { echo "smoke: bin version $VER != tag ${GITHUB_REF_NAME#v}"; exit 1; }
+          "$BIN" --help >/dev/null
+          "$BIN" scan "$WORK/fixture"
+
+      - name: Publish to npm (provenance / trusted publishing)
+        run: |
+          npm install -g npm@latest # OIDC trusted publishing needs npm >= 11.5.1
+          npm publish --provenance --access public
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
