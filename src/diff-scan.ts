@@ -47,7 +47,6 @@ function assertSafeRef(ref: string): void {
   if (ref.startsWith('-')) {
     throw new Error(`Invalid git ref (leading dash): ${JSON.stringify(ref)}`)
   }
-  // eslint-disable-next-line no-control-regex
   if (/[\x00-\x1f\x7f]/.test(ref)) {
     throw new Error(`Invalid git ref (control character): ${JSON.stringify(ref)}`)
   }
