@@ -1,6 +1,7 @@
 import { ESLint, type Linter } from 'eslint'
 import jsxA11yModule from 'eslint-plugin-jsx-a11y'
 import * as tsParser from '@typescript-eslint/parser'
+import * as astroParserModule from 'astro-eslint-parser'
 import { createRequire } from 'node:module'
 import type {
   ScannerAdapter,
@@ -9,9 +10,11 @@ import type {
   Severity,
   PourPrinciple,
   WcagLevel,
+  FileType,
 } from '../types.js'
 
 const jsxA11y = (jsxA11yModule as any).default ?? jsxA11yModule
+const astroParser = (astroParserModule as any).default ?? astroParserModule
 
 // Mapping eslint-plugin-jsx-a11y rules → WCAG criteria + POUR
 // Source: https://github.com/jsx-eslint/eslint-plugin-jsx-a11y#supported-rules
@@ -94,6 +97,7 @@ function extractTokenContext(content: string, msg: Linter.LintMessage): string |
 export class EslintJsxA11yScanner implements ScannerAdapter {
   name = 'eslint-jsx-a11y'
   version = ''
+  fileTypes: FileType[] = ['jsx', 'tsx', 'astro']
   coveredCriteria = [
     '1.1.1', '1.2.2', '1.2.3', '1.3.1', '1.3.5',
     '2.1.1', '2.3.1', '2.4.1', '2.4.3', '2.4.4', '2.4.6', '2.4.7',
@@ -115,9 +119,18 @@ export class EslintJsxA11yScanner implements ScannerAdapter {
       this.version = jsxA11y?.meta?.version ?? 'unknown'
     }
 
-    // Only scan JSX/TSX files
-    const jsxFiles = context.files.filter((f) => f.type === 'jsx' || f.type === 'tsx')
-    if (jsxFiles.length === 0) return []
+    // Scan JSX/TSX and Astro files. Astro is parsed with astro-eslint-parser so the
+    // same jsx-a11y rules run on the .astro template (T1.8) — frontmatter is handled
+    // by the parser; rules apply to the markup.
+    const eligibleFiles = context.files.filter(
+      (f) => f.type === 'jsx' || f.type === 'tsx' || f.type === 'astro'
+    )
+    if (eligibleFiles.length === 0) return []
+
+    // jsx-a11y rules, shared by the JSX and Astro config blocks.
+    const a11yRules = Object.fromEntries(
+      Object.keys(RULE_WCAG_MAP).map((rule) => [rule, 'error'])
+    ) as Linter.RulesRecord
 
     // Build flat config with jsx-a11y recommended rules
     const eslint = new ESLint({
@@ -128,12 +141,27 @@ export class EslintJsxA11yScanner implements ScannerAdapter {
           plugins: {
             'jsx-a11y': jsxA11y,
           },
-          rules: Object.fromEntries(
-            Object.keys(RULE_WCAG_MAP).map((rule) => [rule, 'error'])
-          ),
+          rules: a11yRules,
           languageOptions: {
             parser: tsParser.default ?? tsParser,
             parserOptions: {
+              ecmaFeatures: { jsx: true },
+            },
+          },
+        },
+        {
+          // .astro: astro-eslint-parser exposes the template as JSX-compatible nodes,
+          // so the same jsx-a11y/* rule IDs fire and RULE_WCAG_MAP maps them unchanged.
+          files: ['**/*.astro'],
+          plugins: {
+            'jsx-a11y': jsxA11y,
+          },
+          rules: a11yRules,
+          languageOptions: {
+            parser: astroParser,
+            parserOptions: {
+              parser: tsParser.default ?? tsParser,
+              extraFileExtensions: ['.astro'],
               ecmaFeatures: { jsx: true },
             },
           },
@@ -144,14 +172,26 @@ export class EslintJsxA11yScanner implements ScannerAdapter {
 
     const allIssues: EquallIssue[] = []
 
-    // Lint files in batches to avoid memory issues
-    const filePaths = jsxFiles.map((f) => f.absolute_path)
-
     try {
-      const results = await eslint.lintFiles(filePaths)
+      // Disk mode: lintFiles reads from the filesystem (unchanged behavior).
+      // In-memory mode (T1.1): buffers don't exist on disk, so lint the content
+      // directly via lintText. warnIgnored:false stops a virtual path that looks
+      // ignored from being silently skipped (the false-negative trap); the filePath
+      // keeps a real extension so the flat config still parses it as JSX/TSX.
+      let results: ESLint.LintResult[]
+      if (context.in_memory) {
+        const perFile = await Promise.all(
+          eligibleFiles.map((f) =>
+            eslint.lintText(f.content, { filePath: f.absolute_path, warnIgnored: false })
+          )
+        )
+        results = perFile.flat()
+      } else {
+        results = await eslint.lintFiles(eligibleFiles.map((f) => f.absolute_path))
+      }
 
       for (const result of results) {
-        const fileEntry = jsxFiles.find((f) => f.absolute_path === result.filePath)
+        const fileEntry = eligibleFiles.find((f) => f.absolute_path === result.filePath)
         const relativePath = fileEntry?.path ?? result.filePath
 
         for (const msg of result.messages) {

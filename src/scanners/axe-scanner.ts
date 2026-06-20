@@ -7,6 +7,7 @@ import type {
   Severity,
   PourPrinciple,
   WcagLevel,
+  FileType,
 } from '../types.js'
 import { extractHtml, wrapFragment } from '../utils/html-extract.js'
 
@@ -83,6 +84,10 @@ function pourFromCriterion(criterion: string): PourPrinciple | null {
 export class AxeScanner implements ScannerAdapter {
   name = 'axe-core'
   version = ''
+  fileTypes: FileType[] = ['html', 'jsx', 'tsx', 'vue', 'astro', 'svelte']
+  // Contrast rules (color-contrast / color-contrast-enhanced) are disabled below —
+  // they need real rendering — so 1.4.3 is only partially testable statically.
+  partialCriteria = ['1.4.3']
   coveredCriteria = [
     '1.1.1', '1.2.1', '1.2.2', '1.3.1', '1.3.4', '1.3.5',
     '1.4.1', '1.4.2', '1.4.3', '1.4.4', '1.4.12',
@@ -100,13 +105,23 @@ export class AxeScanner implements ScannerAdapter {
     this.version = axe.version ?? 'unknown'
 
     const htmlFiles = context.files.filter(
-      (f) => f.type === 'html' || f.type === 'jsx' || f.type === 'tsx' || f.type === 'vue'
+      (f) =>
+        f.type === 'html' ||
+        f.type === 'jsx' ||
+        f.type === 'tsx' ||
+        f.type === 'vue' ||
+        f.type === 'astro' ||
+        f.type === 'svelte'
     )
 
-    // For JSX/TSX/Vue, we only scan files that contain HTML-like content
+    // Only scan files that actually contain renderable HTML.
     const scannableFiles = htmlFiles.filter((f) => {
       if (f.type === 'html') return true
-      // For component files, check if they contain renderable HTML
+      // Astro/Svelte are markup-first: the template lives at the top level (no
+      // `return`), so scan as soon as there's a tag. extractHtml strips their
+      // frontmatter/script/style blocks before axe sees the content.
+      if (f.type === 'astro' || f.type === 'svelte') return f.content.includes('<')
+      // JSX/TSX/Vue component files: only those that actually render HTML.
       return f.content.includes('<') && (
         f.content.includes('return') ||
         f.content.includes('<template')

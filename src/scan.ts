@@ -1,9 +1,16 @@
 import { resolve } from 'node:path'
-import { discoverFiles } from './discover.js'
+import { discoverFiles, fileTypeForPath, sanitizeVirtualPath } from './discover.js'
 import { getAvailableScanners } from './scanners/index.js'
 import { computeScanResult } from './scoring/score.js'
+import { computeCoverage } from './coverage.js'
 import { fingerprint } from './utils/fingerprint.js'
 import type { ScanOptions, ScanResult, ScannerInfo, EquallIssue, WcagLevel, FileEntry } from './types.js'
+
+// A single in-memory file: code provided directly instead of read from disk (T1.1).
+export interface FileInput {
+  path: string                       // Relative path (extension drives file-type detection)
+  content: string                    // File content
+}
 
 export interface RunScanOptions {
   path?: string
@@ -11,6 +18,23 @@ export interface RunScanOptions {
   include?: string[]
   exclude?: string[]
   disableScanners?: string[]
+  // In-memory input (T1.1): when provided, scan these buffers instead of discovering
+  // files on disk. Unblocks the MCP (T1.4) and diff-aware scanning (T1.2).
+  files?: FileInput[]
+}
+
+// Build FileEntry[] from caller-supplied buffers, mirroring what discoverFiles
+// produces on disk. Paths are untrusted input → sanitized against traversal/absolute.
+function buildFileEntries(inputs: FileInput[], rootPath: string): FileEntry[] {
+  return inputs.map((input) => {
+    const relativePath = sanitizeVirtualPath(input.path)
+    return {
+      path: relativePath,
+      absolute_path: resolve(rootPath, relativePath),
+      content: input.content,
+      type: fileTypeForPath(relativePath),
+    }
+  })
 }
 
 export async function runScan(options: RunScanOptions = {}): Promise<ScanResult> {
@@ -23,8 +47,11 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
     exclude_patterns: options.exclude ?? [],
   }
 
-  // 1. Discover files
-  const files = await discoverFiles(rootPath, scanOptions)
+  // 1. Get files — from in-memory buffers (T1.1) or by discovering them on disk.
+  const inMemory = options.files != null
+  const files = inMemory
+    ? buildFileEntries(options.files!, rootPath)
+    : await discoverFiles(rootPath, scanOptions)
   if (files.length === 0) {
     return computeScanResult([], 0, [], Date.now() - startTime, scanOptions.wcag_level)
   }
@@ -38,7 +65,7 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
   }
 
   // 3. Run all scanners in parallel
-  const scanContext = { root_path: rootPath, files, options: scanOptions }
+  const scanContext = { root_path: rootPath, files, options: scanOptions, in_memory: inMemory }
 
   const scannerResults = await Promise.allSettled(
     scanners.map(async (scanner) => {
@@ -96,7 +123,21 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
   result.issues = [...withFingerprint(active), ...withFingerprint(ignored)]
   result.summary.ignored_count = ignored.length
 
+  // 10. Honest coverage (T1.3) — exercised criteria only, never "capable" as "tested".
+  // Additive: does NOT touch criteria_covered (which feeds POUR scoring).
+  result.coverage = computeCoverage(scanners, files)
+
   return result
+}
+
+// Scan a single in-memory file (T1.1). Thin wrapper over runScan's buffer path —
+// the entry point the MCP (T1.4) and diff-aware scanning (T1.2) build on.
+export function scanBuffer(
+  content: string,
+  filename: string,
+  options: Omit<RunScanOptions, 'files' | 'path'> = {}
+): Promise<ScanResult> {
+  return runScan({ ...options, files: [{ path: filename, content }] })
 }
 
 // Apply equall-ignore comments to suppress known false positives.

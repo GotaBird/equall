@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import { resolve, extname } from 'node:path'
+import { normalize as posixNormalize } from 'node:path/posix'
 import { globby } from 'globby'
 import type { FileEntry, FileType, ScanOptions } from './types.js'
 
@@ -12,6 +13,29 @@ const EXT_MAP: Record<string, FileType> = {
   '.vue': 'vue',
   '.svelte': 'svelte',
   '.astro': 'astro',
+}
+
+// Resolve a file path to our FileType from its extension. Shared by disk discovery
+// and the in-memory input path so both classify files identically.
+export function fileTypeForPath(filePath: string): FileType {
+  return EXT_MAP[extname(filePath).toLowerCase()] ?? 'other'
+}
+
+// Sanitize a caller-supplied path from in-memory input (T1.1). Buffer paths are
+// untrusted: they must stay relative to a virtual root, never escape it via
+// traversal, and never be absolute. Returns a clean POSIX relative path or throws.
+export function sanitizeVirtualPath(rawPath: string): string {
+  const cleaned = rawPath.replace(/\\/g, '/').trim()
+  if (!cleaned) throw new Error('Empty file path in buffer input')
+
+  // Drop any Windows drive prefix and leading slashes so the path can't be absolute.
+  const relative = cleaned.replace(/^[a-zA-Z]:/, '').replace(/^\/+/, '')
+  const normalized = posixNormalize(relative).replace(/^\.\//, '')
+
+  if (normalized === '..' || normalized.startsWith('../')) {
+    throw new Error(`Unsafe file path (path traversal): ${rawPath}`)
+  }
+  return normalized
 }
 
 // Default patterns for web project files
@@ -66,8 +90,7 @@ export async function discoverFiles(
     const absolutePath = resolve(rootPath, relativePath)
     try {
       const content = await readFile(absolutePath, 'utf-8')
-      const ext = extname(relativePath).toLowerCase()
-      const type: FileType = EXT_MAP[ext] ?? 'other'
+      const type = fileTypeForPath(relativePath)
 
       files.push({
         path: relativePath,

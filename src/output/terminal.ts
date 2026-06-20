@@ -1,5 +1,6 @@
 import type { ScanResult, EquallIssue, Severity, WcagLevel } from '../types.js'
 import { getCriteriaForLevel, getCriterion } from '../wcag-catalog.js'
+import { formatNoFailureVerdict } from '../coverage.js'
 
 // WCAG 2.2 Level A criteria (32 total, 4.1.1 Parsing excluded — obsolete in 2.2)
 // Used to partition coverage and failures by level in the summary display
@@ -192,7 +193,10 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
   // Coverage line(s) — "X/Y criteria checked" makes coverage transparent.
   // Score is already shown in the header, so we don't repeat it here.
   if (result.criteria_total > 0) {
-    const covered = result.criteria_covered.length
+    // Honest coverage (T1.3): "checked" counts only genuinely-exercised (`auto`) criteria,
+    // never the capable union. Falls back to criteria_covered if the report is absent.
+    const checked = result.coverage?.auto_criteria ?? result.criteria_covered
+    const covered = checked.length
     const total = result.criteria_total
 
     // Classify failed criteria by level from actual issues
@@ -208,7 +212,7 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
     const isTargetAA = total > WCAG_A_TOTAL && total <= 57
     if (isTargetAA && failedASet.size > 0) {
       // Two lines: Level A progress + Level AA progress
-      const coveredA = result.criteria_covered.filter(c => WCAG_A_CRITERIA.has(c)).length
+      const coveredA = checked.filter(c => WCAG_A_CRITERIA.has(c)).length
       const pctA = Math.round((coveredA / WCAG_A_TOTAL) * 100)
       const pctAA = Math.round((covered / total) * 100)
       console.log(`  ${BOLD}Coverage${RESET}  Level A   ${coveredA}/${WCAG_A_TOTAL} checked (${pctA}%)  ·  ${RED}${failedASet.size} failing${RESET}`)
@@ -353,7 +357,7 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
   if (options.showManual) {
     const level = options.targetLevel ?? 'AA'
     const allForLevel = getCriteriaForLevel(level)
-    const coveredSet = new Set(result.criteria_covered)
+    const coveredSet = new Set(result.coverage?.auto_criteria ?? result.criteria_covered)
     const untested = allForLevel.filter(c => !coveredSet.has(c.id))
 
     if (untested.length > 0) {
@@ -383,7 +387,9 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
 }
 
 function printCoaching(result: ScanResult): void {
-  const { criteria_covered, criteria_total } = result
+  const { criteria_total } = result
+  // Honest "checked" set (T1.3) — exercised criteria only, not the capable union.
+  const checkedCount = (result.coverage?.auto_criteria ?? result.criteria_covered).length
 
   // Classify failed criteria by level
   const levelAFailed: string[] = []
@@ -401,7 +407,7 @@ function printCoaching(result: ScanResult): void {
     }
   }
 
-  const remaining = criteria_total - criteria_covered.length
+  const remaining = criteria_total - checkedCount
 
   // Format a list of criterion IDs with their plain-language names (max 3, then "+N more")
   const formatCriteria = (ids: string[], max = 3): string => {
@@ -426,9 +432,10 @@ function printCoaching(result: ScanResult): void {
     console.log(`    Level AA is what most regulations (EAA, Section 508, RGAA) require in practice.`)
     console.log(`    ${GRAY}Failing:${RESET} ${formatCriteria(levelAAFailed)}`)
   } else {
-    // All pass
-    console.log(`  ${GREEN}${BOLD}✓ All automated checks pass.${RESET} Nothing to fix in code right now.`)
-    console.log(`    Automated tools catch ~30–40% of a11y issues. The rest needs human review (keyboard, screen reader, contrast in context).`)
+    // No automated failures — anti-"done" guardrail (T1.3): never claim the code is clean.
+    const [headline, ...rest] = formatNoFailureVerdict(result.coverage)
+    console.log(`  ${BOLD}${headline}${RESET}`)
+    for (const line of rest) console.log(`    ${GRAY}${line}${RESET}`)
   }
 
   if (remaining > 0) {
