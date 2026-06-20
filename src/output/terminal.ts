@@ -1,6 +1,7 @@
 import type { ScanResult, EquallIssue, Severity, WcagLevel } from '../types.js'
 import { getCriteriaForLevel, getCriterion } from '../wcag-catalog.js'
 import { formatNoFailureVerdict } from '../coverage.js'
+import { isBeyondTarget } from '../scoring/score.js'
 
 // WCAG 2.2 Level A criteria (32 total, 4.1.1 Parsing excluded — obsolete in 2.2)
 // Used to partition coverage and failures by level in the summary display
@@ -172,18 +173,32 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
   console.log(`  ${GRAY}${conformanceExplainer}${RESET}`)
   console.log()
 
+  // Conformance target drives what counts as a violation vs. beyond-target advisory.
+  const target = options.targetLevel ?? 'AA'
+  // Beyond-target criteria (e.g. AAA reading-level under an AA target) are advisory:
+  // they don't penalize the score and aren't counted among conformance violations.
+  const isAdvisory = (i: EquallIssue) => i.wcag_criteria.length > 0 && isBeyondTarget(i, target)
+  const advisoryCount = result.issues.filter(isAdvisory).length
+
   // Summary stats
   console.log(`  ${BOLD}Summary${RESET}`)
-  const wcagIssuesCount = result.issues.filter(i => i.wcag_criteria.length > 0).length
-  const bpIssuesCount = result.issues.length - wcagIssuesCount
-  console.log(`  ${summary.files_scanned} file${summary.files_scanned === 1 ? '' : 's'} scanned  ·  ${BOLD}${wcagIssuesCount}${RESET} WCAG violation${wcagIssuesCount === 1 ? '' : 's'}  ·  ${GRAY}${bpIssuesCount} best-practice recommendation${bpIssuesCount === 1 ? '' : 's'}${RESET}`)
+  const wcagIssuesCount = result.issues.filter(i => i.wcag_criteria.length > 0 && !isAdvisory(i)).length
+  const bpIssuesCount = result.issues.filter(i => i.wcag_criteria.length === 0).length
+  const advisorySuffix = advisoryCount > 0 ? `  ·  ${GRAY}${advisoryCount} AAA advisory${RESET}` : ''
+  console.log(`  ${summary.files_scanned} file${summary.files_scanned === 1 ? '' : 's'} scanned  ·  ${BOLD}${wcagIssuesCount}${RESET} WCAG violation${wcagIssuesCount === 1 ? '' : 's'}  ·  ${GRAY}${bpIssuesCount} best-practice recommendation${bpIssuesCount === 1 ? '' : 's'}${RESET}${advisorySuffix}`)
 
-  // Severity breakdown with a one-line legend so "critical/serious/moderate/minor" isn't just a color soup
+  // Severity breakdown over conformance-scope issues only (advisory AAA excluded),
+  // with a one-line legend so "critical/serious/moderate/minor" isn't just a color soup
+  const sevCounts: Record<Severity, number> = { critical: 0, serious: 0, moderate: 0, minor: 0 }
+  for (const i of result.issues) {
+    if (isAdvisory(i)) continue
+    sevCounts[i.severity]++
+  }
   console.log(
-    `  ${severityIcon('critical')} ${RED}${summary.by_severity.critical} critical${RESET}   ` +
-    `${severityIcon('serious')} ${YELLOW}${summary.by_severity.serious} serious${RESET}   ` +
-    `${severityIcon('moderate')} ${CYAN}${summary.by_severity.moderate} moderate${RESET}   ` +
-    `${severityIcon('minor')} ${GRAY}${summary.by_severity.minor} minor${RESET}`
+    `  ${severityIcon('critical')} ${RED}${sevCounts.critical} critical${RESET}   ` +
+    `${severityIcon('serious')} ${YELLOW}${sevCounts.serious} serious${RESET}   ` +
+    `${severityIcon('moderate')} ${CYAN}${sevCounts.moderate} moderate${RESET}   ` +
+    `${severityIcon('minor')} ${GRAY}${sevCounts.minor} minor${RESET}`
   )
   console.log(`  ${GRAY}critical/serious = fix before shipping · moderate/minor = fix in next iteration${RESET}`)
   if (summary.ignored_count > 0) {
@@ -199,10 +214,12 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
     const covered = checked.length
     const total = result.criteria_total
 
-    // Classify failed criteria by level from actual issues
+    // Classify failed criteria by level from actual issues. Beyond-target
+    // (advisory) criteria are not conformance failures — exclude them here too.
     const failedASet = new Set<string>()
     const failedAllSet = new Set<string>()
     for (const issue of result.issues) {
+      if (isBeyondTarget(issue, target)) continue
       for (const c of issue.wcag_criteria) {
         failedAllSet.add(c)
         if (WCAG_A_CRITERIA.has(c)) failedASet.add(c)
@@ -240,7 +257,10 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
 
   // Only display non-ignored issues in terminal output
   const visibleIssues = result.issues.filter(i => !i.ignored)
-  const wcagIssues = visibleIssues.filter(i => i.wcag_criteria.length > 0)
+  // WCAG issues at or below the target level are conformance failures; those
+  // above it (e.g. AAA reading-level under an AA target) are advisory only.
+  const wcagIssues = visibleIssues.filter(i => i.wcag_criteria.length > 0 && !isBeyondTarget(i, target))
+  const advisoryIssues = visibleIssues.filter(i => i.wcag_criteria.length > 0 && isBeyondTarget(i, target))
   const bpIssues = visibleIssues.filter(i => i.wcag_criteria.length === 0)
 
   // Top issues (WCAG Violations) — these count against conformance
@@ -288,6 +308,47 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
             console.log(line)
           }
         }
+        if (issue.help_url) {
+          console.log(`      ${GRAY}Learn more: ${issue.help_url}${RESET}`)
+        }
+      }
+      if (uniqueIssues.length > 2) {
+        console.log(`    ${GRAY}↳ and ${uniqueIssues.length - 2} more occurrence${uniqueIssues.length - 2 > 1 ? 's' : ''} of the same issue${RESET}`)
+      }
+      console.log()
+    }
+  }
+
+  // Advisory — WCAG criteria beyond the conformance target (e.g. AAA reading-level
+  // under an AA target). Shown for awareness; they do NOT count against conformance
+  // or the score, and are never framed as "must fix".
+  if (advisoryIssues.length > 0) {
+    console.log(`  ${BOLD}Advisory${RESET} ${GRAY}— beyond your ${target} target (WCAG AAA), not required for conformance${RESET}`)
+    console.log()
+
+    const grouped = groupByCriterion(advisoryIssues)
+    const sorted = [...grouped.entries()].sort((a, b) => b[1].weight - a[1].weight)
+
+    for (const [criterion, group] of sorted) {
+      const name = criterionName(criterion)
+      const levelSuffix = group.issues[0].wcag_level ? ` ${GRAY}Level ${group.issues[0].wcag_level}${RESET}` : ''
+      const nameSuffix = name ? ` ${BOLD}${name}${RESET}` : ''
+      const count = group.issues.length
+      console.log(
+        `  ${GRAY}◇${RESET} ${BOLD}WCAG ${criterion}${RESET}${nameSuffix}${levelSuffix}  ` +
+        `${GRAY}(${count} occurrence${count > 1 ? 's' : ''})${RESET}`
+      )
+
+      const seen = new Set<string>()
+      const uniqueIssues: EquallIssue[] = []
+      for (const issue of group.issues) {
+        const key = `${issue.file_path}:${issue.line ?? ''}:${issue.message}`
+        if (!seen.has(key)) { seen.add(key); uniqueIssues.push(issue) }
+      }
+      for (const issue of uniqueIssues.slice(0, 2)) {
+        const location = issue.line ? `:${issue.line}` : ''
+        console.log(`    ${GRAY}↳${RESET} ${CYAN}${issue.file_path}${location}${RESET}`)
+        console.log(`      ${GRAY}${cleanMessage(issue.message)}${RESET}`)
         if (issue.help_url) {
           console.log(`      ${GRAY}Learn more: ${issue.help_url}${RESET}`)
         }

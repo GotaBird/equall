@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { computeScanResult } from '../scoring/score.js'
-import type { EquallIssue, Severity, PourPrinciple, WcagLevel } from '../types.js'
+import { computeScanResult, isBeyondTarget } from '../scoring/score.js'
+import type { EquallIssue, WcagLevel } from '../types.js'
 
 function makeIssue(overrides: Partial<EquallIssue> = {}): EquallIssue {
   return {
@@ -146,6 +146,55 @@ describe('conformance level', () => {
   it('returns None when no criteria tested', () => {
     const result = computeScanResult([], 10, [], 100, 'AA')
     expect(result.conformance_level).toBe('None')
+  })
+})
+
+describe('beyond-target (AAA) exclusion from conformance', () => {
+  it('isBeyondTarget: AAA is beyond AA but not beyond AAA', () => {
+    const aaa = makeIssue({ wcag_level: 'AAA', wcag_criteria: ['3.1.5'] })
+    expect(isBeyondTarget(aaa, 'AA')).toBe(true)
+    expect(isBeyondTarget(aaa, 'A')).toBe(true)
+    expect(isBeyondTarget(aaa, 'AAA')).toBe(false)
+  })
+
+  it('isBeyondTarget: an issue without a level is always in scope', () => {
+    const bp = makeIssue({ wcag_level: null as unknown as WcagLevel, wcag_criteria: [] })
+    expect(isBeyondTarget(bp, 'A')).toBe(false)
+  })
+
+  it('a AAA reading-level issue does not penalize the score at an AA target', () => {
+    const aaaOnly = computeScanResult(
+      [makeIssue({ wcag_level: 'AAA', wcag_criteria: ['3.1.5'], pour: 'understandable', severity: 'critical' })],
+      4, [], 100, 'AA'
+    )
+    expect(aaaOnly.score).toBe(100)
+  })
+
+  it('the same AAA issue DOES penalize when the target is AAA', () => {
+    const atAAA = computeScanResult(
+      [makeIssue({ wcag_level: 'AAA', wcag_criteria: ['3.1.5'], pour: 'understandable', severity: 'critical' })],
+      4, [], 100, 'AAA'
+    )
+    expect(atAAA.score).toBeLessThan(100)
+  })
+
+  it('AAA criteria do not lower the score beside real Level A failures (AA target)', () => {
+    const aIssue = makeIssue({ wcag_level: 'A', wcag_criteria: ['2.4.4'], pour: 'operable', severity: 'serious' })
+    const aOnly = computeScanResult([aIssue], 4, [], 100, 'AA')
+    const aPlusAaa = computeScanResult(
+      [aIssue, makeIssue({ wcag_level: 'AAA', wcag_criteria: ['3.1.5'], pour: 'understandable', severity: 'critical' })],
+      4, [], 100, 'AA'
+    )
+    expect(aPlusAaa.score).toBe(aOnly.score)
+  })
+
+  it('POUR: a AAA understandable issue does not drag the principle at an AA target', () => {
+    const result = computeScanResult(
+      [makeIssue({ wcag_level: 'AAA', wcag_criteria: ['3.1.5'], pour: 'understandable', severity: 'critical' })],
+      4, [], 100, 'AA', ['3.1.1'], 100
+    )
+    // Understandable is covered (3.1.1) but the only issue is beyond-target → no penalty
+    expect(result.pour_scores.understandable).toBe(100)
   })
 })
 

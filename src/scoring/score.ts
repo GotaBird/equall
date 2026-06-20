@@ -21,6 +21,18 @@ const SEVERITY_WEIGHT: Record<Severity, number> = {
 // Maximum penalty per criterion to avoid one rule destroying the score
 const MAX_PENALTY_PER_CRITERION = 15
 
+// WCAG level ordering, used to scope conformance to the requested target.
+const LEVEL_RANK: Record<WcagLevel, number> = { A: 1, AA: 2, AAA: 3 }
+
+// An issue is "beyond target" — advisory, not a conformance failure — when its
+// WCAG level outranks the conformance target (e.g. a AAA criterion under an AA
+// target). Such issues must not penalize the score or be framed as "must fix".
+// Issues without a level (best-practice) are always in scope.
+export function isBeyondTarget(issue: EquallIssue, targetLevel: WcagLevel): boolean {
+  if (!issue.wcag_level) return false
+  return LEVEL_RANK[issue.wcag_level] > LEVEL_RANK[targetLevel]
+}
+
 export function computeScanResult(
   issues: EquallIssue[],
   filesScanned: number,
@@ -31,8 +43,8 @@ export function computeScanResult(
   criteriaTotal: number = 0
 ): ScanResult {
   const summary = computeSummary(issues, filesScanned)
-  const score = computeScore(issues, filesScanned)
-  const pourScores = computePourScores(issues, filesScanned, criteriaCovered)
+  const score = computeScore(issues, filesScanned, targetLevel)
+  const pourScores = computePourScores(issues, filesScanned, criteriaCovered, targetLevel)
   const conformanceLevel = computeConformanceLevel(issues, summary, targetLevel)
 
   return {
@@ -80,13 +92,16 @@ function computeSummary(issues: EquallIssue[], filesScanned: number): ScanSummar
   }
 }
 
-function computeScore(issues: EquallIssue[], filesScanned: number): number {
-  if (issues.length === 0) return 100
+function computeScore(issues: EquallIssue[], filesScanned: number, targetLevel: WcagLevel): number {
+  // Beyond-target criteria (e.g. AAA under an AA target) are advisory, not
+  // conformance failures — they must not drag the conformance score down.
+  const scoped = issues.filter(issue => !isBeyondTarget(issue, targetLevel))
+  if (scoped.length === 0) return 100
 
   // Group issues by WCAG criterion and compute penalty per criterion
   const penaltyByCriterion = new Map<string, number>()
 
-  for (const issue of issues) {
+  for (const issue of scoped) {
     const weight = SEVERITY_WEIGHT[issue.severity]
     for (const criterion of issue.wcag_criteria) {
       const current = penaltyByCriterion.get(criterion) ?? 0
@@ -113,7 +128,7 @@ function computeScore(issues: EquallIssue[], filesScanned: number): number {
   return Math.max(0, Math.round(score))
 }
 
-function computePourScores(issues: EquallIssue[], filesScanned: number, criteriaCovered: string[] = []): PourScores {
+function computePourScores(issues: EquallIssue[], filesScanned: number, criteriaCovered: string[] = [], targetLevel: WcagLevel = 'AA'): PourScores {
   const pourIssues: Record<PourPrinciple, EquallIssue[]> = {
     perceivable: [],
     operable: [],
@@ -136,6 +151,9 @@ function computePourScores(issues: EquallIssue[], filesScanned: number, criteria
 
   for (const issue of issues) {
     if (!issue.pour) continue
+    // Keep POUR scores consistent with the global score: beyond-target
+    // (advisory) criteria do not count against the principle.
+    if (isBeyondTarget(issue, targetLevel)) continue
     pourIssues[issue.pour].push(issue)
   }
 

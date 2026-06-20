@@ -8,6 +8,7 @@ import ora from 'ora'
 import { runScan } from './scan.js'
 import { printResult, printJson } from './output/terminal.js'
 import { findIgnores, removeIgnore, clearAllIgnores, addIgnore, addIgnoreFile } from './ignores.js'
+import { computeExitCode } from './exit-code.js'
 import type { WcagLevel } from './types.js'
 
 const __dir = resolve(fileURLToPath(import.meta.url), '..')
@@ -33,6 +34,7 @@ program
   .option('-m, --show-manual', 'List WCAG criteria that require manual review')
   .option('--no-color', 'Disable colored output')
   .option('--no-readability', 'Disable readability (Flesch-Kincaid) scanner — English-only, experimental')
+  .option('--min-score <n>', 'CI gate: exit 1 if the score is below <n> (0-100). Omit to always exit 0 on a successful scan')
   .addHelpText('after', `
 Examples:
   equall scan .                        Scan current directory (Level AA)
@@ -44,11 +46,20 @@ Examples:
 
 Supported files: .html .htm .jsx .tsx .vue .svelte .astro
 `)
-  .action(async (path: string, opts: { level: string; include?: string[]; exclude?: string[]; json?: boolean; showIgnored?: boolean; verbose?: boolean; showManual?: boolean; readability?: boolean }) => {
+  .action(async (path: string, opts: { level: string; include?: string[]; exclude?: string[]; json?: boolean; showIgnored?: boolean; verbose?: boolean; showManual?: boolean; readability?: boolean; minScore?: string }) => {
     const level = opts.level.toUpperCase() as WcagLevel
     if (!['A', 'AA', 'AAA'].includes(level)) {
       console.error(`Invalid level "${opts.level}". Use A, AA, or AAA.`)
       process.exit(1)
+    }
+
+    let minScore: number | null = null
+    if (opts.minScore !== undefined) {
+      minScore = Number(opts.minScore)
+      if (!Number.isFinite(minScore) || minScore < 0 || minScore > 100) {
+        console.error(`Invalid --min-score "${opts.minScore}". Use a number between 0 and 100.`)
+        process.exit(1)
+      }
     }
 
     const displayName = basename(resolve(path))
@@ -86,8 +97,9 @@ Supported files: .html .htm .jsx .tsx .vue .svelte .astro
         printResult(result, { showIgnored: opts.showIgnored, verbose: opts.verbose, showManual: opts.showManual, targetLevel: level })
       }
 
-      // Exit code based on score
-      if (result.score < 50) process.exit(1)
+      // A scan that ran successfully exits 0. The score gate is opt-in (--min-score)
+      // so interactive runs never look like a failure and CI can choose its threshold.
+      process.exit(computeExitCode(result, minScore))
     } catch (error) {
       spinner?.stop()
       const msg = error instanceof Error ? error.message : String(error)
