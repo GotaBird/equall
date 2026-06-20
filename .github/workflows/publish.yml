@@ -87,7 +87,19 @@ jobs:
           npm install -g npm@latest # OIDC trusted publishing needs npm >= 11.5.1
           npm publish --provenance --access public
 
+      - name: Extract release notes from CHANGELOG
+        run: |
+          VERSION=${GITHUB_REF_NAME#v}
+          # Print the body of the matching "## [x.y.z]" section, up to the next "## [".
+          awk -v v="$VERSION" '
+            $0 ~ ("^## \\[" v "\\]") { capture = 1; next }
+            capture && /^## \[/      { exit }
+            capture                  { print }
+          ' CHANGELOG.md > release-notes.md
+          # Never fall back to an empty/auto body silently — fail if the section is missing.
+          test -s release-notes.md || { echo "No CHANGELOG section for $VERSION"; exit 1; }
+
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
-          generate_release_notes: true
+          body_path: release-notes.md
