@@ -43,10 +43,15 @@ npm install -g equall-cli   # or run on demand with: npx equall scan .
 ## Usage
 
 ```bash
-equall scan .            # score the current directory
-equall scan . --json     # machine-readable output for CI / tooling
-equall --help            # all commands and options
+equall scan .                  # score the current directory
+equall scan . --json           # machine-readable output for CI / tooling
+equall scan . --min-score 90   # CI gate: exit 1 if the score is below 90
+equall --help                  # all commands and options
 ```
+
+A successful scan always exits `0`. Pass `--min-score <n>` to fail a pipeline when
+the score drops below a threshold. Criteria above your target level (e.g. AAA under
+the default AA target) are reported as advisory and never count against the score.
 
 Programmatic use:
 
