@@ -8,6 +8,7 @@ import ora from 'ora'
 import { runScan } from './scan.js'
 import { printResult, printJson } from './output/terminal.js'
 import { findIgnores, removeIgnore, clearAllIgnores, addIgnore, addIgnoreFile } from './ignores.js'
+import { computeExitCode } from './exit-code.js'
 import type { WcagLevel } from './types.js'
 
 const __dir = resolve(fileURLToPath(import.meta.url), '..')
@@ -98,7 +99,7 @@ Supported files: .html .htm .jsx .tsx .vue .svelte .astro
 
       // A scan that ran successfully exits 0. The score gate is opt-in (--min-score)
       // so interactive runs never look like a failure and CI can choose its threshold.
-      if (minScore !== null && result.score < minScore) process.exit(1)
+      process.exit(computeExitCode(result, minScore))
     } catch (error) {
       spinner?.stop()
       const msg = error instanceof Error ? error.message : String(error)
