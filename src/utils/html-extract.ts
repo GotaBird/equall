@@ -81,6 +81,26 @@ export function extractHtml(content: string, type: string): string {
   return content
 }
 
+// Is this source unit a full DOCUMENT (carries document-level structure itself) or a
+// FRAGMENT (a component/partial whose page structure comes from cross-file composition
+// at render time)? Drives the page-level rule reclassification: page-level
+// axe rules stay active on documents, get reclassified to honest coverage on fragments.
+// Checked on the EXTRACTED content so the predicate stays coherent with wrapFragment
+// below — if wrapFragment would not wrap, axe saw real document structure — and so an
+// `<html` inside Astro frontmatter strings (already stripped) cannot match.
+// Conservative default: when unsure → fragment.
+export function isDocumentUnit(content: string, type: string): boolean {
+  const extracted = extractHtml(content, type)
+  // Same predicate wrapFragment uses: such content is scanned unwrapped, as a document.
+  if (extracted.includes('<html')) return true
+  // A complete .html page may omit <html> but still declare document-ness.
+  if (type === 'html') return /<body[\s>]|<!doctype\s+html/i.test(extracted)
+  // jsx/tsx/vue/svelte components (and Astro pages rendering into a <Layout>) → fragment.
+  // Next.js _document.tsx uses <Html> (capital — no match): stays fragment, correct,
+  // since a component-based document shell is not statically evaluable anyway.
+  return false
+}
+
 // Wrap fragment in a basic HTML document if needed for parsers
 export function wrapFragment(html: string): string {
   if (html.includes('<html')) return html
