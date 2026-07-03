@@ -68,7 +68,7 @@ const AA_CRITERIA = new Set(['1.3.5', '2.4.6', '2.4.7', '3.1.2', '3.3.2'])
 
 // Slice the offending source token out of the file, using the message's reported
 // span (line/column → endLine/endColumn). The text is what gives the issue a stable
-// fingerprint (BUR-106); the positions are only used here to find it, never stored.
+// fingerprint; the positions are only used here to find it, never stored.
 function extractTokenContext(content: string, msg: Linter.LintMessage): string | null {
   if (!msg.line) return null
   const lines = content.split('\n')
@@ -201,8 +201,8 @@ export class EslintJsxA11yScanner implements ScannerAdapter {
           const criteria = wcagMapping?.criteria ?? []
           const pour = wcagMapping?.pour ?? null
 
-          // Capture the offending source token so the issue gets a stable identity
-          // (BUR-106). We use line/column only to *locate* the token at scan time —
+          // Capture the offending source token so the issue gets a stable identity.
+          // We use line/column only to *locate* the token at scan time —
           // the fingerprint hashes the token text, not its position, so a reformat
           // that moves the line keeps the identity stable.
           const tokenContext = fileEntry ? extractTokenContext(fileEntry.content, msg) : null

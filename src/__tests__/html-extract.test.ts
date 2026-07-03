@@ -101,7 +101,7 @@ const title = "Hi"
 })
 
 // ---------------------------------------------------------------------------
-// Dynamic attribute-expression neutralization (BUR-120) — before axe
+// Dynamic attribute-expression neutralization — before axe
 // ---------------------------------------------------------------------------
 describe('neutralizeAttributeExpressions', () => {
   it('strips dynamic attribute values (aria/class/href)', () => {
@@ -163,9 +163,9 @@ describe('neutralizeAttributeExpressions', () => {
 })
 
 // ---------------------------------------------------------------------------
-// Integration: the artifacts must not survive into axe results (BUR-120)
+// Integration: the artifacts must not survive into axe results
 // ---------------------------------------------------------------------------
-describe('axe sees no phantom violations from attribute expressions (BUR-120)', () => {
+describe('axe sees no phantom violations from attribute expressions', () => {
   it('does not flag aria-valid-attr-value on aria-selected={i === 0}', async () => {
     const astro = `---\nconst i = 0\n---\n<main><h1>Tabs</h1><button type="button" role="tab" aria-selected={i === 0}>One</button></main>`
     const result = await scanBuffer(astro, 'Tabs.astro')

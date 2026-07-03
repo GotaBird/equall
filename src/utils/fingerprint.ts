@@ -7,7 +7,7 @@ import type { EquallIssue } from '../types.js'
 // both sites match expressions identically.
 export const ONE_LEVEL_BRACE_EXPR = '\\{(?:[^{}]|\\{[^{}]*\\})*\\}'
 
-// Stable identity for an issue (BUR-106).
+// Stable identity for an issue.
 //
 // The fingerprint must survive cosmetic churn so diff-aware scanning (T1.2) and
 // the decision registry (T2.1) can match the *same* issue across commits:

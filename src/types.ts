@@ -26,7 +26,7 @@ export interface EquallIssue {
   // Suppression
   ignored?: boolean                  // true if suppressed by equall-ignore comment
 
-  // Stable identity (BUR-106) — survives reformatting; see utils/fingerprint.ts.
+  // Stable identity — survives reformatting; see utils/fingerprint.ts.
   // Populated by runScan() after dedup; absent on raw scanner output.
   // Hash of file_path + scanner_rule_id + sorted criteria + normalized html_snippet.
   fingerprint?: string

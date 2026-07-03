@@ -126,7 +126,7 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
   const durationMs = Date.now() - startTime
   const result = computeScanResult(active, files.length, scannersUsed, durationMs, scanOptions.wcag_level, criteriaCovered, criteriaTotal)
 
-  // 9. Attach stable fingerprints — identity for diff-aware scanning (BUR-106).
+  // 9. Attach stable fingerprints — identity for diff-aware scanning.
   // Metadata only: does not affect scoring (computed above from `active`).
   const withFingerprint = (list: EquallIssue[]): EquallIssue[] =>
     list.map((issue) => ({ ...issue, fingerprint: fingerprint(issue) }))

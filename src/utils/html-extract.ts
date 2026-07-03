@@ -13,7 +13,7 @@ const DYNAMIC_ATTR = new RegExp(`\\s([a-zA-Z_:][\\w:.-]*)=\\s*${ONE_LEVEL_BRACE_
 const NAME_BY_VALUE = new Set(['alt', 'aria-label', 'title'])
 const NAME_PLACEHOLDER = '…' // "…" — non-empty so the accessible name reads as present
 
-// Neutralize dynamic attribute-value expressions before the markup reaches axe (BUR-120).
+// Neutralize dynamic attribute-value expressions before the markup reaches axe.
 // A value like `aria-selected={i === 0}`, `class={x}` or `href={url}` is statically
 // unknowable: fed raw, the braces mangle the tag and axe emits phantom violations (e.g. a
 // CRITICAL `aria-valid-attr-value` on `aria-selected={i` ). Classification-based, not a
@@ -68,7 +68,7 @@ export function extractHtml(content: string, type: string): string {
     // Component tags (<Layout>) and text-node expressions ({title}) are left as-is: axe
     // treats unknown tags as inert custom elements and expressions as text. Dynamic
     // attribute values (class={x}, aria-selected={i === 0}) are neutralized so they don't
-    // mangle the tag and produce phantom violations (BUR-120).
+    // mangle the tag and produce phantom violations.
     return neutralizeAttributeExpressions(
       content
         .replace(/^---[\s\S]*?---\n?/, '')
