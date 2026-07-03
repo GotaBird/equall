@@ -4,6 +4,8 @@ import { getAvailableScanners } from './scanners/index.js'
 import { computeScanResult } from './scoring/score.js'
 import { computeCoverage } from './coverage.js'
 import { fingerprint } from './utils/fingerprint.js'
+import { isDocumentUnit } from './utils/html-extract.js'
+import { partitionPageLevelIssues, summarizeReclassified } from './rules/page-level.js'
 import type { ScanOptions, ScanResult, ScannerInfo, EquallIssue, WcagLevel, FileEntry } from './types.js'
 
 // A single in-memory file: code provided directly instead of read from disk (T1.1).
@@ -100,8 +102,18 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
   // 5. Deduplicate issues (same file + same rule + same line = one issue)
   const deduped = deduplicateIssues(allIssues)
 
+  // 5b. Reclassify page-level rules on fragment units — engine-agnostic
+  // post-filter, after dedup (honest counts) and before ignores (an equall-ignore on a
+  // reclassified issue is a harmless no-op, ignored_count stays meaningful). Reclassified
+  // issues leave `issues` entirely and surface in coverage.reclassified (step 10).
+  const fragmentByPath = new Map(files.map((f) => [f.path, !isDocumentUnit(f.content, f.type)]))
+  const { kept, reclassified } = partitionPageLevelIssues(
+    deduped,
+    (path) => fragmentByPath.get(path) ?? true // unknown path → conservative: fragment
+  )
+
   // 6. Apply equall-ignore comments
-  const { active, ignored } = applyIgnoreComments(deduped, files)
+  const { active, ignored } = applyIgnoreComments(kept, files)
 
   // 7. Merge coverage from all active scanners
   const criteriaCovered = [...new Set(scanners.flatMap(s => s.coveredCriteria))].sort()
@@ -114,7 +126,7 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
   const durationMs = Date.now() - startTime
   const result = computeScanResult(active, files.length, scannersUsed, durationMs, scanOptions.wcag_level, criteriaCovered, criteriaTotal)
 
-  // 9. Attach stable fingerprints — identity for diff-aware scanning (BUR-106).
+  // 9. Attach stable fingerprints — identity for diff-aware scanning.
   // Metadata only: does not affect scoring (computed above from `active`).
   const withFingerprint = (list: EquallIssue[]): EquallIssue[] =>
     list.map((issue) => ({ ...issue, fingerprint: fingerprint(issue) }))
@@ -126,6 +138,8 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
   // 10. Honest coverage (T1.3) — exercised criteria only, never "capable" as "tested".
   // Additive: does NOT touch criteria_covered (which feeds POUR scoring).
   result.coverage = computeCoverage(scanners, files)
+  // Always attached ([] when none) so the emitted JSON shape stays stable.
+  result.coverage.reclassified = summarizeReclassified(reclassified)
 
   return result
 }

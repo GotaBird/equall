@@ -13,7 +13,7 @@ const DYNAMIC_ATTR = new RegExp(`\\s([a-zA-Z_:][\\w:.-]*)=\\s*${ONE_LEVEL_BRACE_
 const NAME_BY_VALUE = new Set(['alt', 'aria-label', 'title'])
 const NAME_PLACEHOLDER = '…' // "…" — non-empty so the accessible name reads as present
 
-// Neutralize dynamic attribute-value expressions before the markup reaches axe (BUR-120).
+// Neutralize dynamic attribute-value expressions before the markup reaches axe.
 // A value like `aria-selected={i === 0}`, `class={x}` or `href={url}` is statically
 // unknowable: fed raw, the braces mangle the tag and axe emits phantom violations (e.g. a
 // CRITICAL `aria-valid-attr-value` on `aria-selected={i` ). Classification-based, not a
@@ -68,7 +68,7 @@ export function extractHtml(content: string, type: string): string {
     // Component tags (<Layout>) and text-node expressions ({title}) are left as-is: axe
     // treats unknown tags as inert custom elements and expressions as text. Dynamic
     // attribute values (class={x}, aria-selected={i === 0}) are neutralized so they don't
-    // mangle the tag and produce phantom violations (BUR-120).
+    // mangle the tag and produce phantom violations.
     return neutralizeAttributeExpressions(
       content
         .replace(/^---[\s\S]*?---\n?/, '')
@@ -79,6 +79,26 @@ export function extractHtml(content: string, type: string): string {
   }
 
   return content
+}
+
+// Is this source unit a full DOCUMENT (carries document-level structure itself) or a
+// FRAGMENT (a component/partial whose page structure comes from cross-file composition
+// at render time)? Drives the page-level rule reclassification: page-level
+// axe rules stay active on documents, get reclassified to honest coverage on fragments.
+// Checked on the EXTRACTED content so the predicate stays coherent with wrapFragment
+// below — if wrapFragment would not wrap, axe saw real document structure — and so an
+// `<html` inside Astro frontmatter strings (already stripped) cannot match.
+// Conservative default: when unsure → fragment.
+export function isDocumentUnit(content: string, type: string): boolean {
+  const extracted = extractHtml(content, type)
+  // Same predicate wrapFragment uses: such content is scanned unwrapped, as a document.
+  if (extracted.includes('<html')) return true
+  // A complete .html page may omit <html> but still declare document-ness.
+  if (type === 'html') return /<body[\s>]|<!doctype\s+html/i.test(extracted)
+  // jsx/tsx/vue/svelte components (and Astro pages rendering into a <Layout>) → fragment.
+  // Next.js _document.tsx uses <Html> (capital — no match): stays fragment, correct,
+  // since a component-based document shell is not statically evaluable anyway.
+  return false
 }
 
 // Wrap fragment in a basic HTML document if needed for parsers

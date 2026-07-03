@@ -5,6 +5,35 @@ All notable changes to Equall CLI are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.11] - 2026-07-03
+
+### Changed
+
+- **Fragment scans no longer report page-level rules as violations.** Components and
+  partials — JSX/TSX/Vue/Svelte files, Astro pages that render into a layout, partial
+  `.html` includes — cannot carry page structure: landmarks, the skip link, the document
+  title, `<html lang>` live in the layout that composes them at render time. Page-level
+  axe rules (`region`, `landmark-one-main`, the `landmark-*` family, `page-has-heading-one`,
+  `bypass`, `skip-link`, `document-title`, `html-has-lang`, and related) are now
+  reclassified on fragment scans: instead of appearing as violations, they are named in
+  the honest-coverage report (`coverage.reclassified`, plus a "Not verifiable on this
+  scan" terminal section) with occurrence counts and affected files, as "page-level rule,
+  not verifiable on a per-file static scan". Full documents — a complete `.html` page, an
+  Astro layout or component carrying its own `<html>` — are unaffected; these rules still
+  fire there.
+- **Scores rise on component-heavy projects as a result.** Reclassified findings no
+  longer count against the score or the conformance level (`region` alone was previously
+  the majority of reported issues on fragment-heavy codebases). This is a reporting
+  correction, not a relaxation: the rules still apply to the rendered page, and the CLI
+  now names exactly which ones to verify there.
+
+### Known limitations
+
+- Consumers that track issues by fingerprint across scans will see previously open
+  page-level issues on fragments (most commonly `region`) disappear at the next scan
+  and may mark them resolved. They were reclassified as not statically verifiable —
+  not fixed. Verify them on the rendered page.
+
 ## [0.1.10] - 2026-06-20
 
 ### Changed

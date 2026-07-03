@@ -26,7 +26,7 @@ export interface EquallIssue {
   // Suppression
   ignored?: boolean                  // true if suppressed by equall-ignore comment
 
-  // Stable identity (BUR-106) — survives reformatting; see utils/fingerprint.ts.
+  // Stable identity — survives reformatting; see utils/fingerprint.ts.
   // Populated by runScan() after dedup; absent on raw scanner output.
   // Hash of file_path + scanner_rule_id + sorted criteria + normalized html_snippet.
   fingerprint?: string
@@ -62,10 +62,26 @@ export interface CriterionCoverage {
   scanners: string[]                   // scanners that exercised it (empty for `manual`)
 }
 
+// A page-level rule reclassified out of violations on a fragment scan.
+// Honest coverage: named, counted, never silently dropped. Engine-agnostic shape —
+// `scanner` is 'axe-core' today, but the suppression layer is designed for any engine.
+export interface ReclassifiedRule {
+  rule_id: string
+  scanner: string
+  reason: string
+  count: number                        // occurrences reclassified this scan
+  files: string[]                      // unique affected files
+  wcag_criteria: string[]              // [] for best-practice rules
+}
+
 export interface CoverageReport {
   criteria: CriterionCoverage[]
   counts: Record<CoverageStatus, number>
   auto_criteria: string[]              // criteria with status `auto` — the genuinely-checked set
+  // Both halves are deliberate: the `?` keeps older JSON consumers type-compatible,
+  // while runScan ALWAYS attaches it (`[]` when none) so the emitted shape stays stable.
+  // Do not remove the `?` and do not make the attachment conditional.
+  reclassified?: ReclassifiedRule[]
 }
 
 // What we pass to each scanner

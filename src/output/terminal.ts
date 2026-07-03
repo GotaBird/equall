@@ -25,6 +25,10 @@ const BP_HINTS: Record<string, string> = {
   'landmark-complementary-is-top-level': 'Complementary landmarks should not be nested',
   'landmark-no-duplicate-banner': 'Multiple banner landmarks confuse screen readers',
   'landmark-no-duplicate-contentinfo': 'Multiple contentinfo landmarks confuse screen readers',
+  'landmark-no-duplicate-main': 'Multiple main landmarks confuse screen readers',
+  'landmark-banner-is-top-level': 'Banner landmarks should not be nested',
+  'landmark-contentinfo-is-top-level': 'Contentinfo landmarks should not be nested',
+  'skip-link': 'Skip links let keyboard users jump past repeated content',
 }
 
 // ANSI color helpers (chalk-free fallback for minimal deps)
@@ -185,7 +189,11 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
   const wcagIssuesCount = result.issues.filter(i => i.wcag_criteria.length > 0 && !isAdvisory(i)).length
   const bpIssuesCount = result.issues.filter(i => i.wcag_criteria.length === 0).length
   const advisorySuffix = advisoryCount > 0 ? `  ·  ${GRAY}${advisoryCount} AAA advisory${RESET}` : ''
-  console.log(`  ${summary.files_scanned} file${summary.files_scanned === 1 ? '' : 's'} scanned  ·  ${BOLD}${wcagIssuesCount}${RESET} WCAG violation${wcagIssuesCount === 1 ? '' : 's'}  ·  ${GRAY}${bpIssuesCount} best-practice recommendation${bpIssuesCount === 1 ? '' : 's'}${RESET}${advisorySuffix}`)
+  // Page-level rules reclassified on fragment scans — surfaced even in a skim.
+  const reclassified = result.coverage?.reclassified ?? []
+  const reclassifiedCount = reclassified.reduce((n, r) => n + r.count, 0)
+  const reclassifiedSuffix = reclassifiedCount > 0 ? `  ·  ${GRAY}${reclassifiedCount} page-level (needs rendered page)${RESET}` : ''
+  console.log(`  ${summary.files_scanned} file${summary.files_scanned === 1 ? '' : 's'} scanned  ·  ${BOLD}${wcagIssuesCount}${RESET} WCAG violation${wcagIssuesCount === 1 ? '' : 's'}  ·  ${GRAY}${bpIssuesCount} best-practice recommendation${bpIssuesCount === 1 ? '' : 's'}${RESET}${advisorySuffix}${reclassifiedSuffix}`)
 
   // Severity breakdown over conformance-scope issues only (advisory AAA excluded),
   // with a one-line legend so "critical/serious/moderate/minor" isn't just a color soup
@@ -399,6 +407,43 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
       }
       console.log()
     }
+  }
+
+  // Page-level rules reclassified on fragment scans. Rendered UNCONDITIONALLY
+  // (never behind --show-manual): honest coverage means the removed findings stay named.
+  if (reclassified.length > 0) {
+    console.log(`  ${BOLD}Not verifiable on this scan${RESET} ${GRAY}— ${reclassified.length} page-level rule${reclassified.length > 1 ? 's' : ''} on fragment files${RESET}`)
+    console.log()
+
+    for (const entry of reclassified) {
+      // WCAG-mapped page-level rules (e.g. bypass 2.4.1) show their criterion; the
+      // best-practice ones reuse the BP_HINTS explanation.
+      const wcagSuffix = entry.wcag_criteria.length > 0
+        ? `  ${GRAY}WCAG ${entry.wcag_criteria.map((c) => {
+            const name = criterionName(c)
+            return name ? `${c} ${name}` : c
+          }).join(', ')}${RESET}`
+        : ''
+      console.log(
+        `  ${GRAY}○${RESET} ${BOLD}${entry.rule_id}${RESET}  ` +
+        `${GRAY}${entry.count} occurrence${entry.count > 1 ? 's' : ''}${RESET}${wcagSuffix}`
+      )
+      const hint = BP_HINTS[entry.rule_id]
+      if (hint) console.log(`      ${GRAY}${hint}${RESET}`)
+
+      const maxFiles = options.verbose ? entry.files.length : 2
+      for (const file of entry.files.slice(0, maxFiles)) {
+        console.log(`      ${GRAY}↳${RESET} ${CYAN}${file}${RESET}`)
+      }
+      if (!options.verbose && entry.files.length > 2) {
+        console.log(`      ${GRAY}↳ and ${entry.files.length - 2} more file${entry.files.length - 2 > 1 ? 's' : ''} (run with --verbose to list all)${RESET}`)
+      }
+      console.log()
+    }
+
+    console.log(`  ${GRAY}These rules apply to the composed page, not a single component or partial.${RESET}`)
+    console.log(`  ${GRAY}Next step: verify them on the built HTML output or with a rendered check.${RESET}`)
+    console.log()
   }
 
   // Ignored issues (verbose only)
