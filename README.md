@@ -32,7 +32,7 @@ Equall sits in that gap. It wraps existing open-source scanners and adds what th
 - **Score 0–100** — weighted by severity, grouped by WCAG criterion, with a conformance level (A / AA / AAA).
 - **POUR breakdown** — see which principle (Perceivable, Operable, Understandable, Robust) is your weakest.
 - **Zero config** — point it at a folder, get a score. No setup, no account, no signup.
-- **Honest about coverage** — it tells you exactly which criteria are tested and which still need manual review. No "100% compliant" claims.
+- **Honest about coverage** — it tells you exactly which criteria are tested and which still need manual review. No "100% compliant" claims. Page-level rules (landmarks, skip link, document title) are reported as "not verifiable on this scan" when you scan components or partials, instead of as false violations — they only fire on full documents.
 
 ## Install
 
