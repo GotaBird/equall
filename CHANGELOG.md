@@ -5,6 +5,41 @@ All notable changes to Equall CLI are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- **A problem confirmed by two engines now counts once.** When axe-core and
+  eslint-plugin-jsx-a11y flag the same issue on the same element — the canonical case is a
+  missing `alt`, reported as both `image-alt` and `alt-text` — the scan now merges them into
+  a single issue instead of counting it twice. Equivalent rules are declared in a
+  rule-equivalence table (`src/rules/equivalence.ts`): engine-agnostic and declarative, so
+  supporting an additional engine means adding rows, not merge logic. The surviving issue is
+  the one carrying a source line (the more actionable of the two) and credits every engine
+  that agreed (see `scanners` below) — cross-engine agreement is surfaced, never silently
+  collapsed.
+- **Merging is deliberately conservative.** Findings merge only when the match is
+  unambiguous: in plain HTML the offending element is located in the source; in extracted
+  formats (JSX/TSX, Astro, Vue) a pair merges only when it cannot be confused with another
+  occurrence in the same file. Ambiguous cases keep both issues — counting a duplicate twice
+  is a known, visible cost; dropping a real finding is not acceptable.
+- **Scores may rise slightly on multi-engine projects as a result.** The scoring formula is
+  unchanged; the deduplicated issue set is simply smaller. This is a counting correction,
+  not a relaxation.
+
+### Added
+
+- `EquallIssue.scanners` — the engines that independently confirmed an issue
+  (e.g. `["eslint-jsx-a11y", "axe-core"]`). `scanner` still names the engine of the
+  surviving report, so existing consumers are unaffected.
+
+### Known limitations
+
+- Consumers that track issues by fingerprint across scans will see the merged twin of a
+  cross-engine duplicate (usually the axe-core one) disappear at the next scan and may mark
+  it resolved. It was a duplicate being merged, not a fix — the issue itself remains open
+  under its surviving fingerprint.
+
 ## [0.1.11] - 2026-07-03
 
 ### Changed

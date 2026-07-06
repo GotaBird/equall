@@ -30,6 +30,11 @@ export interface EquallIssue {
   // Populated by runScan() after dedup; absent on raw scanner output.
   // Hash of file_path + scanner_rule_id + sorted criteria + normalized html_snippet.
   fingerprint?: string
+
+  // Engines that independently confirmed this issue — populated only when equivalent
+  // findings from different engines were merged (see rules/equivalence.ts). `scanner`
+  // still names the surviving engine, so existing consumers are unaffected.
+  scanners?: string[]
 }
 
 export type WcagLevel = 'A' | 'AA' | 'AAA'

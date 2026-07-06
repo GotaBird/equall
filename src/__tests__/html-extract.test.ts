@@ -180,8 +180,11 @@ describe('axe sees no phantom violations from attribute expressions', () => {
     const astro = `---\nconst c = 'x'\n---\n<main><h1>Img</h1><img src="logo.png" class={c}></main>`
     const result = await scanBuffer(astro, 'Img.astro')
 
-    const alt = result.issues.find((i) => i.scanner === 'axe-core' && i.scanner_rule_id === 'image-alt')
-    expect(alt).toBeDefined()
+    // Cross-engine merge collapses the pair into one issue — axe's catch must still be
+    // visible, either as the credited engine on the merged issue or as its own finding.
+    const alt = result.issues.filter((i) => i.wcag_criteria.includes('1.1.1'))
+    expect(alt).toHaveLength(1)
+    expect(alt[0].scanners ?? [alt[0].scanner]).toContain('axe-core')
   })
 
   it('does NOT falsely flag a missing label on a dynamic aria-label (placeholder keeps it present)', async () => {
