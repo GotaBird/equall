@@ -6,6 +6,7 @@ import { computeCoverage } from './coverage.js'
 import { fingerprint } from './utils/fingerprint.js'
 import { isDocumentUnit } from './utils/html-extract.js'
 import { partitionPageLevelIssues, summarizeReclassified } from './rules/page-level.js'
+import { mergeCrossEngineDuplicates } from './rules/equivalence.js'
 import type { ScanOptions, ScanResult, ScannerInfo, EquallIssue, WcagLevel, FileEntry } from './types.js'
 
 // A single in-memory file: code provided directly instead of read from disk (T1.1).
@@ -99,8 +100,11 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
     }
   }
 
-  // 5. Deduplicate issues (same file + same rule + same line = one issue)
-  const deduped = deduplicateIssues(allIssues)
+  // 5. Merge cross-engine duplicates (rule-equivalence table, conservative 1:1 —
+  // see rules/equivalence.ts), then deduplicate within engines (same file + same
+  // rule + same line = one issue). Both run before fingerprinting, so surviving
+  // issues keep the identity they would have had anyway.
+  const deduped = deduplicateIssues(mergeCrossEngineDuplicates(allIssues))
 
   // 5b. Reclassify page-level rules on fragment units — engine-agnostic
   // post-filter, after dedup (honest counts) and before ignores (an equall-ignore on a
