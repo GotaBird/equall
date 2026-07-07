@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import { computeCoverage, formatNoFailureVerdict } from '../coverage.js'
+import { computeCoverage, formatNoFailureVerdict, honestTestedCriteria } from '../coverage.js'
 import { formatDiffGuardrail } from '../diff-scan.js'
 import type { DiffScanResult } from '../diff-scan.js'
 import { runScan } from '../scan.js'
-import type { ScannerAdapter, FileEntry, FileType } from '../types.js'
+import type { ScannerAdapter, FileEntry, FileType, CoverageReport, ReclassifiedRule } from '../types.js'
 
 function scanner(over: Partial<ScannerAdapter> & { name: string; fileTypes: FileType[]; coveredCriteria: string[] }): ScannerAdapter {
   return {
@@ -66,6 +66,37 @@ describe('computeCoverage', () => {
     expect(report.counts.auto).toBe(0)
     expect(report.counts.partial).toBe(0)
     expect(report.criteria.every((c) => c.status === 'manual')).toBe(true)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// honestTestedCriteria — the coverage-derived criteria_tested set (BUR-159)
+// ---------------------------------------------------------------------------
+describe('honestTestedCriteria', () => {
+  const coverage: CoverageReport = {
+    criteria: [],
+    counts: { auto: 0, partial: 0, manual: 0 },
+    auto_criteria: ['1.1.1', '2.4.1', '2.4.2', '3.1.1', '4.1.2'],
+  }
+
+  it('returns the auto set unchanged when nothing was reclassified', () => {
+    expect(honestTestedCriteria(coverage, [])).toEqual(['1.1.1', '2.4.1', '2.4.2', '3.1.1', '4.1.2'])
+  })
+
+  it('subtracts criteria of page-level rules reclassified on a fragment', () => {
+    const reclassified: ReclassifiedRule[] = [
+      { rule_id: 'bypass', scanner: 'axe-core', reason: 'page-level', count: 1, files: ['a.astro'], wcag_criteria: ['2.4.1'] },
+      { rule_id: 'html-has-lang', scanner: 'axe-core', reason: 'page-level', count: 1, files: ['a.astro'], wcag_criteria: ['3.1.1'] },
+    ]
+    // 2.4.1 and 3.1.1 could not be verified on the fragment → not "tested".
+    expect(honestTestedCriteria(coverage, reclassified)).toEqual(['1.1.1', '2.4.2', '4.1.2'])
+  })
+
+  it('ignores reclassified best-practice rules with no WCAG criteria', () => {
+    const reclassified: ReclassifiedRule[] = [
+      { rule_id: 'region', scanner: 'axe-core', reason: 'page-level', count: 1, files: ['a.astro'], wcag_criteria: [] },
+    ]
+    expect(honestTestedCriteria(coverage, reclassified)).toEqual(coverage.auto_criteria)
   })
 })
 

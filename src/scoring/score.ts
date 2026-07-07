@@ -9,6 +9,7 @@ import type {
   ScannerInfo,
   ScanResult,
 } from '../types.js'
+import { ENGINE_VERSION } from '../engine-version.js'
 
 // Severity weight for scoring — critical issues impact score more
 const SEVERITY_WEIGHT: Record<Severity, number> = {
@@ -20,6 +21,12 @@ const SEVERITY_WEIGHT: Record<Severity, number> = {
 
 // Maximum penalty per criterion to avoid one rule destroying the score
 const MAX_PENALTY_PER_CRITERION = 15
+
+// Scoring-model version stamped on every ScanResult (BUR-159). Bump ONLY when the
+// scoring formula or its input semantics change, so two outputs from different
+// releases are comparable. This ticket changes output semantics, not the formula
+// itself — model 1 is the first stamped baseline.
+const SCORE_MODEL = 1
 
 // WCAG level ordering, used to scope conformance to the requested target.
 const LEVEL_RANK: Record<WcagLevel, number> = { A: 1, AA: 2, AAA: 3 }
@@ -40,11 +47,18 @@ export function computeScanResult(
   durationMs: number,
   targetLevel: WcagLevel = 'AA',
   criteriaCovered: string[] = [],
-  criteriaTotal: number = 0
+  criteriaTotal: number = 0,
+  // The criteria genuinely EXERCISED on this scan (coverage `auto` set, minus
+  // reclassified-on-fragment criteria) — see honestTestedCriteria in coverage.ts.
+  // Distinct from `criteriaCovered` (the capable union, which still feeds the
+  // stored `criteria_covered` field). Drives honest `criteria_tested` and the
+  // POUR n/a gating (BUR-159). Defaults to [] so callers that don't have coverage
+  // (early returns, unit tests) get an honest empty exercised set.
+  exercised: string[] = []
 ): ScanResult {
-  const summary = computeSummary(issues, filesScanned)
+  const summary = computeSummary(issues, filesScanned, exercised)
   const score = computeScore(issues, filesScanned, targetLevel)
-  const pourScores = computePourScores(issues, filesScanned, criteriaCovered, targetLevel)
+  const pourScores = computePourScores(issues, filesScanned, exercised, targetLevel)
   const conformanceLevel = computeConformanceLevel(issues, summary, targetLevel)
 
   return {
@@ -58,10 +72,12 @@ export function computeScanResult(
     criteria_total: criteriaTotal,
     scanned_at: new Date().toISOString(),
     duration_ms: durationMs,
+    engine_version: ENGINE_VERSION,
+    score_model: SCORE_MODEL,
   }
 }
 
-function computeSummary(issues: EquallIssue[], filesScanned: number): ScanSummary {
+function computeSummary(issues: EquallIssue[], filesScanned: number, exercised: string[] = []): ScanSummary {
   const bySeverity: Record<Severity, number> = {
     critical: 0,
     serious: 0,
@@ -69,14 +85,12 @@ function computeSummary(issues: EquallIssue[], filesScanned: number): ScanSummar
     minor: 0,
   }
   const byScanner: Record<string, number> = {}
-  const criteriaSet = new Set<string>()
   const failedCriteriaSet = new Set<string>()
 
   for (const issue of issues) {
     bySeverity[issue.severity]++
     byScanner[issue.scanner] = (byScanner[issue.scanner] ?? 0) + 1
     for (const c of issue.wcag_criteria) {
-      criteriaSet.add(c)
       failedCriteriaSet.add(c)
     }
   }
@@ -86,7 +100,10 @@ function computeSummary(issues: EquallIssue[], filesScanned: number): ScanSummar
     total_issues: issues.length,
     by_severity: bySeverity,
     by_scanner: byScanner,
-    criteria_tested: [...criteriaSet].sort(),
+    // BUR-159: criteria_tested is the genuinely EXERCISED set (coverage-derived),
+    // NOT the issue-derived set (which equalled criteria_failed and made the verdict
+    // coverage-blind). criteria_failed stays issue-derived — it IS the failure set.
+    criteria_tested: [...exercised].sort(),
     criteria_failed: [...failedCriteriaSet].sort(),
     ignored_count: 0,
   }
@@ -128,7 +145,7 @@ function computeScore(issues: EquallIssue[], filesScanned: number, targetLevel: 
   return Math.max(0, Math.round(score))
 }
 
-function computePourScores(issues: EquallIssue[], filesScanned: number, criteriaCovered: string[] = [], targetLevel: WcagLevel = 'AA'): PourScores {
+function computePourScores(issues: EquallIssue[], filesScanned: number, exercised: string[] = [], targetLevel: WcagLevel = 'AA'): PourScores {
   const pourIssues: Record<PourPrinciple, EquallIssue[]> = {
     perceivable: [],
     operable: [],
@@ -136,17 +153,19 @@ function computePourScores(issues: EquallIssue[], filesScanned: number, criteria
     robust: [],
   }
 
-  // Map covered criteria to POUR principles (first digit: 1=P, 2=O, 3=U, 4=R)
+  // Map EXERCISED criteria to POUR principles (first digit: 1=P, 2=O, 3=U, 4=R).
+  // BUR-159: gate on the genuinely-exercised set, not the capable union — a principle
+  // with no exercised criteria and no issues must read n/a (null), never a green 100.
   const POUR_BY_PREFIX: Record<string, PourPrinciple> = { '1': 'perceivable', '2': 'operable', '3': 'understandable', '4': 'robust' }
-  const pourCovered: Record<PourPrinciple, boolean> = {
+  const pourExercised: Record<PourPrinciple, boolean> = {
     perceivable: false,
     operable: false,
     understandable: false,
     robust: false,
   }
-  for (const c of criteriaCovered) {
+  for (const c of exercised) {
     const principle = POUR_BY_PREFIX[c[0]]
-    if (principle) pourCovered[principle] = true
+    if (principle) pourExercised[principle] = true
   }
 
   for (const issue of issues) {
@@ -164,7 +183,7 @@ function computePourScores(issues: EquallIssue[], filesScanned: number, criteria
   function pourScore(principle: PourPrinciple): number | null {
     const principleIssues = pourIssues[principle]
 
-    if (!pourCovered[principle] && principleIssues.length === 0) return null
+    if (!pourExercised[principle] && principleIssues.length === 0) return null
     if (principleIssues.length === 0) return 100
 
     const penaltyByCriterion = new Map<string, number>()

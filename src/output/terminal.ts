@@ -125,28 +125,28 @@ function formatSuggestion(raw: string, indent: string): string[] {
   return out
 }
 
-function conformanceBadge(level: string): string {
-  switch (level) {
-    case 'AAA': return `${BG_GREEN}${WHITE} AAA ${RESET}`
-    case 'AA': return `${BG_GREEN}${WHITE} AA ${RESET}`
-    case 'A': return `${BG_CYAN}${WHITE} A ${RESET}`
-    case 'Partial A': return `${BG_YELLOW}${WHITE} ~A ${RESET}`
-    case 'None': return `${BG_RED}${WHITE} — ${RESET}`
-    default: return level
-  }
-}
+// BUR-159: the honest verdict that replaces the old "Meets WCAG AA" badge + explainer.
+// It states exactly what automation established — how many in-target (A/AA) criteria are
+// failing, out of how many were genuinely verified, and how many were NOT evaluated — and
+// never makes a pass/fail claim ("Meets"/"conformant"). A clean scan reads
+// "0 A/AA failures among the N criteria automatically verified (M not evaluated)", never "None".
+function formatVerifiedSubset(result: ScanResult, target: WcagLevel): { line: string; failing: number } {
+  const verified = result.summary.criteria_tested.length
+  const notEvaluated = Math.max(0, result.criteria_total - verified)
 
-// One-line plain-language explainer for the conformance badge.
-// Shown right under the score so newcomers understand what "~A" or "AA" means.
-function describeConformance(level: string): string {
-  switch (level) {
-    case 'AAA': return 'Meets WCAG AAA — the highest level of automated conformance.'
-    case 'AA': return 'Meets WCAG AA — the standard most regulations require.'
-    case 'A': return 'Meets WCAG A — the legal minimum. Aim for AA next.'
-    case 'Partial A': return 'Not yet conformant. Some Level A criteria are failing (legal minimum).'
-    case 'None': return 'Conformance level could not be determined from this scan.'
-    default: return ''
+  // Distinct in-target failing criteria (advisory AAA-under-AA excluded), matching the
+  // Coverage block's "failing" count so the header and the coverage line agree.
+  const failing = new Set<string>()
+  for (const issue of result.issues) {
+    if (issue.ignored) continue
+    if (isBeyondTarget(issue, target)) continue
+    for (const c of issue.wcag_criteria) failing.add(c)
   }
+  const f = failing.size
+
+  const scope = target === 'A' ? 'Level A' : target === 'AAA' ? 'A/AA/AAA' : 'A/AA'
+  const line = `${f} ${scope} failure${f === 1 ? '' : 's'} among the ${verified} criteri${verified === 1 ? 'on' : 'a'} automatically verified (${notEvaluated} not evaluated).`
+  return { line, failing: f }
 }
 
 function bar(value: number | null, width: number = 20): string {
@@ -165,20 +165,21 @@ export interface PrintOptions {
 }
 
 export function printResult(result: ScanResult, options: PrintOptions = {}): void {
-  const { score, conformance_level, pour_scores, summary, scanners_used, duration_ms } = result
+  const { score, pour_scores, summary, scanners_used, duration_ms } = result
 
   console.log()
   console.log(`${BOLD}  ◆ EQUALL — Accessibility Score${RESET}`)
   console.log()
 
-  // Big score display with plain-language conformance explainer
-  const conformanceExplainer = describeConformance(conformance_level)
-  console.log(`  ${scoreBg(score)}${BOLD}${WHITE}  ${score}  ${RESET}  ${conformanceBadge(conformance_level)}  ${GRAY}WCAG 2.2${RESET}`)
-  console.log(`  ${GRAY}${conformanceExplainer}${RESET}`)
-  console.log()
-
-  // Conformance target drives what counts as a violation vs. beyond-target advisory.
+  // Target drives what counts as an in-scope violation vs. beyond-target advisory.
   const target = options.targetLevel ?? 'AA'
+
+  // Big score (a trend indicator, not a pass/fail grade) + the honest verified-subset
+  // verdict (BUR-159) — no "Meets"/badge that could read as a conformance claim.
+  const verdict = formatVerifiedSubset(result, target)
+  console.log(`  ${scoreBg(score)}${BOLD}${WHITE}  ${score}  ${RESET}  ${GRAY}WCAG 2.2 · score is a trend indicator${RESET}`)
+  console.log(`  ${verdict.failing > 0 ? RED : GRAY}${verdict.line}${RESET}`)
+  console.log()
   // Beyond-target criteria (e.g. AAA reading-level under an AA target) are advisory:
   // they don't penalize the score and aren't counted among conformance violations.
   const isAdvisory = (i: EquallIssue) => i.wcag_criteria.length > 0 && isBeyondTarget(i, target)
@@ -273,7 +274,7 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
 
   // Top issues (WCAG Violations) — these count against conformance
   if (wcagIssues.length > 0) {
-    console.log(`  ${BOLD}WCAG Violations${RESET} ${GRAY}— must fix to reach conformance${RESET}`)
+    console.log(`  ${BOLD}WCAG Violations${RESET} ${GRAY}— automated failures at your ${target} target, fix these first${RESET}`)
     console.log()
 
     const grouped = groupByCriterion(wcagIssues)
@@ -331,7 +332,7 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
   // under an AA target). Shown for awareness; they do NOT count against conformance
   // or the score, and are never framed as "must fix".
   if (advisoryIssues.length > 0) {
-    console.log(`  ${BOLD}Advisory${RESET} ${GRAY}— beyond your ${target} target (WCAG AAA), not required for conformance${RESET}`)
+    console.log(`  ${BOLD}Advisory${RESET} ${GRAY}— beyond your ${target} target (WCAG AAA), advisory only${RESET}`)
     console.log()
 
     const grouped = groupByCriterion(advisoryIssues)

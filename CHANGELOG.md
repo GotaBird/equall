@@ -9,6 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **The verdict now states what was actually verified, and never claims conformance.** A scan
+  whose only finding was a AAA advisory used to print "Meets WCAG AA"; a clean scan reported
+  "None". Both were misleading. The score header now reads, e.g., "0 A/AA failures among the
+  25 criteria automatically verified (31 not evaluated)" — an honest subset statement. The
+  words "Meets", "conformant", "compliant" and the "None" verdict are gone from every output.
+- **"Criteria tested" now means the criteria actually exercised, not the ones that failed.**
+  Previously the tested set was derived from the issues found, so it equalled the failed set —
+  the A/AA/AAA determination had no awareness of coverage. It is now sourced from the exercised
+  coverage (a scanner with eligible files ran the check), minus any page-level rule that could
+  not be verified on a fragment. `summary.criteria_failed` is unchanged.
+- **A POUR principle that was never exercised now shows n/a instead of a green 100.** The bar
+  reads `—` when no criterion under that principle was actually checked on this scan, rather
+  than implying a perfect, tested result.
+
 - **A problem confirmed by two engines now counts once.** When axe-core and
   eslint-plugin-jsx-a11y flag the same issue on the same element — the canonical case is a
   missing `alt`, reported as both `image-alt` and `alt-text` — the scan now merges them into
@@ -32,6 +46,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `EquallIssue.scanners` — the engines that independently confirmed an issue
   (e.g. `["eslint-jsx-a11y", "axe-core"]`). `scanner` still names the engine of the
   surviving report, so existing consumers are unaffected.
+- `ScanResult.engine_version` and `ScanResult.score_model` — version stamps so two scan
+  outputs from different releases are comparable. Per-scanner versions remain in
+  `scanners_used[].version`.
 
 ### Known limitations
 

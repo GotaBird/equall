@@ -4,6 +4,7 @@ import type {
   CoverageReport,
   CriterionCoverage,
   CoverageStatus,
+  ReclassifiedRule,
 } from './types.js'
 
 // Honest coverage (T1.3): classify every criterion the active scanners are CAPABLE of
@@ -52,6 +53,21 @@ export function computeCoverage(scanners: ScannerAdapter[], files: FileEntry[]):
     counts,
     auto_criteria: criteria.filter((c) => c.status === 'auto').map((c) => c.criterion),
   }
+}
+
+// BUR-159: the honest "criteria_tested" set — the criteria genuinely EXERCISED on this
+// scan, the source of truth for the verdict and the POUR n/a gating. It starts from the
+// coverage `auto` set (a scanner with eligible files actually exercised the criterion,
+// not merely capable of it) and REMOVES any criterion reclassified out of violations on
+// a fragment scan: a page-level rule (e.g. html-has-lang → 3.1.1, bypass → 2.4.1,
+// document-title → 2.4.2) cannot be verified on a fragment, so it must not be reported as
+// tested. Conservative by design — it under-claims rather than over-claims coverage.
+export function honestTestedCriteria(
+  coverage: CoverageReport,
+  reclassified: ReclassifiedRule[]
+): string[] {
+  const removed = new Set(reclassified.flatMap((r) => r.wcag_criteria))
+  return coverage.auto_criteria.filter((c) => !removed.has(c))
 }
 
 // The anti-"done" verdict (T1.3): the lines shown when static analysis found nothing to fix.

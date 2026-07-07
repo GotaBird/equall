@@ -108,13 +108,24 @@ describe('POUR scores', () => {
     const result = computeScanResult(issues, 10, [], 100)
     expect(result.pour_scores.perceivable).toBeNull()
   })
+
+  it('n/a (null) for a principle with no EXERCISED criteria, 100 for one exercised without failures (BUR-159)', () => {
+    // Only perceivable was exercised (1.1.1); no issues anywhere.
+    const result = computeScanResult([], 10, [], 100, 'AA', [], 56, ['1.1.1'])
+    expect(result.pour_scores.perceivable).toBe(100) // exercised, no failures
+    expect(result.pour_scores.operable).toBeNull()   // never exercised → n/a, not a green 100
+    expect(result.pour_scores.understandable).toBeNull()
+    expect(result.pour_scores.robust).toBeNull()
+  })
 })
 
 describe('conformance level', () => {
   it('returns A when targeting A with no Level A failures', () => {
+    // criteria_tested is now the exercised set (BUR-159): a non-empty exercised set
+    // means criteria WERE evaluated, so 0 Level A failures → 'A' (not 'None').
     const result = computeScanResult(
       [makeIssue({ wcag_level: 'AA', wcag_criteria: ['1.4.3'] })],
-      10, [], 100, 'A'
+      10, [], 100, 'A', [], 0, ['1.1.1']
     )
     expect(result.conformance_level).toBe('A')
   })
@@ -130,7 +141,7 @@ describe('conformance level', () => {
   it('returns AA when targeting AA with no A or AA failures', () => {
     const result = computeScanResult(
       [makeIssue({ wcag_level: 'AAA', wcag_criteria: ['1.4.6'] })],
-      10, [], 100, 'AA'
+      10, [], 100, 'AA', [], 0, ['1.1.1']
     )
     expect(result.conformance_level).toBe('AA')
   })
@@ -191,9 +202,9 @@ describe('beyond-target (AAA) exclusion from conformance', () => {
   it('POUR: a AAA understandable issue does not drag the principle at an AA target', () => {
     const result = computeScanResult(
       [makeIssue({ wcag_level: 'AAA', wcag_criteria: ['3.1.5'], pour: 'understandable', severity: 'critical' })],
-      4, [], 100, 'AA', ['3.1.1'], 100
+      4, [], 100, 'AA', ['3.1.1'], 100, ['3.1.1']
     )
-    // Understandable is covered (3.1.1) but the only issue is beyond-target → no penalty
+    // Understandable was exercised (3.1.1) but the only issue is beyond-target → no penalty → 100
     expect(result.pour_scores.understandable).toBe(100)
   })
 })

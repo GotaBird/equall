@@ -1,25 +1,22 @@
 #!/usr/bin/env node
 
 import { resolve, basename } from 'node:path'
-import { readFileSync, existsSync, statSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
+import { existsSync, statSync } from 'node:fs'
 import { Command } from 'commander'
 import ora from 'ora'
 import { runScan } from './scan.js'
 import { printResult, printJson } from './output/terminal.js'
 import { findIgnores, removeIgnore, clearAllIgnores, addIgnore, addIgnoreFile } from './ignores.js'
 import { computeExitCode } from './exit-code.js'
+import { ENGINE_VERSION } from './engine-version.js'
 import type { WcagLevel } from './types.js'
-
-const __dir = resolve(fileURLToPath(import.meta.url), '..')
-const pkg = JSON.parse(readFileSync(resolve(__dir, '..', 'package.json'), 'utf-8'))
 
 const program = new Command()
 
 program
   .name('equall')
   .description('WCAG accessibility scanner for HTML, JSX, TSX, Vue, Svelte & Astro files')
-  .version(pkg.version)
+  .version(ENGINE_VERSION)
 
 program
   .command('scan')

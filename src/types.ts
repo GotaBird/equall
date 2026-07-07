@@ -127,6 +127,12 @@ export interface ScanResult {
   coverage?: CoverageReport            // Honest, exercised coverage (T1.3) — attached by runScan
   scanned_at: string                   // ISO timestamp
   duration_ms: number
+  // Version stamps so results are comparable across releases (BUR-159).
+  // Optional to keep older JSON consumers type-compatible, but runScan / computeScanResult
+  // ALWAYS populate them — like `coverage?`, the `?` is compatibility, not "sometimes absent".
+  // Per-scanner versions live in `scanners_used[].version`.
+  engine_version?: string              // Engine (package) version, e.g. "0.1.12"
+  score_model?: number                 // Scoring-model version (bumped when the formula/semantics change)
 }
 
 export interface PourScores {

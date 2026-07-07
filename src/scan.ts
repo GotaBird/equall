@@ -2,7 +2,7 @@ import { resolve } from 'node:path'
 import { discoverFiles, fileTypeForPath, sanitizeVirtualPath } from './discover.js'
 import { getAvailableScanners } from './scanners/index.js'
 import { computeScanResult } from './scoring/score.js'
-import { computeCoverage } from './coverage.js'
+import { computeCoverage, honestTestedCriteria } from './coverage.js'
 import { fingerprint } from './utils/fingerprint.js'
 import { isDocumentUnit } from './utils/html-extract.js'
 import { partitionPageLevelIssues, summarizeReclassified } from './rules/page-level.js'
@@ -119,16 +119,27 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
   // 6. Apply equall-ignore comments
   const { active, ignored } = applyIgnoreComments(kept, files)
 
-  // 7. Merge coverage from all active scanners
+  // 7. Merge coverage from all active scanners.
+  // criteria_covered is the CAPABLE union — it still feeds POUR scoring in score.ts and
+  // is stored as-is; never route honest coverage into the score.
   const criteriaCovered = [...new Set(scanners.flatMap(s => s.coveredCriteria))].sort()
 
   // Total WCAG 2.2 criteria per level (4.1.1 Parsing excluded — obsolete in 2.2)
   const WCAG_TOTAL: Record<string, number> = { A: 32, AA: 56, AAA: 86 }
   const criteriaTotal = WCAG_TOTAL[scanOptions.wcag_level] ?? 56
 
-  // 8. Compute score (only active issues affect scoring)
+  // 7b. Honest coverage (T1.3) — exercised criteria only, never "capable" as "tested".
+  // Computed BEFORE scoring (BUR-159) so the genuinely-exercised set feeds the honest
+  // criteria_tested + POUR n/a gating. The reclassified summary is what honestTestedCriteria
+  // subtracts (page-level rules that can't be verified on a fragment).
+  const coverage = computeCoverage(scanners, files)
+  coverage.reclassified = summarizeReclassified(reclassified)
+  const exercised = honestTestedCriteria(coverage, coverage.reclassified)
+
+  // 8. Compute score (only active issues affect scoring). `exercised` drives the honest
+  // criteria_tested and the POUR n/a gating; `criteriaCovered` stays the stored capable union.
   const durationMs = Date.now() - startTime
-  const result = computeScanResult(active, files.length, scannersUsed, durationMs, scanOptions.wcag_level, criteriaCovered, criteriaTotal)
+  const result = computeScanResult(active, files.length, scannersUsed, durationMs, scanOptions.wcag_level, criteriaCovered, criteriaTotal, exercised)
 
   // 9. Attach stable fingerprints — identity for diff-aware scanning.
   // Metadata only: does not affect scoring (computed above from `active`).
@@ -139,11 +150,9 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
   result.issues = [...withFingerprint(active), ...withFingerprint(ignored)]
   result.summary.ignored_count = ignored.length
 
-  // 10. Honest coverage (T1.3) — exercised criteria only, never "capable" as "tested".
-  // Additive: does NOT touch criteria_covered (which feeds POUR scoring).
-  result.coverage = computeCoverage(scanners, files)
+  // 10. Attach the honest coverage report computed above.
   // Always attached ([] when none) so the emitted JSON shape stays stable.
-  result.coverage.reclassified = summarizeReclassified(reclassified)
+  result.coverage = coverage
 
   return result
 }
