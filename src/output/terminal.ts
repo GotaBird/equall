@@ -600,7 +600,7 @@ function printCoaching(result: ScanResult): void {
   if (levelAFailed.length > 0) {
     // Level A failures — most urgent
     console.log(`  ${RED}${BOLD}▲ Action needed${RESET}  You're failing ${BOLD}${levelAFailed.length} Level A criteri${levelAFailed.length > 1 ? 'a' : 'on'}${RESET}.`)
-    console.log(`    Level A is the legal minimum — without it, some users literally cannot use your product.`)
+    console.log(`    Level A is the floor — the most fundamental barriers. Without it, some users literally cannot use your product.`)
     console.log(`    ${GRAY}Failing:${RESET} ${formatCriteria(levelAFailed)}`)
     console.log(`    ${GREEN}Next step:${RESET} scroll to ${BOLD}WCAG Violations${RESET} below and fix the critical/serious items first.`)
   } else if (levelAAFailed.length > 0) {
