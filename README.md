@@ -1,6 +1,8 @@
 # Equall
 
-Open-source accessibility scoring for dev teams. Aggregates axe-core, eslint-plugin-jsx-a11y, text-readability, and more into a single WCAG score — and an honest, per-criterion conformance verdict.
+> **Open-source accessibility scoring for dev teams.**
+
+Equall aggregates `axe-core`, `eslint-plugin-jsx-a11y`, `text-readability`, and more into a single WCAG score — and delivers an honest, per-criterion conformance verdict.
 
 **One command. Real score. No config.**
 
@@ -28,16 +30,16 @@ npx equall scan .
 
 ## What is Equall?
 
-Accessibility tools today fall into two camps: dev tools that show violations without context (axe, Lighthouse), and enterprise platforms that cost $75K+/year (Deque, Siteimprove). Nothing in between.
+Accessibility tools today usually fall into two camps: dev tools that show violations without context (axe, Lighthouse), and enterprise platforms that cost $75K+/year (Deque, Siteimprove). Nothing in between.
 
-Equall sits in that gap. It wraps existing open-source scanners and adds what they're missing — a **per-criterion conformance verdict** you can act on, and a **score** to track the trend.
+Equall sits in that gap. It wraps existing open-source scanners and adds what they're missing: a **per-criterion conformance verdict** you can actually act on, and a **score** to track your trend over time.
 
-- **Aggregator, not reinventor** — wraps axe-core, eslint-plugin-jsx-a11y, readability, and more. We don't rewrite rules, we unify and de-duplicate their results.
-- **Framework-aware** — scans HTML, JSX/TSX, Vue, Svelte and **Astro**. `.astro` is **full multi-engine** (axe-core + jsx-a11y via `astro-eslint-parser` + readability), not axe-only.
-- **Per-criterion verdict** — for every WCAG success criterion of your target level: `Supports (automated)`, `Does not support`, or `Not evaluated`. It's the report backbone; the [verdict reference](https://equallscan.com/docs/verdicts) says exactly what each claims — and what it doesn't.
-- **Score is a trend, not a grade** — a 0–100 number to watch move over time. It motivates; it certifies nothing. No conformance badge, no "Meets WCAG" claim.
-- **Speaks the legal standard** — `--standard wcag21` renders the WCAG 2.1 AA view cited by the EU Web Accessibility Directive / EN 301 549; `wcag22` (default) is the latest. Same scan, same score — only the criteria set changes.
-- **Honest about coverage** — it never says "100% compliant." Automation covers a subset; the rest is `Not evaluated` (needs a rendered check or manual review). Page-level rules (landmarks, skip link, `<html lang>`) are reported as "not verifiable on this scan" when you scan components or partials, not as false violations — they only fire on full documents.
+- **Aggregator, not a reinventor** — wraps axe-core, eslint-plugin-jsx-a11y, readability, and more. We don't rewrite the rules; we unify and de-duplicate their results.
+- **Framework-aware** — scans HTML, JSX/TSX, Vue, Svelte, and **Astro**. `.astro` is scanned full multi-engine (axe-core + jsx-a11y via `astro-eslint-parser` + readability), not axe alone.
+- **Per-criterion verdicts** — for every WCAG success criterion of your target level: `Supports (automated)`, `Does not support`, or `Not evaluated`. It's the backbone of the report; the [verdict reference](https://equallscan.com/docs/verdicts) says exactly what each claims — and what it doesn't.
+- **Score is a trend, not a grade** — a 0–100 number to watch move over time. It motivates; it certifies nothing. No fake "100% Meets WCAG" badges here.
+- **Speaks the legal standard** — `--standard wcag21` renders the WCAG 2.1 AA view cited by the EU Web Accessibility Directive / EN 301 549; `wcag22` is the default. Same scan, same score — only the criteria set changes.
+- **Honest about coverage** — automation covers a subset; the rest is `Not evaluated` (needs a rendered check or manual review). Page-level rules (landmarks, skip link, `<html lang>`) are reported as "not verifiable on this scan" when you scan components or partials — not as false violations.
 
 ## Install
 
@@ -61,23 +63,28 @@ A successful scan always exits `0`. Pass `--min-score <n>` to fail a pipeline wh
 score drops below a threshold. Criteria above your target level (e.g. AAA under the
 default AA target) are advisory and never count against the score.
 
-Programmatic use:
+## Programmatic use
 
 ```typescript
 import { runScan } from 'equall-cli'
 
-const result = await runScan({ path: './my-project', level: 'AA' })
-console.log(result.score, result.criterion_conformance)
+const result = await runScan({
+  path: './my-project',
+  level: 'AA',
+})
+
+console.log('Score:', result.score)
+console.log('Verdicts:', result.criterion_conformance)
 ```
 
 `ScanResult` carries `criterion_conformance` (the per-criterion verdicts), `coverage`
 (what was actually exercised), `summary`, `standard`, and `engine_version` / `score_model`
-version stamps so results are comparable across releases.
+version stamps so results stay comparable across releases.
 
 ## Documentation
 
-Full guide — scanners, scoring model, verdict reference, ignoring issues, CI gates and the API:
-**https://equallscan.com/docs**
+Full guide — scanners, the scoring model, the verdict reference, ignoring issues, CI gates
+and the API: **https://equallscan.com/docs**
 
 ## License
 
