@@ -12,7 +12,6 @@ export { fingerprint } from './utils/fingerprint.js'
 export type {
   EquallIssue,
   ScanResult,
-  PourScores,
   ConformanceLevel,
   ScannerAdapter,
   ScanContext,

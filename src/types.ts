@@ -160,7 +160,6 @@ export interface ScanOptions {
 export interface ScanResult {
   score: number                        // 0-100
   conformance_level: ConformanceLevel
-  pour_scores: PourScores
   issues: EquallIssue[]
   summary: ScanSummary
   scanners_used: ScannerInfo[]
@@ -185,13 +184,6 @@ export interface ScanResult {
   // Per-scanner versions live in `scanners_used[].version`.
   engine_version?: string              // Engine (package) version, e.g. "0.1.12"
   score_model?: number                 // Scoring-model version (bumped when the formula/semantics change)
-}
-
-export interface PourScores {
-  perceivable: number | null           // 0-100, null if no criteria tested
-  operable: number | null
-  understandable: number | null
-  robust: number | null
 }
 
 export type ConformanceLevel = 'AAA' | 'AA' | 'A' | 'Partial A' | 'None'

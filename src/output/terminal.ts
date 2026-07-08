@@ -36,7 +36,6 @@ const RED = '\x1b[31m'
 const YELLOW = '\x1b[33m'
 const GREEN = '\x1b[32m'
 const CYAN = '\x1b[36m'
-const MAGENTA = '\x1b[35m'
 const WHITE = '\x1b[37m'
 const BG_RED = '\x1b[41m'
 const BG_YELLOW = '\x1b[43m'
@@ -48,11 +47,9 @@ const BG_CYAN = '\x1b[46m'
 // NOTE: ships in the published CLI — keep in sync with the canonical public docs domain.
 const VERDICT_DOCS_URL = 'https://equallscan.com/docs/verdicts'
 
-function scoreColor(score: number): string {
-  if (score >= 80) return GREEN
-  if (score >= 50) return YELLOW
-  return RED
-}
+// How to verify the reclassified page-level rules — the post-build "scan your dist/" recipe.
+// Also ships in the published CLI; same canonical docs domain as VERDICT_DOCS_URL.
+const POST_BUILD_DOCS_URL = 'https://equallscan.com/docs/verifying-page-level-rules'
 
 function scoreBg(score: number): string {
   if (score >= 80) return BG_GREEN
@@ -149,14 +146,6 @@ function formatVerifiedSubset(result: ScanResult, target: WcagLevel): { line: st
   return { line, failing: f }
 }
 
-function bar(value: number | null, width: number = 20): string {
-  if (value === null) return `${GRAY}${'░'.repeat(width)} n/a${RESET}`
-  const filled = Math.round((value / 100) * width)
-  const empty = width - filled
-  const color = scoreColor(value)
-  return `${color}${'█'.repeat(filled)}${GRAY}${'░'.repeat(empty)}${RESET} ${color}${value}${RESET}`
-}
-
 export interface PrintOptions {
   showIgnored?: boolean
   verbose?: boolean
@@ -166,7 +155,7 @@ export interface PrintOptions {
 }
 
 export function printResult(result: ScanResult, options: PrintOptions = {}): void {
-  const { score, pour_scores, summary, scanners_used, duration_ms } = result
+  const { score, summary, scanners_used, duration_ms } = result
 
   console.log()
   console.log(`${BOLD}  ◆ EQUALL — Accessibility Score${RESET}`)
@@ -251,14 +240,6 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
       console.log(`  ${BOLD}Coverage${RESET}  ${levelLabel}  ${covered}/${total} checked (${pct}%)  ·  ${RED}${failedAllSet.size} failing${RESET}`)
     }
   }
-  console.log()
-
-  // POUR breakdown
-  console.log(`  ${BOLD}POUR Breakdown${RESET}`)
-  console.log(`  ${MAGENTA}P${RESET} Perceivable    ${bar(pour_scores.perceivable)}`)
-  console.log(`  ${MAGENTA}O${RESET} Operable       ${bar(pour_scores.operable)}`)
-  console.log(`  ${MAGENTA}U${RESET} Understandable ${bar(pour_scores.understandable)}`)
-  console.log(`  ${MAGENTA}R${RESET} Robust         ${bar(pour_scores.robust)}`)
   console.log()
 
   // Contextual coaching
@@ -444,7 +425,8 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
     }
 
     console.log(`  ${GRAY}These rules apply to the composed page, not a single component or partial.${RESET}`)
-    console.log(`  ${GRAY}Next step: verify them on the built HTML output or with a rendered check.${RESET}`)
+    console.log(`  ${GRAY}Verify on the built output:${RESET}  npx equall scan <build-dir>  ${GRAY}(e.g. astro build && npx equall scan dist/)${RESET}`)
+    console.log(`  ${GRAY}Guide: ${POST_BUILD_DOCS_URL}${RESET}`)
     console.log()
   }
 

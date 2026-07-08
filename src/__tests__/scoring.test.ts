@@ -80,45 +80,6 @@ describe('computeScore', () => {
   })
 })
 
-describe('POUR scores', () => {
-  it('returns null for principles with no issues and no criteria', () => {
-    const result = computeScanResult([], 10, [], 100)
-    expect(result.pour_scores.perceivable).toBeNull()
-    expect(result.pour_scores.operable).toBeNull()
-    expect(result.pour_scores.understandable).toBeNull()
-    expect(result.pour_scores.robust).toBeNull()
-  })
-
-  it('scores each principle independently', () => {
-    const issues = [
-      makeIssue({ pour: 'perceivable', severity: 'critical', wcag_criteria: ['1.1.1'] }),
-      makeIssue({ pour: 'operable', severity: 'minor', wcag_criteria: ['2.1.1'] }),
-    ]
-    const result = computeScanResult(issues, 10, [], 100)
-    expect(result.pour_scores.perceivable).not.toBeNull()
-    expect(result.pour_scores.operable).not.toBeNull()
-    expect(result.pour_scores.perceivable!).toBeLessThan(result.pour_scores.operable!)
-    expect(result.pour_scores.understandable).toBeNull()
-    expect(result.pour_scores.robust).toBeNull()
-  })
-
-  it('returns 100 for principle with issues that have no WCAG criteria', () => {
-    // Issues without pour are skipped in POUR scoring
-    const issues = [makeIssue({ pour: null })]
-    const result = computeScanResult(issues, 10, [], 100)
-    expect(result.pour_scores.perceivable).toBeNull()
-  })
-
-  it('n/a (null) for a principle with no EXERCISED criteria, 100 for one exercised without failures', () => {
-    // Only perceivable was exercised (1.1.1); no issues anywhere.
-    const result = computeScanResult([], 10, [], 100, 'AA', [], 56, ['1.1.1'])
-    expect(result.pour_scores.perceivable).toBe(100) // exercised, no failures
-    expect(result.pour_scores.operable).toBeNull()   // never exercised → n/a, not a green 100
-    expect(result.pour_scores.understandable).toBeNull()
-    expect(result.pour_scores.robust).toBeNull()
-  })
-})
-
 describe('conformance level', () => {
   it('returns A when targeting A with no Level A failures', () => {
     // criteria_tested is now the exercised set: a non-empty exercised set
@@ -197,15 +158,6 @@ describe('beyond-target (AAA) exclusion from conformance', () => {
       4, [], 100, 'AA'
     )
     expect(aPlusAaa.score).toBe(aOnly.score)
-  })
-
-  it('POUR: a AAA understandable issue does not drag the principle at an AA target', () => {
-    const result = computeScanResult(
-      [makeIssue({ wcag_level: 'AAA', wcag_criteria: ['3.1.5'], pour: 'understandable', severity: 'critical' })],
-      4, [], 100, 'AA', ['3.1.1'], 100, ['3.1.1']
-    )
-    // Understandable was exercised (3.1.1) but the only issue is beyond-target → no penalty → 100
-    expect(result.pour_scores.understandable).toBe(100)
   })
 })
 

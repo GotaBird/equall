@@ -101,13 +101,17 @@ export function isDocumentUnit(content: string, type: string): boolean {
   return false
 }
 
-// Wrap fragment in a basic HTML document if needed for parsers
+// Wrap a fragment in a minimal HTML document so parsers have a valid tree. Deliberately NO
+// `lang` and NO `<title>`: a fragment (a component/partial) cannot know the page's title or
+// language — those live in the layout. A synthetic lang/title would make `html-has-lang` (3.1.1)
+// and `document-title` (2.4.2) falsely pass; leaving them out lets those page-level rules fire so
+// they are reclassified as "not verifiable on this scan" (honest) rather than a masked pass.
 export function wrapFragment(html: string): string {
   if (html.includes('<html')) return html
   return `
     <!DOCTYPE html>
-    <html lang="en">
-      <head><title>Scan</title></head>
+    <html>
+      <head></head>
       <body>${html}</body>
     </html>
   `

@@ -7,8 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Removed
+
+- **The POUR score breakdown (`pour_scores`) is gone.** The per-principle Perceivable / Operable /
+  Understandable / Robust bars were a demoted-score artifact that masked which criteria actually
+  failed or went unevaluated — the per-criterion Support Summary supersedes them. `ScanResult` no
+  longer carries `pour_scores` (breaking for any consumer that read it); the per-issue `pour` field
+  is unchanged.
+
 ### Changed
 
+- **"Not verifiable on this scan" now tells you how to verify.** Page-level rules (landmarks,
+  skip link, document title, `<html lang>`) reclassified out of a fragment scan — and the
+  matching `not_verifiable_on_this_scan` conformance verdict — now name the concrete next step:
+  run `equall scan` on your **built output** (`dist/`), where those rules execute as real
+  documents and their criteria move from "Not evaluated" to Supports / Does-not-support. Both
+  the terminal section and the verdict `reason` carry the command + a link to the guide. No new
+  capability — the same static scan, pointed at the composed page.
+- **Fragments no longer falsely pass page title / language.** A component can't know the page's
+  `<title>` or `lang` — they live in the layout — so `document-title` (2.4.2) and `html-has-lang`
+  (3.1.1) now read `not_verifiable_on_this_scan` on a fragment scan instead of a masked "Supports
+  (automated)". They evaluate honestly on a document / built-output scan (this is what makes the
+  post-build coverage uplift real).
 - **WCAG criteria totals corrected — a real over-count is fixed.** `2.5.6 Concurrent Input
   Mechanisms` was mis-catalogued as Level A; it is Level AAA. So the WCAG 2.2 totals drop by
   one: Level A 32→31, Level A+AA 56→55 (`criteria_total` in the JSON). Totals are now derived

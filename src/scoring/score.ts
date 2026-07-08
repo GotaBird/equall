@@ -1,7 +1,5 @@
 import type {
   EquallIssue,
-  PourScores,
-  PourPrinciple,
   ConformanceLevel,
   Severity,
   WcagLevel,
@@ -50,20 +48,18 @@ export function computeScanResult(
   // The criteria genuinely EXERCISED on this scan (coverage `auto` set, minus
   // reclassified-on-fragment criteria) — see honestTestedCriteria in coverage.ts.
   // Distinct from `criteriaCovered` (the capable union, which still feeds the
-  // stored `criteria_covered` field). Drives honest `criteria_tested` and the
-  // POUR n/a gating. Defaults to [] so callers that don't have coverage
+  // stored `criteria_covered` field). Drives the honest `criteria_tested` set.
+  // Defaults to [] so callers that don't have coverage
   // (early returns, unit tests) get an honest empty exercised set.
   exercised: string[] = []
 ): ScanResult {
   const summary = computeSummary(issues, filesScanned, exercised)
   const score = computeScore(issues, filesScanned, targetLevel)
-  const pourScores = computePourScores(issues, filesScanned, exercised, targetLevel)
   const conformanceLevel = computeConformanceLevel(issues, summary, targetLevel)
 
   return {
     score,
     conformance_level: conformanceLevel,
-    pour_scores: pourScores,
     issues,
     summary,
     scanners_used: scannersUsed,
@@ -142,76 +138,6 @@ function computeScore(issues: EquallIssue[], filesScanned: number, targetLevel: 
   const score = 100 * Math.exp(-k * scaledPenalty)
 
   return Math.max(0, Math.round(score))
-}
-
-function computePourScores(issues: EquallIssue[], filesScanned: number, exercised: string[] = [], targetLevel: WcagLevel = 'AA'): PourScores {
-  const pourIssues: Record<PourPrinciple, EquallIssue[]> = {
-    perceivable: [],
-    operable: [],
-    understandable: [],
-    robust: [],
-  }
-
-  // Map EXERCISED criteria to POUR principles (first digit: 1=P, 2=O, 3=U, 4=R).
-  // Gate on the genuinely-exercised set, not the capable union — a principle
-  // with no exercised criteria and no issues must read n/a (null), never a green 100.
-  const POUR_BY_PREFIX: Record<string, PourPrinciple> = { '1': 'perceivable', '2': 'operable', '3': 'understandable', '4': 'robust' }
-  const pourExercised: Record<PourPrinciple, boolean> = {
-    perceivable: false,
-    operable: false,
-    understandable: false,
-    robust: false,
-  }
-  for (const c of exercised) {
-    const principle = POUR_BY_PREFIX[c[0]]
-    if (principle) pourExercised[principle] = true
-  }
-
-  for (const issue of issues) {
-    if (!issue.pour) continue
-    // Keep POUR scores consistent with the global score: beyond-target
-    // (advisory) criteria do not count against the principle.
-    if (isBeyondTarget(issue, targetLevel)) continue
-    pourIssues[issue.pour].push(issue)
-  }
-
-  const scaleFactor = 1 / (1 + Math.log10(Math.max(1, filesScanned)))
-  const k = 0.02
-
-  // Score per POUR: Same formula as global score but isolated to the principle
-  function pourScore(principle: PourPrinciple): number | null {
-    const principleIssues = pourIssues[principle]
-
-    if (!pourExercised[principle] && principleIssues.length === 0) return null
-    if (principleIssues.length === 0) return 100
-
-    const penaltyByCriterion = new Map<string, number>()
-
-    for (const issue of principleIssues) {
-      const weight = SEVERITY_WEIGHT[issue.severity]
-      for (const criterion of issue.wcag_criteria) {
-        const current = penaltyByCriterion.get(criterion) ?? 0
-        penaltyByCriterion.set(criterion, Math.min(current + weight, MAX_PENALTY_PER_CRITERION))
-      }
-      if (issue.wcag_criteria.length === 0) {
-        const key = `_${issue.scanner}:${issue.scanner_rule_id}`
-        const current = penaltyByCriterion.get(key) ?? 0
-        penaltyByCriterion.set(key, Math.min(current + weight, MAX_PENALTY_PER_CRITERION))
-      }
-    }
-
-    const totalRawPenalty = [...penaltyByCriterion.values()].reduce((a, b) => a + b, 0)
-    const scaledPenalty = totalRawPenalty * scaleFactor
-
-    return Math.max(0, Math.round(100 * Math.exp(-k * scaledPenalty)))
-  }
-
-  return {
-    perceivable: pourScore('perceivable'),
-    operable: pourScore('operable'),
-    understandable: pourScore('understandable'),
-    robust: pourScore('robust'),
-  }
 }
 
 function computeConformanceLevel(
