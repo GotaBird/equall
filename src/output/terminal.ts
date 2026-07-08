@@ -1,6 +1,5 @@
 import type { ScanResult, EquallIssue, Severity, WcagLevel, WcagStandard, ConformanceVerdict } from '../types.js'
 import { getCriteriaForStandardLevel, getCriterion } from '../wcag-catalog.js'
-import { formatNoFailureVerdict } from '../coverage.js'
 import { isBeyondTarget } from '../scoring/score.js'
 
 // WCAG version label for the selected standard. The Level-A partition set/total
@@ -164,11 +163,8 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
   // Target drives what counts as an in-scope violation vs. beyond-target advisory.
   const target = options.targetLevel ?? 'AA'
 
-  // Standard view — drives the "WCAG 2.1/2.2" labels and the Level-A partition
-  // set/total, both derived from the catalog so they can't drift.
+  // Standard view — drives the "WCAG 2.1/2.2" labels (derived from the catalog).
   const standard = options.standard ?? 'wcag22'
-  const levelACriteria = new Set(getCriteriaForStandardLevel(standard, 'A').map((c) => c.id))
-  const levelATotal = levelACriteria.size
 
   // Beyond-target criteria (e.g. AAA reading-level under an AA target) are advisory:
   // they don't penalize the score and aren't counted among conformance violations.
@@ -204,46 +200,6 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
     console.log(`  ${GRAY}${summary.ignored_count} issue${summary.ignored_count > 1 ? 's' : ''} suppressed via equall-ignore${RESET}`)
   }
 
-  // Coverage line(s) — "X/Y criteria checked" makes coverage transparent.
-  // Score is already shown in the header, so we don't repeat it here.
-  if (result.criteria_total > 0) {
-    // Honest coverage (T1.3): "checked" counts only genuinely-exercised (`auto`) criteria,
-    // never the capable union. Falls back to criteria_covered if the report is absent.
-    const checked = result.coverage?.auto_criteria ?? result.criteria_covered
-    const covered = checked.length
-    const total = result.criteria_total
-
-    // Classify failed criteria by level from actual issues. Beyond-target
-    // (advisory) criteria are not conformance failures — exclude them here too.
-    const failedASet = new Set<string>()
-    const failedAllSet = new Set<string>()
-    for (const issue of result.issues) {
-      if (isBeyondTarget(issue, target)) continue
-      for (const c of issue.wcag_criteria) {
-        failedAllSet.add(c)
-        if (levelACriteria.has(c)) failedASet.add(c)
-      }
-    }
-
-    const isTargetAA = target === 'AA'
-    if (isTargetAA && failedASet.size > 0) {
-      // Two lines: Level A progress + Level AA progress
-      const coveredA = checked.filter(c => levelACriteria.has(c)).length
-      const pctA = Math.round((coveredA / levelATotal) * 100)
-      const pctAA = Math.round((covered / total) * 100)
-      console.log(`  ${BOLD}Coverage${RESET}  Level A   ${coveredA}/${levelATotal} checked (${pctA}%)  ·  ${RED}${failedASet.size} failing${RESET}`)
-      console.log(`            Level AA  ${covered}/${total} checked (${pctAA}%)  ·  ${RED}${failedAllSet.size} failing${RESET}`)
-    } else {
-      // Single line
-      const levelLabel = `Level ${target}`
-      const pct = Math.round((covered / total) * 100)
-      console.log(`  ${BOLD}Coverage${RESET}  ${levelLabel}  ${covered}/${total} checked (${pct}%)  ·  ${RED}${failedAllSet.size} failing${RESET}`)
-    }
-  }
-  console.log()
-
-  // Contextual coaching
-  printCoaching(result)
   console.log()
 
   // Only display non-ignored issues in terminal output
@@ -476,16 +432,16 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
     }
   }
 
-  // Scanners used — transparency about what ran
-  const scannerLine = scanners_used
-    .map((s) => `${s.name} ${GRAY}v${s.version}${RESET} ${GRAY}(${s.issues_found})${RESET}`)
-    .join(`${GRAY} · ${RESET}`)
-  console.log(`  ${GRAY}Scanners:${RESET} ${scannerLine}`)
-
-  // Readability disclaimer — the scanner uses English-calibrated Flesch-Kincaid,
-  // so non-English documents are skipped and the grade is approximate.
-  if (scanners_used.some(s => s.name === 'readability')) {
-    console.log(`  ${GRAY}Note: readability uses Flesch-Kincaid on English text only. Non-English files are skipped. Grades are indicative — disable with --no-readability.${RESET}`)
+  // Scanners used — transparency about what ran. Verbose-only, to keep the default output tight.
+  if (options.verbose) {
+    const scannerLine = scanners_used
+      .map((s) => `${s.name} ${GRAY}v${s.version}${RESET} ${GRAY}(${s.issues_found})${RESET}`)
+      .join(`${GRAY} · ${RESET}`)
+    console.log(`  ${GRAY}Scanners:${RESET} ${scannerLine}`)
+    // Readability disclaimer — English-calibrated Flesch-Kincaid; non-English docs are skipped.
+    if (scanners_used.some(s => s.name === 'readability')) {
+      console.log(`  ${GRAY}Note: readability uses Flesch-Kincaid on English text only. Non-English files are skipped. Grades are indicative — disable with --no-readability.${RESET}`)
+    }
   }
 
   console.log(`  ${GRAY}Completed in ${(duration_ms / 1000).toFixed(1)}s${RESET}`)
@@ -561,62 +517,6 @@ function printSupportSummary(result: ScanResult, target: WcagLevel, options: Pri
   // Authoritative reference for what each verdict asserts (and does not) + the VPAT mapping.
   console.log(`  ${GRAY}What each verdict means → ${VERDICT_DOCS_URL}${RESET}`)
   console.log()
-}
-
-function printCoaching(result: ScanResult): void {
-  const { criteria_total } = result
-  // Honest "checked" set (T1.3) — exercised criteria only, not the capable union.
-  const checkedCount = (result.coverage?.auto_criteria ?? result.criteria_covered).length
-
-  // Classify failed criteria by level
-  const levelAFailed: string[] = []
-  const levelAAFailed: string[] = []
-  for (const issue of result.issues) {
-    if (issue.wcag_criteria.length === 0) continue
-    if (issue.wcag_level === 'A') {
-      for (const c of issue.wcag_criteria) {
-        if (!levelAFailed.includes(c)) levelAFailed.push(c)
-      }
-    } else if (issue.wcag_level === 'AA') {
-      for (const c of issue.wcag_criteria) {
-        if (!levelAAFailed.includes(c)) levelAAFailed.push(c)
-      }
-    }
-  }
-
-  const remaining = criteria_total - checkedCount
-
-  // Format a list of criterion IDs with their plain-language names (max 3, then "+N more")
-  const formatCriteria = (ids: string[], max = 3): string => {
-    const sorted = [...ids].sort()
-    const shown = sorted.slice(0, max).map(id => {
-      const name = criterionName(id)
-      return name ? `${id} ${GRAY}${name}${RESET}` : id
-    })
-    const extra = sorted.length - max
-    return extra > 0 ? `${shown.join(', ')}, ${GRAY}+${extra} more${RESET}` : shown.join(', ')
-  }
-
-  if (levelAFailed.length > 0) {
-    // Level A failures — most urgent
-    console.log(`  ${RED}${BOLD}▲ Action needed${RESET}  You're failing ${BOLD}${levelAFailed.length} Level A criteri${levelAFailed.length > 1 ? 'a' : 'on'}${RESET}.`)
-    console.log(`    ${GRAY}Failing:${RESET} ${formatCriteria(levelAFailed)}`)
-    console.log(`    ${GREEN}Next step:${RESET} scroll to ${BOLD}WCAG Violations${RESET} below and fix the critical/serious items first.`)
-  } else if (levelAAFailed.length > 0) {
-    // Level A passes, Level AA fails
-    console.log(`  ${GREEN}✓${RESET} ${BOLD}Level A passed.${RESET} Now working toward ${BOLD}AA${RESET} — ${levelAAFailed.length} criteri${levelAAFailed.length > 1 ? 'a' : 'on'} still failing.`)
-    console.log(`    Level AA is what most regulations (EAA, Section 508, RGAA) require in practice.`)
-    console.log(`    ${GRAY}Failing:${RESET} ${formatCriteria(levelAAFailed)}`)
-  } else {
-    // No automated failures — anti-"done" guardrail (T1.3): never claim the code is clean.
-    const [headline, ...rest] = formatNoFailureVerdict(result.coverage)
-    console.log(`  ${BOLD}${headline}${RESET}`)
-    for (const line of rest) console.log(`    ${GRAY}${line}${RESET}`)
-  }
-
-  if (remaining > 0) {
-    console.log(`    ${GRAY}${remaining} criteria still need manual testing — automation can't verify them.${RESET}`)
-  }
 }
 
 interface CriterionGroup {

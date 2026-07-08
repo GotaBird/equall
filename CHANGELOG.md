@@ -24,6 +24,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Tighter, less repetitive terminal output.** The redundant top blocks are gone: the `Coverage`
+  line(s) and the coaching block restated the failing set the headline (score + verdict + Support
+  Summary) already states — the same count appeared up to six times. The scanner list moved behind
+  `--verbose`. A default scan now reads cleanly: what was scanned → the violations (same detail) →
+  the read-first headline.
 - **The engine no longer writes to your stderr.** Non-fatal scan warnings (no scanners available,
   a scanner threw) are collected on the new `ScanResult.diagnostics` field instead of being
   `console.warn`'d from `runScan` — a library / MCP consumer can capture them, and `--json` output
