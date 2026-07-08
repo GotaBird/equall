@@ -4,7 +4,7 @@ import { computeConformance } from '../conformance/index.js'
 import { getCriteriaForStandardLevel } from '../wcag-catalog.js'
 import type { CoverageReport, EquallIssue } from '../types.js'
 
-// BUR-161 — `--standard wcag22 | wcag21` is a conformance VIEW filter. The 2.1 view is the
+// `--standard wcag22 | wcag21` is a conformance VIEW filter. The 2.1 view is the
 // public-sector legal bar (WAD / EN 301 549). It must never change the score.
 
 const emptyCoverage: CoverageReport = {

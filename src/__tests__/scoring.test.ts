@@ -109,7 +109,7 @@ describe('POUR scores', () => {
     expect(result.pour_scores.perceivable).toBeNull()
   })
 
-  it('n/a (null) for a principle with no EXERCISED criteria, 100 for one exercised without failures (BUR-159)', () => {
+  it('n/a (null) for a principle with no EXERCISED criteria, 100 for one exercised without failures', () => {
     // Only perceivable was exercised (1.1.1); no issues anywhere.
     const result = computeScanResult([], 10, [], 100, 'AA', [], 56, ['1.1.1'])
     expect(result.pour_scores.perceivable).toBe(100) // exercised, no failures
@@ -121,7 +121,7 @@ describe('POUR scores', () => {
 
 describe('conformance level', () => {
   it('returns A when targeting A with no Level A failures', () => {
-    // criteria_tested is now the exercised set (BUR-159): a non-empty exercised set
+    // criteria_tested is now the exercised set: a non-empty exercised set
     // means criteria WERE evaluated, so 0 Level A failures → 'A' (not 'None').
     const result = computeScanResult(
       [makeIssue({ wcag_level: 'AA', wcag_criteria: ['1.4.3'] })],

@@ -22,10 +22,9 @@ const SEVERITY_WEIGHT: Record<Severity, number> = {
 // Maximum penalty per criterion to avoid one rule destroying the score
 const MAX_PENALTY_PER_CRITERION = 15
 
-// Scoring-model version stamped on every ScanResult (BUR-159). Bump ONLY when the
+// Scoring-model version stamped on every ScanResult. Bump ONLY when the
 // scoring formula or its input semantics change, so two outputs from different
-// releases are comparable. This ticket changes output semantics, not the formula
-// itself — model 1 is the first stamped baseline.
+// releases are comparable — model 1 is the first stamped baseline.
 const SCORE_MODEL = 1
 
 // WCAG level ordering, used to scope conformance to the requested target.
@@ -52,7 +51,7 @@ export function computeScanResult(
   // reclassified-on-fragment criteria) — see honestTestedCriteria in coverage.ts.
   // Distinct from `criteriaCovered` (the capable union, which still feeds the
   // stored `criteria_covered` field). Drives honest `criteria_tested` and the
-  // POUR n/a gating (BUR-159). Defaults to [] so callers that don't have coverage
+  // POUR n/a gating. Defaults to [] so callers that don't have coverage
   // (early returns, unit tests) get an honest empty exercised set.
   exercised: string[] = []
 ): ScanResult {
@@ -100,7 +99,7 @@ function computeSummary(issues: EquallIssue[], filesScanned: number, exercised: 
     total_issues: issues.length,
     by_severity: bySeverity,
     by_scanner: byScanner,
-    // BUR-159: criteria_tested is the genuinely EXERCISED set (coverage-derived),
+    // criteria_tested is the genuinely EXERCISED set (coverage-derived),
     // NOT the issue-derived set (which equalled criteria_failed and made the verdict
     // coverage-blind). criteria_failed stays issue-derived — it IS the failure set.
     criteria_tested: [...exercised].sort(),
@@ -154,7 +153,7 @@ function computePourScores(issues: EquallIssue[], filesScanned: number, exercise
   }
 
   // Map EXERCISED criteria to POUR principles (first digit: 1=P, 2=O, 3=U, 4=R).
-  // BUR-159: gate on the genuinely-exercised set, not the capable union — a principle
+  // Gate on the genuinely-exercised set, not the capable union — a principle
   // with no exercised criteria and no issues must read n/a (null), never a green 100.
   const POUR_BY_PREFIX: Record<string, PourPrinciple> = { '1': 'perceivable', '2': 'operable', '3': 'understandable', '4': 'robust' }
   const pourExercised: Record<PourPrinciple, boolean> = {

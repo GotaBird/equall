@@ -3,7 +3,7 @@ import { getCriteriaForStandardLevel, getCriterion } from '../wcag-catalog.js'
 import { formatNoFailureVerdict } from '../coverage.js'
 import { isBeyondTarget } from '../scoring/score.js'
 
-// WCAG version label for the selected standard (BUR-161). The Level-A partition set/total
+// WCAG version label for the selected standard. The Level-A partition set/total
 // are derived per-scan from the catalog (standard-aware) inside printResult — never hardcoded.
 function standardLabel(standard: WcagStandard): string {
   return standard === 'wcag21' ? 'WCAG 2.1' : 'WCAG 2.2'
@@ -125,7 +125,7 @@ function formatSuggestion(raw: string, indent: string): string[] {
   return out
 }
 
-// BUR-159: the honest verdict that replaces the old "Meets WCAG AA" badge + explainer.
+// The honest verdict that replaces the old "Meets WCAG AA" badge + explainer.
 // It states exactly what automation established — how many in-target (A/AA) criteria are
 // failing, out of how many were genuinely verified, and how many were NOT evaluated — and
 // never makes a pass/fail claim ("Meets"/"conformant"). A clean scan reads
@@ -175,7 +175,7 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
   // Target drives what counts as an in-scope violation vs. beyond-target advisory.
   const target = options.targetLevel ?? 'AA'
 
-  // Standard view (BUR-161) — drives the "WCAG 2.1/2.2" labels and the Level-A partition
+  // Standard view — drives the "WCAG 2.1/2.2" labels and the Level-A partition
   // set/total, both derived from the catalog so they can't drift.
   const standard = options.standard ?? 'wcag22'
   const levelACriteria = new Set(getCriteriaForStandardLevel(standard, 'A').map((c) => c.id))
@@ -448,7 +448,7 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
     console.log()
   }
 
-  // Alt-quality confidence flags (BUR-164) — an ADVISORY, never a WCAG failure. Rendered
+  // Alt-quality confidence flags — an ADVISORY, never a WCAG failure. Rendered
   // unconditionally like "Not verifiable": a present-but-useless alt passes the automated check
   // but is likely junk to a screen-reader user, so it's surfaced for human review. GRAY, never RED.
   const confidenceFlags = result.confidence_flags ?? []
@@ -511,8 +511,8 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
 
   // Headline at the END (moved 2026-07-08): in a terminal the bottom of the output is what
   // stays on screen when the scan finishes, so the report's takeaway is printed last — read
-  // first without scrolling. The score (a trend indicator, BUR-159) sits just above the
-  // Support Summary (BUR-160), whose bucket line is the final content line.
+  // first without scrolling. The score (a trend indicator) sits just above the
+  // Support Summary, whose bucket line is the final content line.
   const verdict = formatVerifiedSubset(result, target)
   console.log(`  ${scoreBg(score)}${BOLD}${WHITE}  ${score}  ${RESET}  ${GRAY}${standardLabel(standard)} · score is a trend indicator${RESET}`)
   console.log(`  ${verdict.failing > 0 ? RED : GRAY}${verdict.line}${RESET}`)
@@ -520,7 +520,7 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
   printSupportSummary(result, target, options)
 }
 
-// Report headline (BUR-160). Printed at the END of the output (moved 2026-07-08): in a
+// Report headline. Printed at the END of the output (moved 2026-07-08): in a
 // terminal the bottom of the scan is what stays on screen when it finishes, so the report's
 // takeaway — the per-criterion Support Summary — is read first, without scrolling. Three
 // VPAT-anchored buckets (Supports (automated) / Does not support / Not evaluated); `--verbose`

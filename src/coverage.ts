@@ -55,7 +55,7 @@ export function computeCoverage(scanners: ScannerAdapter[], files: FileEntry[]):
   }
 }
 
-// BUR-159: the honest "criteria_tested" set — the criteria genuinely EXERCISED on this
+// The honest "criteria_tested" set — the criteria genuinely EXERCISED on this
 // scan, the source of truth for the verdict and the POUR n/a gating. It starts from the
 // coverage `auto` set (a scanner with eligible files actually exercised the criterion,
 // not merely capable of it) and REMOVES any criterion reclassified out of violations on

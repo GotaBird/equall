@@ -3,7 +3,7 @@ import { computeScanResult } from '../scoring/score.js'
 import { printResult } from '../output/terminal.js'
 import type { EquallIssue, WcagLevel } from '../types.js'
 
-// BUR-159 — the honest verdict must never claim conformance, and the terminal output
+// The honest verdict must never claim conformance, and the terminal output
 // must contain none of the banned words on ANY path. These tests exercise the real
 // printResult() rendering (the output path the grep-gate cares about), not internals.
 
@@ -43,7 +43,7 @@ function render(issues: EquallIssue[], exercised: string[], target: WcagLevel = 
 
 const BANNED = /meets|conformant|compliant|conformance/i
 
-describe('honest verdict (BUR-159)', () => {
+describe('honest verdict', () => {
   afterEach(() => vi.restoreAllMocks())
 
   it('a clean scan states the verified subset, never "None" or "Meets"', () => {

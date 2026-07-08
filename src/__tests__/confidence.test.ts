@@ -14,7 +14,7 @@ function img(alt: string, src = '/x.png'): string {
   return `<img src="${src}" alt="${alt}">`
 }
 
-describe('computeConfidenceFlags — signal precision (BUR-164)', () => {
+describe('computeConfidenceFlags — signal precision', () => {
   it('flags a filename-style alt (DSC / extension / IMG_n)', () => {
     for (const alt of ['DSC00423', 'hero.jpg', 'IMG_1024', 'screenshot-3', 'photo2']) {
       const flags = computeConfidenceFlags([file(img(alt))])
@@ -76,7 +76,7 @@ describe('computeConfidenceFlags — signal precision (BUR-164)', () => {
   })
 })
 
-describe('confidence flags are inert (BUR-164 core guarantee)', () => {
+describe('confidence flags are inert', () => {
   const page = (alt: string) =>
     `<!doctype html><html lang="en"><head><title>t</title></head><body><main><h1>Hi</h1><img src="/a.jpg" alt="${alt}"><p>Some body copy for the readability engine to chew on.</p></main></body></html>`
 
@@ -99,7 +99,7 @@ describe('confidence flags are inert (BUR-164 core guarantee)', () => {
   })
 })
 
-describe('terminal advisory surface (BUR-164)', () => {
+describe('terminal advisory surface', () => {
   it('prints a gray advisory, framed as not a violation, with no banned words', async () => {
     const result = await runScan({ files: [{ path: 'index.html', content: '<!doctype html><html lang="en"><head><title>t</title></head><body><main><h1>H</h1><img src="/a.jpg" alt="DSC00423"><p>Body.</p></main></body></html>' }] })
     const lines: string[] = []

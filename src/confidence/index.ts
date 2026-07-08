@@ -1,6 +1,6 @@
 import type { ConfidenceFlag, FileEntry } from '../types.js'
 
-// Alt-quality confidence flags (BUR-164) — a precision-first ADVISORY layer. It reads the raw
+// Alt-quality confidence flags — a precision-first ADVISORY layer. It reads the raw
 // file contents for `<img>` tags with a present-but-suspect static `alt` and emits a low-confidence
 // flag per match. It is orthogonal metadata: it never touches issues, the conformance verdicts,
 // the score, or coverage. Honesty cuts both ways — a crude alt heuristic promoted to a WCAG
@@ -74,7 +74,7 @@ function detect(alt: string, src: string | null): Pick<ConfidenceFlag, 'signal' 
   return null
 }
 
-// Pure, deterministic derivation over the scanned files (BUR-164). No scanning engine, no network.
+// Pure, deterministic derivation over the scanned files. No scanning engine, no network.
 // Skips `type: 'other'`, dynamic alts, and empty `alt=""` (intentional decorative images).
 export function computeConfidenceFlags(files: FileEntry[]): ConfidenceFlag[] {
   const flags: ConfidenceFlag[] = []

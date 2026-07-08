@@ -38,7 +38,7 @@ export interface EquallIssue {
 }
 
 export type WcagLevel = 'A' | 'AA' | 'AAA'
-// The WCAG version the conformance VIEW is rendered against (BUR-161). `wcag22` (default) is
+// The WCAG version the conformance VIEW is rendered against. `wcag22` (default) is
 // Equall's identity; `wcag21` is the public-sector legal bar (WAD / EN 301 549). A view filter
 // only — it never changes the score. See getCriteriaForStandardLevel in wcag-catalog.ts.
 export type WcagStandard = 'wcag22' | 'wcag21'
@@ -93,7 +93,7 @@ export interface CoverageReport {
   reclassified?: ReclassifiedRule[]
 }
 
-// Per-criterion conformance (BUR-160) — the honest, scan-scoped verdict the E3 audit
+// Per-criterion conformance — the honest, scan-scoped verdict the audit
 // report stands on. Pure derivation from issues × coverage × reclassified; no scanning,
 // no scoring. This is the EVIDENCE layer, NOT the VPAT: the engine states only what
 // automation established this scan, and a documented map (VERDICT_VPAT_MAP in
@@ -115,7 +115,7 @@ export interface CriterionConformance {
   reason?: string                      // why not verifiable / not tested — verdicts 3–5 only
 }
 
-// Alt-quality confidence flag (BUR-164) — an ADVISORY, never a WCAG failure. Surfaces a
+// Alt-quality confidence flag — an ADVISORY, never a WCAG failure. Surfaces a
 // present-but-suspect `alt` (a filename, a generic placeholder, the src basename) that passes
 // automated checks (so the criterion's verdict stays `pass_automated`) but is likely useless to
 // a screen-reader user. Orthogonal metadata: it never touches issues, verdicts, the score, or
@@ -151,7 +151,7 @@ export type FileType = 'html' | 'jsx' | 'tsx' | 'vue' | 'svelte' | 'astro' | 'ot
 
 export interface ScanOptions {
   wcag_level: WcagLevel               // Target conformance level
-  standard?: WcagStandard             // WCAG version view (BUR-161) — 'wcag22' (default) | 'wcag21'
+  standard?: WcagStandard             // WCAG version view — 'wcag22' (default) | 'wcag21'
   include_patterns: string[]          // Glob patterns to include
   exclude_patterns: string[]          // Glob patterns to exclude
 }
@@ -167,19 +167,19 @@ export interface ScanResult {
   criteria_covered: string[]           // Union of all scanner coveredCriteria
   criteria_total: number               // Total WCAG criteria for the target level
   coverage?: CoverageReport            // Honest, exercised coverage (T1.3) — attached by runScan
-  // Per-criterion conformance (BUR-160) — the E3 report backbone. Like `coverage?`, the `?`
+  // Per-criterion conformance — the audit report backbone. Like `coverage?`, the `?`
   // is for older-consumer compatibility; runScan ALWAYS attaches it (absent only on the
   // early-return paths that also omit `coverage`). Never routed into the score.
   criterion_conformance?: CriterionConformance[]
-  // WCAG standard the conformance view was rendered against (BUR-161). Optional for older
+  // WCAG standard the conformance view was rendered against. Optional for older
   // consumers; runScan always sets it. `wcag22` (default) or `wcag21` (the legal-bar view).
   standard?: WcagStandard
-  // Alt-quality advisories (BUR-164) — additive, attached by runScan ([] when none). Never
+  // Alt-quality advisories — additive, attached by runScan ([] when none). Never
   // routed into the score, verdicts, coverage, or issues; a review suggestion only.
   confidence_flags?: ConfidenceFlag[]
   scanned_at: string                   // ISO timestamp
   duration_ms: number
-  // Version stamps so results are comparable across releases (BUR-159).
+  // Version stamps so results are comparable across releases.
   // Optional to keep older JSON consumers type-compatible, but runScan / computeScanResult
   // ALWAYS populate them — like `coverage?`, the `?` is compatibility, not "sometimes absent".
   // Per-scanner versions live in `scanners_used[].version`.

@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { getCriteriaForLevel, getCriteriaForStandardLevel, getCriterion } from '../wcag-catalog.js'
 
-// BUR-161 — the catalog is the single source of truth for per-standard criteria totals.
+// The catalog is the single source of truth for per-standard criteria totals.
 // These counts match the real WCAG numbers (and caught the 2.5.6 mis-level bug).
 describe('WCAG catalog — standard-aware criteria sets', () => {
   const count = (s: 'wcag22' | 'wcag21', l: 'A' | 'AA' | 'AAA') => getCriteriaForStandardLevel(s, l).length

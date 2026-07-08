@@ -70,7 +70,7 @@ describe('computeCoverage', () => {
 })
 
 // ---------------------------------------------------------------------------
-// honestTestedCriteria — the coverage-derived criteria_tested set (BUR-159)
+// honestTestedCriteria — the coverage-derived criteria_tested set
 // ---------------------------------------------------------------------------
 describe('honestTestedCriteria', () => {
   const coverage: CoverageReport = {

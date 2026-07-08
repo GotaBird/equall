@@ -13,9 +13,9 @@ import { PAGE_LEVEL_REASON } from '../rules/page-level.js'
 
 // Documented bridge from the engine's honest, scan-scoped verdicts to the ITI VPAT/ACR
 // vocabulary. The engine is the EVIDENCE layer — it never emits a bare "Supports" (that
-// requires manual + assistive-technology testing). E3-A4 + human attestation apply these
-// terms when building the accessibility statement / ACR. Keep in sync with the docs.
-// `not_applicable` is intentionally absent: applicability is a human judgement (Phase B).
+// requires manual + assistive-technology testing). A downstream audit workflow + human
+// attestation apply these terms when building the accessibility statement / ACR.
+// `not_applicable` is intentionally absent: applicability is a human judgement.
 export const VERDICT_VPAT_MAP: Record<ConformanceVerdict, string> = {
   fail: 'Does Not Support / Partially Supports',
   pass_automated: 'Supports (automated basis — pending manual confirmation)',
@@ -28,11 +28,11 @@ const REASON_ASSISTED =
   'Partially testable by static analysis — confirm with a rendered/assisted check (e.g. contrast in context).'
 const REASON_MANUAL =
   'No automated coverage on this scan — verify manually (keyboard, screen reader, human review).'
-// 4.1.1 Parsing (WCAG 2.1 only, obsolete) — fixed pass under the wcag21 view (BUR-161).
+// 4.1.1 Parsing (WCAG 2.1 only, obsolete) — fixed pass under the wcag21 view.
 const REASON_PARSING_OBSOLETE =
   'Obsolete per W3C erratum — satisfied by modern HTML parsers (removed in WCAG 2.2).'
 
-// Pure derivation (BUR-160): one honest verdict per WCAG success criterion of the target
+// Pure derivation: one honest verdict per WCAG success criterion of the target
 // level, from data the engine already produced — issues × coverage × reclassified. No
 // scanning, no state, deterministic. Iterating the catalog for the level guarantees every
 // target criterion is emitted exactly once, so the verdict buckets always sum to the level's
@@ -63,7 +63,7 @@ export function computeConformance(
   }
 
   // Genuinely exercised this scan = coverage `auto` minus criteria reclassified out on a
-  // fragment (single source of truth, shared with summary.criteria_tested — BUR-159).
+  // fragment (single source of truth, shared with summary.criteria_tested).
   const reclassified = coverage.reclassified ?? []
   const exercised = new Set(honestTestedCriteria(coverage, reclassified))
 

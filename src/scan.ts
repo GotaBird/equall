@@ -21,7 +21,7 @@ export interface FileInput {
 export interface RunScanOptions {
   path?: string
   level?: WcagLevel
-  standard?: WcagStandard             // WCAG version view (BUR-161) — 'wcag22' (default) | 'wcag21'
+  standard?: WcagStandard             // WCAG version view — 'wcag22' (default) | 'wcag21'
   include?: string[]
   exclude?: string[]
   disableScanners?: string[]
@@ -130,11 +130,11 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
   const criteriaCovered = [...new Set(scanners.flatMap(s => s.coveredCriteria))].sort()
 
   // Total criteria for the selected standard + level — derived from the catalog (single
-  // source of truth, BUR-161); never hardcoded. 2.2: A=31/AA=55/AAA=86 · 2.1: A=30/AA=50/AAA=78.
+  // source of truth); never hardcoded. 2.2: A=31/AA=55/AAA=86 · 2.1: A=30/AA=50/AAA=78.
   const criteriaTotal = getCriteriaForStandardLevel(scanOptions.standard ?? 'wcag22', scanOptions.wcag_level).length
 
   // 7b. Honest coverage (T1.3) — exercised criteria only, never "capable" as "tested".
-  // Computed BEFORE scoring (BUR-159) so the genuinely-exercised set feeds the honest
+  // Computed BEFORE scoring so the genuinely-exercised set feeds the honest
   // criteria_tested + POUR n/a gating. The reclassified summary is what honestTestedCriteria
   // subtracts (page-level rules that can't be verified on a fragment).
   const coverage = computeCoverage(scanners, files)
@@ -160,15 +160,15 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
   // Always attached ([] when none) so the emitted JSON shape stays stable.
   result.coverage = coverage
 
-  // 11. Per-criterion conformance (BUR-160) — the E3 report backbone. Pure derivation from
+  // 11. Per-criterion conformance — the audit report backbone. Pure derivation from
   // the fingerprinted active issues × coverage; `evidence` reuses the fingerprints attached
   // above. Same additive-attach pattern as coverage (absent on the early-return paths).
   result.criterion_conformance = computeConformance(scanOptions.wcag_level, scanOptions.standard ?? 'wcag22', activeFingerprinted, coverage)
 
-  // 12. Stamp the standard the conformance view was rendered against (BUR-161).
+  // 12. Stamp the standard the conformance view was rendered against.
   result.standard = scanOptions.standard ?? 'wcag22'
 
-  // 13. Alt-quality confidence flags (BUR-164) — an ADVISORY over the raw file contents. Runs
+  // 13. Alt-quality confidence flags — an ADVISORY over the raw file contents. Runs
   // after the score + verdicts and only reads `files`, so it cannot alter any of them. Always
   // attached ([] when none) for a stable JSON shape.
   result.confidence_flags = computeConfidenceFlags(files)

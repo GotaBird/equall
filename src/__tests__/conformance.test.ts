@@ -5,7 +5,7 @@ import { printResult } from '../output/terminal.js'
 import { getCriteriaForLevel } from '../wcag-catalog.js'
 import type { CoverageReport, EquallIssue, ConformanceVerdict } from '../types.js'
 
-// BUR-160 — the per-criterion conformance module. Pure derivation from issues × coverage ×
+// The per-criterion conformance module. Pure derivation from issues × coverage ×
 // reclassified; one honest verdict per criterion of the target level.
 
 function issue(over: Partial<EquallIssue> = {}): EquallIssue {
@@ -156,7 +156,7 @@ function render(result: Awaited<ReturnType<typeof runScan>>, verbose = false): s
   return logs.join('\n').replace(/\x1b\[[0-9;]*m/g, '')
 }
 
-describe('Support Summary (terminal, BUR-160)', () => {
+describe('Support Summary (terminal)', () => {
   afterEach(() => vi.restoreAllMocks())
 
   const html = `<!DOCTYPE html>

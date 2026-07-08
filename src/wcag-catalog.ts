@@ -111,7 +111,7 @@ export const WCAG_CATALOG: WcagCriterion[] = [
 
 const LEVEL_RANK: Record<WcagLevel, number> = { A: 1, AA: 2, AAA: 3 }
 
-// Standard membership (BUR-161). Kept as sets next to the catalog so the standard views are
+// Standard membership. Kept as sets next to the catalog so the standard views are
 // data, not per-entry flags. `NEW_IN_WCAG22` = the 9 success criteria added in 2.2 (absent
 // from 2.1). `WCAG21_ONLY` = present in 2.1 but removed in 2.2 (4.1.1 Parsing, obsolete).
 const NEW_IN_WCAG22 = new Set(['2.4.11', '2.4.12', '2.4.13', '2.5.7', '2.5.8', '3.2.6', '3.3.7', '3.3.8', '3.3.9'])
@@ -132,7 +132,7 @@ export function getCriteriaForLevel(level: WcagLevel): WcagCriterion[] {
   return WCAG_CATALOG.filter((c) => LEVEL_RANK[c.level] <= maxRank && !WCAG21_ONLY.has(c.id))
 }
 
-// The criteria set for a given standard + level (BUR-161). `wcag21` drops the 9 new-in-2.2
+// The criteria set for a given standard + level. `wcag21` drops the 9 new-in-2.2
 // criteria and keeps 4.1.1; `wcag22` drops 4.1.1. Totals derive from this — never hardcode
 // them (see scan.ts / terminal.ts). Real counts: 2.2 A=31/AA=55/AAA=86 · 2.1 A=30/AA=50/AAA=78.
 export function getCriteriaForStandardLevel(standard: WcagStandard, level: WcagLevel): WcagCriterion[] {
