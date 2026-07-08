@@ -113,6 +113,9 @@ export interface CriterionConformance {
   verdict: ConformanceVerdict
   evidence?: string[]                  // failing issue fingerprints — `fail` only
   reason?: string                      // why not verifiable / not tested — verdicts 3–5 only
+  accepted_exceptions?: number         // count of equall-ignore'd issues on this criterion —
+                                       // inventory only, never counted in the failing set (BUR-168;
+                                       // reasons deferred to BUR-158). Absent = 0.
 }
 
 // Alt-quality confidence flag — an ADVISORY, never a WCAG failure. Surfaces a

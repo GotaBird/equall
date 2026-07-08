@@ -187,7 +187,9 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
   // 11. Per-criterion conformance — the audit report backbone. Pure derivation from
   // the fingerprinted active issues × coverage; `evidence` reuses the fingerprints attached
   // above. Same additive-attach pattern as coverage (absent on the early-return paths).
-  result.criterion_conformance = computeConformance(scanOptions.wcag_level, scanOptions.standard ?? 'wcag22', activeFingerprinted, coverage)
+  // Pass ALL issues (active + ignored) so conformance can count accepted_exceptions per criterion;
+  // it re-filters to active for the failing set, so the ignored ones never become failures.
+  result.criterion_conformance = computeConformance(scanOptions.wcag_level, scanOptions.standard ?? 'wcag22', result.issues, coverage)
 
   // 12. Stamp the standard the conformance view was rendered against.
   result.standard = scanOptions.standard ?? 'wcag22'

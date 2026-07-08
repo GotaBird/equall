@@ -62,6 +62,17 @@ export function computeConformance(
     }
   }
 
+  // Accepted exceptions per criterion: equall-ignore'd issues. Excluded from the failing set
+  // everywhere (canonical `ignored` rule, BUR-168), but the inventory is always carried — a count
+  // here (reasons deferred to BUR-158). Requires the caller to pass ALL issues (active + ignored).
+  const acceptedByCriterion = new Map<string, number>()
+  for (const issue of issues) {
+    if (!issue.ignored) continue
+    for (const c of issue.wcag_criteria) {
+      acceptedByCriterion.set(c, (acceptedByCriterion.get(c) ?? 0) + 1)
+    }
+  }
+
   // Genuinely exercised this scan = coverage `auto` minus criteria reclassified out on a
   // fragment (single source of truth, shared with summary.criteria_tested).
   const reclassified = coverage.reclassified ?? []
@@ -81,7 +92,10 @@ export function computeConformance(
 
   return getCriteriaForStandardLevel(standard, targetLevel).map((crit): CriterionConformance => {
     const id = crit.id
-    const base = { criterion: id, level: crit.level, name: crit.name }
+    const base: Pick<CriterionConformance, 'criterion' | 'level' | 'name' | 'accepted_exceptions'> =
+      { criterion: id, level: crit.level, name: crit.name }
+    const accepted = acceptedByCriterion.get(id) ?? 0
+    if (accepted > 0) base.accepted_exceptions = accepted
 
     // Priority cascade.
     if (failed.has(id)) {
