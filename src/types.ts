@@ -38,6 +38,10 @@ export interface EquallIssue {
 }
 
 export type WcagLevel = 'A' | 'AA' | 'AAA'
+// The WCAG version the conformance VIEW is rendered against (BUR-161). `wcag22` (default) is
+// Equall's identity; `wcag21` is the public-sector legal bar (WAD / EN 301 549). A view filter
+// only — it never changes the score. See getCriteriaForStandardLevel in wcag-catalog.ts.
+export type WcagStandard = 'wcag22' | 'wcag21'
 export type PourPrinciple = 'perceivable' | 'operable' | 'understandable' | 'robust'
 export type Severity = 'critical' | 'serious' | 'moderate' | 'minor'
 
@@ -132,6 +136,7 @@ export type FileType = 'html' | 'jsx' | 'tsx' | 'vue' | 'svelte' | 'astro' | 'ot
 
 export interface ScanOptions {
   wcag_level: WcagLevel               // Target conformance level
+  standard?: WcagStandard             // WCAG version view (BUR-161) — 'wcag22' (default) | 'wcag21'
   include_patterns: string[]          // Glob patterns to include
   exclude_patterns: string[]          // Glob patterns to exclude
 }
@@ -151,6 +156,9 @@ export interface ScanResult {
   // is for older-consumer compatibility; runScan ALWAYS attaches it (absent only on the
   // early-return paths that also omit `coverage`). Never routed into the score.
   criterion_conformance?: CriterionConformance[]
+  // WCAG standard the conformance view was rendered against (BUR-161). Optional for older
+  // consumers; runScan always sets it. `wcag22` (default) or `wcag21` (the legal-bar view).
+  standard?: WcagStandard
   scanned_at: string                   // ISO timestamp
   duration_ms: number
   // Version stamps so results are comparable across releases (BUR-159).

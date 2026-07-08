@@ -4,11 +4,12 @@ import { getAvailableScanners } from './scanners/index.js'
 import { computeScanResult } from './scoring/score.js'
 import { computeCoverage, honestTestedCriteria } from './coverage.js'
 import { computeConformance } from './conformance/index.js'
+import { getCriteriaForStandardLevel } from './wcag-catalog.js'
 import { fingerprint } from './utils/fingerprint.js'
 import { isDocumentUnit } from './utils/html-extract.js'
 import { partitionPageLevelIssues, summarizeReclassified } from './rules/page-level.js'
 import { mergeCrossEngineDuplicates } from './rules/equivalence.js'
-import type { ScanOptions, ScanResult, ScannerInfo, EquallIssue, WcagLevel, FileEntry } from './types.js'
+import type { ScanOptions, ScanResult, ScannerInfo, EquallIssue, WcagLevel, WcagStandard, FileEntry } from './types.js'
 
 // A single in-memory file: code provided directly instead of read from disk (T1.1).
 export interface FileInput {
@@ -19,6 +20,7 @@ export interface FileInput {
 export interface RunScanOptions {
   path?: string
   level?: WcagLevel
+  standard?: WcagStandard             // WCAG version view (BUR-161) — 'wcag22' (default) | 'wcag21'
   include?: string[]
   exclude?: string[]
   disableScanners?: string[]
@@ -47,6 +49,7 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
 
   const scanOptions: ScanOptions = {
     wcag_level: options.level ?? 'AA',
+    standard: options.standard ?? 'wcag22',
     include_patterns: options.include ?? [],
     exclude_patterns: options.exclude ?? [],
   }
@@ -125,9 +128,9 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
   // is stored as-is; never route honest coverage into the score.
   const criteriaCovered = [...new Set(scanners.flatMap(s => s.coveredCriteria))].sort()
 
-  // Total WCAG 2.2 criteria per level (4.1.1 Parsing excluded — obsolete in 2.2)
-  const WCAG_TOTAL: Record<string, number> = { A: 32, AA: 56, AAA: 86 }
-  const criteriaTotal = WCAG_TOTAL[scanOptions.wcag_level] ?? 56
+  // Total criteria for the selected standard + level — derived from the catalog (single
+  // source of truth, BUR-161); never hardcoded. 2.2: A=31/AA=55/AAA=86 · 2.1: A=30/AA=50/AAA=78.
+  const criteriaTotal = getCriteriaForStandardLevel(scanOptions.standard ?? 'wcag22', scanOptions.wcag_level).length
 
   // 7b. Honest coverage (T1.3) — exercised criteria only, never "capable" as "tested".
   // Computed BEFORE scoring (BUR-159) so the genuinely-exercised set feeds the honest
@@ -159,7 +162,10 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
   // 11. Per-criterion conformance (BUR-160) — the E3 report backbone. Pure derivation from
   // the fingerprinted active issues × coverage; `evidence` reuses the fingerprints attached
   // above. Same additive-attach pattern as coverage (absent on the early-return paths).
-  result.criterion_conformance = computeConformance(scanOptions.wcag_level, activeFingerprinted, coverage)
+  result.criterion_conformance = computeConformance(scanOptions.wcag_level, scanOptions.standard ?? 'wcag22', activeFingerprinted, coverage)
+
+  // 12. Stamp the standard the conformance view was rendered against (BUR-161).
+  result.standard = scanOptions.standard ?? 'wcag22'
 
   return result
 }

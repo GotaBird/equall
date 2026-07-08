@@ -2,7 +2,7 @@
 // Source: https://www.w3.org/TR/WCAG22/
 // 4.1.1 Parsing is obsolete in WCAG 2.2 and excluded.
 
-import type { WcagLevel, PourPrinciple } from './types.js'
+import type { WcagLevel, PourPrinciple, WcagStandard } from './types.js'
 
 export interface WcagCriterion {
   id: string
@@ -76,7 +76,7 @@ export const WCAG_CATALOG: WcagCriterion[] = [
   { id: '2.5.3', name: 'Label in Name',                             level: 'A',   pour: 'operable' },
   { id: '2.5.4', name: 'Motion Actuation',                          level: 'A',   pour: 'operable' },
   { id: '2.5.5', name: 'Target Size (Enhanced)',                    level: 'AAA', pour: 'operable' },
-  { id: '2.5.6', name: 'Concurrent Input Mechanisms',               level: 'A',   pour: 'operable' },
+  { id: '2.5.6', name: 'Concurrent Input Mechanisms',               level: 'AAA', pour: 'operable' },
   { id: '2.5.7', name: 'Dragging Movements',                        level: 'AA',  pour: 'operable' },
   { id: '2.5.8', name: 'Target Size (Minimum)',                     level: 'AA',  pour: 'operable' },
 
@@ -104,11 +104,18 @@ export const WCAG_CATALOG: WcagCriterion[] = [
   { id: '3.3.9', name: 'Accessible Authentication (Enhanced)',      level: 'AAA', pour: 'understandable' },
 
   // Principle 4 — Robust
+  { id: '4.1.1', name: 'Parsing',                                   level: 'A',   pour: 'robust' }, // WCAG 2.1 only — obsolete, removed in 2.2 (see WCAG21_ONLY)
   { id: '4.1.2', name: 'Name, Role, Value',                         level: 'A',   pour: 'robust' },
   { id: '4.1.3', name: 'Status Messages',                           level: 'AA',  pour: 'robust' },
 ]
 
 const LEVEL_RANK: Record<WcagLevel, number> = { A: 1, AA: 2, AAA: 3 }
+
+// Standard membership (BUR-161). Kept as sets next to the catalog so the standard views are
+// data, not per-entry flags. `NEW_IN_WCAG22` = the 9 success criteria added in 2.2 (absent
+// from 2.1). `WCAG21_ONLY` = present in 2.1 but removed in 2.2 (4.1.1 Parsing, obsolete).
+const NEW_IN_WCAG22 = new Set(['2.4.11', '2.4.12', '2.4.13', '2.5.7', '2.5.8', '3.2.6', '3.3.7', '3.3.8', '3.3.9'])
+const WCAG21_ONLY = new Set(['4.1.1'])
 
 const catalogMap = new Map<string, WcagCriterion>()
 for (const c of WCAG_CATALOG) catalogMap.set(c.id, c)
@@ -117,7 +124,21 @@ export function getCriterion(id: string): WcagCriterion | undefined {
   return catalogMap.get(id)
 }
 
+// The WCAG 2.2 view for a level (the default identity): everything at/below the level, minus
+// the 2.1-only criteria (4.1.1). Kept for existing callers; equivalent to
+// getCriteriaForStandardLevel('wcag22', level).
 export function getCriteriaForLevel(level: WcagLevel): WcagCriterion[] {
   const maxRank = LEVEL_RANK[level]
-  return WCAG_CATALOG.filter(c => LEVEL_RANK[c.level] <= maxRank)
+  return WCAG_CATALOG.filter((c) => LEVEL_RANK[c.level] <= maxRank && !WCAG21_ONLY.has(c.id))
+}
+
+// The criteria set for a given standard + level (BUR-161). `wcag21` drops the 9 new-in-2.2
+// criteria and keeps 4.1.1; `wcag22` drops 4.1.1. Totals derive from this — never hardcode
+// them (see scan.ts / terminal.ts). Real counts: 2.2 A=31/AA=55/AAA=86 · 2.1 A=30/AA=50/AAA=78.
+export function getCriteriaForStandardLevel(standard: WcagStandard, level: WcagLevel): WcagCriterion[] {
+  const maxRank = LEVEL_RANK[level]
+  return WCAG_CATALOG.filter((c) => {
+    if (LEVEL_RANK[c.level] > maxRank) return false
+    return standard === 'wcag21' ? !NEW_IN_WCAG22.has(c.id) : !WCAG21_ONLY.has(c.id)
+  })
 }

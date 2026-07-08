@@ -9,7 +9,7 @@ import { printResult, printJson } from './output/terminal.js'
 import { findIgnores, removeIgnore, clearAllIgnores, addIgnore, addIgnoreFile } from './ignores.js'
 import { computeExitCode } from './exit-code.js'
 import { ENGINE_VERSION } from './engine-version.js'
-import type { WcagLevel } from './types.js'
+import type { WcagLevel, WcagStandard } from './types.js'
 
 const program = new Command()
 
@@ -23,6 +23,7 @@ program
   .description('Scan a project for accessibility issues')
   .argument('[path]', 'Path to project root', '.')
   .option('-l, --level <level>', 'WCAG conformance target: A, AA, or AAA', 'AA')
+  .option('--standard <standard>', 'WCAG version to evaluate against: wcag22 (default) or wcag21 (the public-sector legal bar, WAD/EN 301 549)', 'wcag22')
   .option('--include <patterns...>', 'Glob patterns to include')
   .option('--exclude <patterns...>', 'Glob patterns to exclude')
   .option('--json', 'Output results as JSON')
@@ -43,10 +44,16 @@ Examples:
 
 Supported files: .html .htm .jsx .tsx .vue .svelte .astro
 `)
-  .action(async (path: string, opts: { level: string; include?: string[]; exclude?: string[]; json?: boolean; showIgnored?: boolean; verbose?: boolean; showManual?: boolean; readability?: boolean; minScore?: string }) => {
+  .action(async (path: string, opts: { level: string; standard?: string; include?: string[]; exclude?: string[]; json?: boolean; showIgnored?: boolean; verbose?: boolean; showManual?: boolean; readability?: boolean; minScore?: string }) => {
     const level = opts.level.toUpperCase() as WcagLevel
     if (!['A', 'AA', 'AAA'].includes(level)) {
       console.error(`Invalid level "${opts.level}". Use A, AA, or AAA.`)
+      process.exit(1)
+    }
+
+    const standard = (opts.standard ?? 'wcag22').toLowerCase() as WcagStandard
+    if (!['wcag22', 'wcag21'].includes(standard)) {
+      console.error(`Invalid standard "${opts.standard}". Use wcag22 or wcag21.`)
       process.exit(1)
     }
 
@@ -69,6 +76,7 @@ Supported files: .html .htm .jsx .tsx .vue .svelte .astro
       const result = await runScan({
         path,
         level,
+        standard,
         include: opts.include,
         exclude: opts.exclude,
         disableScanners: opts.readability === false ? ['readability'] : [],
@@ -91,7 +99,7 @@ Supported files: .html .htm .jsx .tsx .vue .svelte .astro
         printJson(result)
         console.error(`✓ JSON report written (${result.issues.length} issues)`)
       } else {
-        printResult(result, { showIgnored: opts.showIgnored, verbose: opts.verbose, showManual: opts.showManual, targetLevel: level })
+        printResult(result, { showIgnored: opts.showIgnored, verbose: opts.verbose, showManual: opts.showManual, targetLevel: level, standard })
       }
 
       // A scan that ran successfully exits 0. The score gate is opt-in (--min-score)

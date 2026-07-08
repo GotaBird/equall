@@ -28,7 +28,7 @@ function makeIssue(overrides: Partial<EquallIssue> = {}): EquallIssue {
 
 // Capture what printResult writes to stdout, with ANSI stripped so assertions read plainly.
 function render(issues: EquallIssue[], exercised: string[], target: WcagLevel = 'AA'): string {
-  const result = computeScanResult(issues, 5, [], 100, target, exercised, 56, exercised)
+  const result = computeScanResult(issues, 5, [], 100, target, exercised, 55, exercised)
   const logs: string[] = []
   const spy = vi.spyOn(console, 'log').mockImplementation((...a: unknown[]) => {
     logs.push(a.map(String).join(' '))
@@ -78,8 +78,8 @@ describe('honest verdict (BUR-159)', () => {
   })
 
   it('the not-evaluated count equals criteria_total minus verified', () => {
-    // 3 verified out of 56 (AA total) → 53 not evaluated.
+    // 3 verified out of 55 (AA total, WCAG 2.2) → 52 not evaluated.
     const out = render([], ['1.1.1', '2.4.4', '1.3.1'])
-    expect(out).toContain('(53 not evaluated)')
+    expect(out).toContain('(52 not evaluated)')
   })
 })

@@ -5,8 +5,9 @@ import type {
   CriterionConformance,
   EquallIssue,
   WcagLevel,
+  WcagStandard,
 } from '../types.js'
-import { getCriteriaForLevel } from '../wcag-catalog.js'
+import { getCriteriaForStandardLevel } from '../wcag-catalog.js'
 import { honestTestedCriteria } from '../coverage.js'
 import { PAGE_LEVEL_REASON } from '../rules/page-level.js'
 
@@ -27,6 +28,9 @@ const REASON_ASSISTED =
   'Partially testable by static analysis — confirm with a rendered/assisted check (e.g. contrast in context).'
 const REASON_MANUAL =
   'No automated coverage on this scan — verify manually (keyboard, screen reader, human review).'
+// 4.1.1 Parsing (WCAG 2.1 only, obsolete) — fixed pass under the wcag21 view (BUR-161).
+const REASON_PARSING_OBSOLETE =
+  'Obsolete per W3C erratum — satisfied by modern HTML parsers (removed in WCAG 2.2).'
 
 // Pure derivation (BUR-160): one honest verdict per WCAG success criterion of the target
 // level, from data the engine already produced — issues × coverage × reclassified. No
@@ -36,6 +40,7 @@ const REASON_MANUAL =
 // sub-check. See ConformanceVerdict for the vocabulary and VERDICT_VPAT_MAP for the VPAT bridge.
 export function computeConformance(
   targetLevel: WcagLevel,
+  standard: WcagStandard,
   issues: EquallIssue[],
   coverage: CoverageReport
 ): CriterionConformance[] {
@@ -74,7 +79,7 @@ export function computeConformance(
   const statusByCriterion = new Map<string, CoverageStatus>()
   for (const c of coverage.criteria) statusByCriterion.set(c.criterion, c.status)
 
-  return getCriteriaForLevel(targetLevel).map((crit): CriterionConformance => {
+  return getCriteriaForStandardLevel(standard, targetLevel).map((crit): CriterionConformance => {
     const id = crit.id
     const base = { criterion: id, level: crit.level, name: crit.name }
 
@@ -84,6 +89,11 @@ export function computeConformance(
       return evidence?.length
         ? { ...base, verdict: 'fail', evidence }
         : { ...base, verdict: 'fail' }
+    }
+    // 4.1.1 Parsing appears only under the wcag21 view; no scanner maps to it (obsolete), so
+    // fix it as an automated pass with the documented erratum reason, not "not tested".
+    if (id === '4.1.1') {
+      return { ...base, verdict: 'pass_automated', reason: REASON_PARSING_OBSOLETE }
     }
     if (exercised.has(id)) {
       return { ...base, verdict: 'pass_automated' }

@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **WCAG criteria totals corrected — a real over-count is fixed.** `2.5.6 Concurrent Input
+  Mechanisms` was mis-catalogued as Level A; it is Level AAA. So the WCAG 2.2 totals drop by
+  one: Level A 32→31, Level A+AA 56→55 (`criteria_total` in the JSON). Totals are now derived
+  from the catalog (single source of truth) instead of hardcoded, so this class of drift can't
+  recur. This is a correction, not a scope change.
 - **The verdict now states what was actually verified, and never claims conformance.** A scan
   whose only finding was a AAA advisory used to print "Meets WCAG AA"; a clean scan reported
   "None". Both were misleading. The score header now reads, e.g., "0 A/AA failures among the
@@ -43,6 +48,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`--standard wcag22 | wcag21` — evaluate against a chosen WCAG version.** `wcag22` (default)
+  is Equall's identity; `wcag21` renders the conformance table, coverage and verdict against
+  WCAG 2.1 AA — the standard cited under the Web Accessibility Directive / EN 301 549 (the
+  public-sector legal bar). It is a VIEW filter: the 0–100 score is **identical** across
+  standards. Under `wcag21` the 9 criteria new in 2.2 leave the table (findings on them stay
+  visible as issues) and `4.1.1 Parsing` reappears as a documented automated pass (obsolete
+  per W3C erratum). The chosen `standard` is stamped on `ScanResult` and labelled in the terminal.
 - `EquallIssue.scanners` — the engines that independently confirmed an issue
   (e.g. `["eslint-jsx-a11y", "axe-core"]`). `scanner` still names the engine of the
   surviving report, so existing consumers are unaffected.

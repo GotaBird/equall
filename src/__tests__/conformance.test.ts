@@ -52,7 +52,7 @@ function conformance() {
     issue({ wcag_criteria: ['4.1.2'], fingerprint: 'fp-412', scanner_rule_id: 'aria-valid' }),
     issue({ wcag_criteria: ['1.3.1'], ignored: true, fingerprint: 'fp-ignored' }), // must NOT fail 1.3.1
   ]
-  const list = computeConformance('AA', issues, coverage)
+  const list = computeConformance('AA', 'wcag22', issues, coverage)
   const by = new Map(list.map((c) => [c.criterion, c]))
   return { list, by }
 }

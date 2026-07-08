@@ -1,18 +1,13 @@
-import type { ScanResult, EquallIssue, Severity, WcagLevel, ConformanceVerdict } from '../types.js'
-import { getCriteriaForLevel, getCriterion } from '../wcag-catalog.js'
+import type { ScanResult, EquallIssue, Severity, WcagLevel, WcagStandard, ConformanceVerdict } from '../types.js'
+import { getCriteriaForStandardLevel, getCriterion } from '../wcag-catalog.js'
 import { formatNoFailureVerdict } from '../coverage.js'
 import { isBeyondTarget } from '../scoring/score.js'
 
-// WCAG 2.2 Level A criteria (32 total, 4.1.1 Parsing excluded — obsolete in 2.2)
-// Used to partition coverage and failures by level in the summary display
-const WCAG_A_CRITERIA = new Set([
-  '1.1.1', '1.2.1', '1.2.2', '1.2.3', '1.3.1', '1.3.2', '1.3.3', '1.4.1', '1.4.2',
-  '2.1.1', '2.1.2', '2.1.4', '2.2.1', '2.2.2', '2.3.1',
-  '2.4.1', '2.4.2', '2.4.3', '2.4.4', '2.5.1', '2.5.2', '2.5.3', '2.5.4', '2.5.6',
-  '3.1.1', '3.2.1', '3.2.2', '3.2.6', '3.3.1', '3.3.2', '3.3.7',
-  '4.1.2',
-])
-const WCAG_A_TOTAL = 32
+// WCAG version label for the selected standard (BUR-161). The Level-A partition set/total
+// are derived per-scan from the catalog (standard-aware) inside printResult — never hardcoded.
+function standardLabel(standard: WcagStandard): string {
+  return standard === 'wcag21' ? 'WCAG 2.1' : 'WCAG 2.2'
+}
 
 // Best-practice rule explanations
 const BP_HINTS: Record<string, string> = {
@@ -167,6 +162,7 @@ export interface PrintOptions {
   verbose?: boolean
   showManual?: boolean
   targetLevel?: WcagLevel
+  standard?: WcagStandard
 }
 
 export function printResult(result: ScanResult, options: PrintOptions = {}): void {
@@ -178,6 +174,12 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
 
   // Target drives what counts as an in-scope violation vs. beyond-target advisory.
   const target = options.targetLevel ?? 'AA'
+
+  // Standard view (BUR-161) — drives the "WCAG 2.1/2.2" labels and the Level-A partition
+  // set/total, both derived from the catalog so they can't drift.
+  const standard = options.standard ?? 'wcag22'
+  const levelACriteria = new Set(getCriteriaForStandardLevel(standard, 'A').map((c) => c.id))
+  const levelATotal = levelACriteria.size
 
   // Beyond-target criteria (e.g. AAA reading-level under an AA target) are advisory:
   // they don't penalize the score and aren't counted among conformance violations.
@@ -230,21 +232,21 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
       if (isBeyondTarget(issue, target)) continue
       for (const c of issue.wcag_criteria) {
         failedAllSet.add(c)
-        if (WCAG_A_CRITERIA.has(c)) failedASet.add(c)
+        if (levelACriteria.has(c)) failedASet.add(c)
       }
     }
 
-    const isTargetAA = total > WCAG_A_TOTAL && total <= 57
+    const isTargetAA = target === 'AA'
     if (isTargetAA && failedASet.size > 0) {
       // Two lines: Level A progress + Level AA progress
-      const coveredA = checked.filter(c => WCAG_A_CRITERIA.has(c)).length
-      const pctA = Math.round((coveredA / WCAG_A_TOTAL) * 100)
+      const coveredA = checked.filter(c => levelACriteria.has(c)).length
+      const pctA = Math.round((coveredA / levelATotal) * 100)
       const pctAA = Math.round((covered / total) * 100)
-      console.log(`  ${BOLD}Coverage${RESET}  Level A   ${coveredA}/${WCAG_A_TOTAL} checked (${pctA}%)  ·  ${RED}${failedASet.size} failing${RESET}`)
+      console.log(`  ${BOLD}Coverage${RESET}  Level A   ${coveredA}/${levelATotal} checked (${pctA}%)  ·  ${RED}${failedASet.size} failing${RESET}`)
       console.log(`            Level AA  ${covered}/${total} checked (${pctAA}%)  ·  ${RED}${failedAllSet.size} failing${RESET}`)
     } else {
       // Single line
-      const levelLabel = total <= WCAG_A_TOTAL ? 'Level A' : 'Level AA'
+      const levelLabel = `Level ${target}`
       const pct = Math.round((covered / total) * 100)
       console.log(`  ${BOLD}Coverage${RESET}  ${levelLabel}  ${covered}/${total} checked (${pct}%)  ·  ${RED}${failedAllSet.size} failing${RESET}`)
     }
@@ -462,7 +464,7 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
   // Manual review criteria
   if (options.showManual) {
     const level = options.targetLevel ?? 'AA'
-    const allForLevel = getCriteriaForLevel(level)
+    const allForLevel = getCriteriaForStandardLevel(standard, level)
     const coveredSet = new Set(result.coverage?.auto_criteria ?? result.criteria_covered)
     const untested = allForLevel.filter(c => !coveredSet.has(c.id))
 
@@ -496,7 +498,7 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
   // first without scrolling. The score (a trend indicator, BUR-159) sits just above the
   // Support Summary (BUR-160), whose bucket line is the final content line.
   const verdict = formatVerifiedSubset(result, target)
-  console.log(`  ${scoreBg(score)}${BOLD}${WHITE}  ${score}  ${RESET}  ${GRAY}WCAG 2.2 · score is a trend indicator${RESET}`)
+  console.log(`  ${scoreBg(score)}${BOLD}${WHITE}  ${score}  ${RESET}  ${GRAY}${standardLabel(standard)} · score is a trend indicator${RESET}`)
   console.log(`  ${verdict.failing > 0 ? RED : GRAY}${verdict.line}${RESET}`)
   console.log()
   printSupportSummary(result, target, options)
@@ -541,7 +543,7 @@ function printSupportSummary(result: ScanResult, target: WcagLevel, options: Pri
       not_tested_assisted: `${GRAY}○${RESET}`,
       not_tested_manual: `${GRAY}○${RESET}`,
     }
-    console.log(`  ${BOLD}Per-criterion${RESET} ${GRAY}— WCAG 2.2, ${target} target${RESET}`)
+    console.log(`  ${BOLD}Per-criterion${RESET} ${GRAY}— ${standardLabel(result.standard ?? 'wcag22')}, ${target} target${RESET}`)
     for (const e of entries) {
       console.log(`  ${mark[e.verdict]} ${GRAY}${e.criterion}${RESET}  ${e.name}  ${label[e.verdict]}`)
     }
@@ -549,7 +551,7 @@ function printSupportSummary(result: ScanResult, target: WcagLevel, options: Pri
   }
 
   // The headline bucket line — the last, read-first takeaway.
-  console.log(`  ${BOLD}WCAG 2.2 Support Summary${RESET} ${GRAY}— ${target} target · automated basis only${RESET}`)
+  console.log(`  ${BOLD}${standardLabel(result.standard ?? 'wcag22')} Support Summary${RESET} ${GRAY}— ${target} target · automated basis only${RESET}`)
   console.log(
     `  ${GREEN}✓ Supports (automated) ${supports}${RESET}   ` +
     `${RED}✕ Does not support ${fails}${RESET}   ` +
