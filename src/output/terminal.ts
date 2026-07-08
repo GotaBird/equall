@@ -51,7 +51,7 @@ const BG_CYAN = '\x1b[46m'
 // Public docs page defining every verdict (what it asserts / does not) + the VPAT mapping.
 // Printed under the Support Summary so a reader of "Supports (automated)" has a reference.
 // NOTE: ships in the published CLI — keep in sync with the canonical public docs domain.
-const VERDICT_DOCS_URL = 'https://equallscan.com/verdicts'
+const VERDICT_DOCS_URL = 'https://equallscan.com/docs/verdicts'
 
 function scoreColor(score: number): string {
   if (score >= 80) return GREEN
