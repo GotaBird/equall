@@ -163,7 +163,7 @@ describe('Support Summary (terminal, BUR-160)', () => {
 <html lang="en"><head><title>T</title></head>
 <body><main><h1>Hi</h1><img src="a.png"><a href="#"></a></main></body></html>`
 
-  it('leads with the Support Summary, before the trend-indicator score, with no banned words', async () => {
+  it('trails: the Support Summary is the final block, after the score, with no banned words', async () => {
     const result = await runScan({ files: [{ path: 'index.html', content: html }] })
     const out = render(result)
 
@@ -172,8 +172,10 @@ describe('Support Summary (terminal, BUR-160)', () => {
     expect(out).toContain('Does not support')
     expect(out).toContain('Not evaluated')
     expect(out).not.toMatch(BANNED)
-    // The Support Summary is the headline; the score trend indicator comes after it.
-    expect(out.indexOf('Support Summary')).toBeLessThan(out.indexOf('score is a trend indicator'))
+    // Moved to the END (read-first in a terminal): the score trend indicator prints first,
+    // then the Support Summary as the final block, in the last portion of the output.
+    expect(out.indexOf('score is a trend indicator')).toBeLessThan(out.indexOf('WCAG 2.2 Support Summary'))
+    expect(out.indexOf('WCAG 2.2 Support Summary')).toBeGreaterThan(out.length * 0.6)
   })
 
   it('--verbose expands the full per-criterion table and splits "Not evaluated"', async () => {

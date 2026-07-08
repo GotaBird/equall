@@ -59,9 +59,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   criterion is silently missing. This is the evidence layer behind an accessibility
   statement / VPAT — it never emits a formal "Supports"; that is a human attestation applied
   later against the documented verdict → VPAT-term mapping.
-- **The terminal now leads with a "WCAG 2.2 Support Summary"** — `Supports (automated) N ·
-  Does not support N · Not evaluated N` — and the 0–100 score moves below it, framed as a
-  trend indicator. `--verbose` expands the full per-criterion table.
+- **The terminal closes with a "WCAG 2.2 Support Summary"** — `Supports (automated) N ·
+  Does not support N · Not evaluated N` — printed last so it is the takeaway you read first
+  when the scan finishes (a terminal shows the bottom of the output). The 0–100 score sits
+  just above it, framed as a trend indicator. `--verbose` prints the full per-criterion table
+  above the summary, keeping the bucket line the final line.
 
 ### Known limitations
 

@@ -174,16 +174,6 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
   // Target drives what counts as an in-scope violation vs. beyond-target advisory.
   const target = options.targetLevel ?? 'AA'
 
-  // Leading section (BUR-160): the per-criterion Support Summary is the report headline;
-  // the 0-100 score follows it as a trend indicator (score demoted 2026-07-04).
-  printSupportSummary(result, target, options)
-
-  // Score (a trend indicator, not a pass/fail grade) + the honest verified-subset verdict
-  // (BUR-159), now BELOW the Support Summary — no badge that could read as a pass/fail claim.
-  const verdict = formatVerifiedSubset(result, target)
-  console.log(`  ${scoreBg(score)}${BOLD}${WHITE}  ${score}  ${RESET}  ${GRAY}WCAG 2.2 · score is a trend indicator${RESET}`)
-  console.log(`  ${verdict.failing > 0 ? RED : GRAY}${verdict.line}${RESET}`)
-  console.log()
   // Beyond-target criteria (e.g. AAA reading-level under an AA target) are advisory:
   // they don't penalize the score and aren't counted among conformance violations.
   const isAdvisory = (i: EquallIssue) => i.wcag_criteria.length > 0 && isBeyondTarget(i, target)
@@ -495,15 +485,27 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
 
   console.log(`  ${GRAY}Completed in ${(duration_ms / 1000).toFixed(1)}s${RESET}`)
   console.log()
+
+  // Headline at the END (moved 2026-07-08): in a terminal the bottom of the output is what
+  // stays on screen when the scan finishes, so the report's takeaway is printed last — read
+  // first without scrolling. The score (a trend indicator, BUR-159) sits just above the
+  // Support Summary (BUR-160), whose bucket line is the final content line.
+  const verdict = formatVerifiedSubset(result, target)
+  console.log(`  ${scoreBg(score)}${BOLD}${WHITE}  ${score}  ${RESET}  ${GRAY}WCAG 2.2 · score is a trend indicator${RESET}`)
+  console.log(`  ${verdict.failing > 0 ? RED : GRAY}${verdict.line}${RESET}`)
+  console.log()
+  printSupportSummary(result, target, options)
 }
 
-// Leading section (BUR-160): the honest per-criterion Support Summary — the E3 report
-// headline (the 0-100 score follows it, demoted to a trend indicator). Three VPAT-anchored
-// buckets — Supports (automated) / Does not support / Not evaluated — with `--verbose`
-// expanding the full per-criterion table and splitting "Not evaluated" into its three
-// reasons. Absent on early-return scans (no `criterion_conformance`), like `coverage`.
-// The engine states an automated BASIS, never a pass/fail claim: the banned words
-// (Meets/conformant/compliant/conformance) must never appear here — verdict.test.ts gates it.
+// Report headline (BUR-160). Printed at the END of the output (moved 2026-07-08): in a
+// terminal the bottom of the scan is what stays on screen when it finishes, so the report's
+// takeaway — the per-criterion Support Summary — is read first, without scrolling. Three
+// VPAT-anchored buckets (Supports (automated) / Does not support / Not evaluated); `--verbose`
+// prints the full per-criterion table ABOVE the buckets (so the bucket line stays the final,
+// read-first line) and splits "Not evaluated" into its three reasons. Absent on early-return
+// scans (no `criterion_conformance`), like `coverage`. The engine states an automated BASIS,
+// never a pass/fail claim: the banned words (Meets/conformant/compliant/conformance) must
+// never appear here — verdict.test.ts gates it.
 function printSupportSummary(result: ScanResult, target: WcagLevel, options: PrintOptions): void {
   const entries = result.criterion_conformance
   if (!entries || entries.length === 0) return
@@ -517,16 +519,9 @@ function printSupportSummary(result: ScanResult, target: WcagLevel, options: Pri
     else notEvaluated++
   }
 
-  console.log(`  ${BOLD}WCAG 2.2 Support Summary${RESET} ${GRAY}— ${target} target · automated basis only${RESET}`)
-  console.log(
-    `  ${GREEN}✓ Supports (automated) ${supports}${RESET}   ` +
-    `${RED}✕ Does not support ${fails}${RESET}   ` +
-    `${GRAY}○ Not evaluated ${notEvaluated}${RESET}`
-  )
-
+  // --verbose: the full per-criterion table FIRST, so the bucket summary below stays the
+  // final (read-first) line. "Not evaluated" splits into its three honest reasons.
   if (options.verbose) {
-    // Full per-criterion table, in WCAG catalog order. "Not evaluated" splits into its
-    // three honest reasons so the reader sees WHY each was not evaluated.
     const label: Record<ConformanceVerdict, string> = {
       fail: `${RED}Does not support${RESET}`,
       pass_automated: `${GREEN}Supports (automated)${RESET}`,
@@ -541,11 +536,21 @@ function printSupportSummary(result: ScanResult, target: WcagLevel, options: Pri
       not_tested_assisted: `${GRAY}○${RESET}`,
       not_tested_manual: `${GRAY}○${RESET}`,
     }
-    console.log()
+    console.log(`  ${BOLD}Per-criterion${RESET} ${GRAY}— WCAG 2.2, ${target} target${RESET}`)
     for (const e of entries) {
       console.log(`  ${mark[e.verdict]} ${GRAY}${e.criterion}${RESET}  ${e.name}  ${label[e.verdict]}`)
     }
-  } else {
+    console.log()
+  }
+
+  // The headline bucket line — the last, read-first takeaway.
+  console.log(`  ${BOLD}WCAG 2.2 Support Summary${RESET} ${GRAY}— ${target} target · automated basis only${RESET}`)
+  console.log(
+    `  ${GREEN}✓ Supports (automated) ${supports}${RESET}   ` +
+    `${RED}✕ Does not support ${fails}${RESET}   ` +
+    `${GRAY}○ Not evaluated ${notEvaluated}${RESET}`
+  )
+  if (!options.verbose) {
     console.log(`  ${GRAY}Automated verdicts only — a full statement needs manual + assistive-tech testing. Run --verbose for the per-criterion table.${RESET}`)
   }
   console.log()
