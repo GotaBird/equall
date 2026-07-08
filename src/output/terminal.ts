@@ -48,6 +48,11 @@ const BG_YELLOW = '\x1b[43m'
 const BG_GREEN = '\x1b[42m'
 const BG_CYAN = '\x1b[46m'
 
+// Public docs page defining every verdict (what it asserts / does not) + the VPAT mapping.
+// Printed under the Support Summary so a reader of "Supports (automated)" has a reference.
+// NOTE: ships in the published CLI — keep in sync with the canonical public docs domain.
+const VERDICT_DOCS_URL = 'https://equallscan.com/verdicts'
+
 function scoreColor(score: number): string {
   if (score >= 80) return GREEN
   if (score >= 50) return YELLOW
@@ -553,6 +558,8 @@ function printSupportSummary(result: ScanResult, target: WcagLevel, options: Pri
   if (!options.verbose) {
     console.log(`  ${GRAY}Automated verdicts only — a full statement needs manual + assistive-tech testing. Run --verbose for the per-criterion table.${RESET}`)
   }
+  // Authoritative reference for what each verdict asserts (and does not) + the VPAT mapping.
+  console.log(`  ${GRAY}What each verdict means → ${VERDICT_DOCS_URL}${RESET}`)
   console.log()
 }
 

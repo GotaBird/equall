@@ -64,6 +64,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   when the scan finishes (a terminal shows the bottom of the output). The 0–100 score sits
   just above it, framed as a trend indicator. `--verbose` prints the full per-criterion table
   above the summary, keeping the bucket line the final line.
+- **A verdict reference is one click away.** The Support Summary now points to a docs page
+  defining what each verdict asserts (and what it does not) plus the VPAT mapping, so a reader
+  of "Supports (automated)" has an authoritative reference — not just a colour.
 
 ### Known limitations
 
