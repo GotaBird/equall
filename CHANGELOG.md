@@ -24,6 +24,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **The engine no longer writes to your stderr.** Non-fatal scan warnings (no scanners available,
+  a scanner threw) are collected on the new `ScanResult.diagnostics` field instead of being
+  `console.warn`'d from `runScan` — a library / MCP consumer can capture them, and `--json` output
+  carries them. The CLI still prints them to stderr.
 - **"Not verifiable on this scan" now tells you how to verify.** Page-level rules (landmarks,
   skip link, document title, `<html lang>`) reclassified out of a fragment scan — and the
   matching `not_verifiable_on_this_scan` conformance verdict — now name the concrete next step:

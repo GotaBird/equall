@@ -49,7 +49,7 @@ function buildFileEntries(inputs: FileInput[], rootPath: string): FileEntry[] {
 // standard / confidence_flags are present, never `undefined`. No scanners ran on these paths →
 // coverage is all-manual and conformance all not_tested_manual; confidence still reads the files
 // (advisories are independent of the engines).
-function attachEmptyReport(result: ScanResult, files: FileEntry[], scanOptions: ScanOptions): ScanResult {
+function attachEmptyReport(result: ScanResult, files: FileEntry[], scanOptions: ScanOptions, diagnostics: string[]): ScanResult {
   const standard = scanOptions.standard ?? 'wcag22'
   const coverage = computeCoverage([], files)
   coverage.reclassified = []
@@ -57,6 +57,7 @@ function attachEmptyReport(result: ScanResult, files: FileEntry[], scanOptions: 
   result.criterion_conformance = computeConformance(scanOptions.wcag_level, standard, [], coverage)
   result.standard = standard
   result.confidence_flags = computeConfidenceFlags(files)
+  result.diagnostics = diagnostics
   return result
 }
 
@@ -71,6 +72,11 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
     exclude_patterns: options.exclude ?? [],
   }
 
+  // Non-fatal warnings collected during the scan (no scanners available, a scanner threw).
+  // Returned on ScanResult.diagnostics instead of written to stderr — the CLI prints them;
+  // a library / MCP consumer can capture them.
+  const diagnostics: string[] = []
+
   // 1. Get files — from in-memory buffers (T1.1) or by discovering them on disk.
   const inMemory = options.files != null
   const files = inMemory
@@ -78,16 +84,16 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
     : await discoverFiles(rootPath, scanOptions)
   if (files.length === 0) {
     const result = computeScanResult([], 0, [], Date.now() - startTime, scanOptions.wcag_level)
-    return attachEmptyReport(result, files, scanOptions)
+    return attachEmptyReport(result, files, scanOptions, diagnostics)
   }
 
   // 2. Get available scanners (minus any the user disabled via CLI flag)
   const disabled = new Set(options.disableScanners ?? [])
   const scanners = (await getAvailableScanners()).filter(s => !disabled.has(s.name))
   if (scanners.length === 0) {
-    console.warn('No scanners available. Install axe-core and jsdom for HTML scanning.')
+    diagnostics.push('No scanners available. Install axe-core and jsdom for HTML scanning.')
     const result = computeScanResult([], files.length, [], Date.now() - startTime, scanOptions.wcag_level)
-    return attachEmptyReport(result, files, scanOptions)
+    return attachEmptyReport(result, files, scanOptions, diagnostics)
   }
 
   // 3. Run all scanners in parallel
@@ -119,7 +125,7 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
       })
     } else {
       const err = result.reason instanceof Error ? result.reason.message : String(result.reason)
-      console.warn(`  [scanner] Failed: ${err.slice(0, 120)}`)
+      diagnostics.push(`[scanner] failed: ${err.slice(0, 120)}`)
     }
   }
 
@@ -190,6 +196,9 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
   // after the score + verdicts and only reads `files`, so it cannot alter any of them. Always
   // attached ([] when none) for a stable JSON shape.
   result.confidence_flags = computeConfidenceFlags(files)
+
+  // 14. Non-fatal scan warnings — returned on the result, never written to the host's stderr.
+  result.diagnostics = diagnostics
 
   return result
 }

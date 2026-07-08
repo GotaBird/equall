@@ -84,6 +84,10 @@ Supported files: .html .htm .jsx .tsx .vue .svelte .astro
 
       spinner?.stop()
 
+      // Surface the engine's non-fatal scan warnings on stderr (the engine no longer writes to
+      // stderr itself; they also travel on result.diagnostics for --json / programmatic consumers).
+      for (const d of result.diagnostics ?? []) console.warn(`  ${d}`)
+
       if (result.summary.files_scanned === 0) {
         if (opts.json) {
           printJson(result)

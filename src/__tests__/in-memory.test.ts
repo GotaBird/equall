@@ -124,5 +124,6 @@ describe('empty scan carries the documented report shape (R1a)', () => {
     expect(result.criterion_conformance?.every((c) => c.verdict === 'not_tested_manual')).toBe(true)
     expect(result.standard).toBe('wcag22')
     expect(result.confidence_flags).toEqual([])
+    expect(result.diagnostics).toEqual([])
   })
 })

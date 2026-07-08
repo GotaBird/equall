@@ -176,6 +176,10 @@ export interface ScanResult {
   // Alt-quality advisories — additive, attached by runScan ([] when none). Never
   // routed into the score, verdicts, coverage, or issues; a review suggestion only.
   confidence_flags?: ConfidenceFlag[]
+  // Non-fatal warnings from the scan (no scanners available, a scanner threw). Attached by
+  // runScan ([] when none) so the engine never writes to the host's stderr — the CLI decides
+  // whether to print them, and a library / MCP consumer can capture them.
+  diagnostics?: string[]
   scanned_at: string                   // ISO timestamp
   duration_ms: number
   // Version stamps so results are comparable across releases.
