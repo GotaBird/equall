@@ -44,6 +44,22 @@ function buildFileEntries(inputs: FileInput[], rootPath: string): FileEntry[] {
   })
 }
 
+// Always-attach the report fields on the empty-scan early returns, so EVERY ScanResult carries
+// the shape the README's "Programmatic use" documents — coverage / criterion_conformance /
+// standard / confidence_flags are present, never `undefined`. No scanners ran on these paths →
+// coverage is all-manual and conformance all not_tested_manual; confidence still reads the files
+// (advisories are independent of the engines).
+function attachEmptyReport(result: ScanResult, files: FileEntry[], scanOptions: ScanOptions): ScanResult {
+  const standard = scanOptions.standard ?? 'wcag22'
+  const coverage = computeCoverage([], files)
+  coverage.reclassified = []
+  result.coverage = coverage
+  result.criterion_conformance = computeConformance(scanOptions.wcag_level, standard, [], coverage)
+  result.standard = standard
+  result.confidence_flags = computeConfidenceFlags(files)
+  return result
+}
+
 export async function runScan(options: RunScanOptions = {}): Promise<ScanResult> {
   const rootPath = resolve(options.path ?? process.cwd())
   const startTime = Date.now()
@@ -61,7 +77,8 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
     ? buildFileEntries(options.files!, rootPath)
     : await discoverFiles(rootPath, scanOptions)
   if (files.length === 0) {
-    return computeScanResult([], 0, [], Date.now() - startTime, scanOptions.wcag_level)
+    const result = computeScanResult([], 0, [], Date.now() - startTime, scanOptions.wcag_level)
+    return attachEmptyReport(result, files, scanOptions)
   }
 
   // 2. Get available scanners (minus any the user disabled via CLI flag)
@@ -69,7 +86,8 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
   const scanners = (await getAvailableScanners()).filter(s => !disabled.has(s.name))
   if (scanners.length === 0) {
     console.warn('No scanners available. Install axe-core and jsdom for HTML scanning.')
-    return computeScanResult([], files.length, [], Date.now() - startTime, scanOptions.wcag_level)
+    const result = computeScanResult([], files.length, [], Date.now() - startTime, scanOptions.wcag_level)
+    return attachEmptyReport(result, files, scanOptions)
   }
 
   // 3. Run all scanners in parallel

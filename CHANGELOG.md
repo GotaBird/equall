@@ -15,6 +15,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   longer carries `pour_scores` (breaking for any consumer that read it); the per-issue `pour` field
   is unchanged.
 
+### Fixed
+
+- **Empty and no-scanner scans now carry the full `ScanResult` shape.** `coverage`,
+  `criterion_conformance`, `standard`, and `confidence_flags` (documented in the programmatic API)
+  are attached on **every** scan, including the early-return paths — previously a scan with no
+  scannable files returned them as `undefined`, contradicting the docs.
+
 ### Changed
 
 - **"Not verifiable on this scan" now tells you how to verify.** Page-level rules (landmarks,
