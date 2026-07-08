@@ -15,7 +15,9 @@ const CRITERION = '1.1.1'
 // collapses alt={x}→alt="…" and strips src): static `alt="…"`/`alt='…'` only. Dynamic forms
 // (`alt={…}`, `:alt`, `v-bind:alt`) and `data-alt` don't match — the required leading whitespace
 // before `alt` excludes `:`/`-`-prefixed names.
-const IMG_TAG = /<img\b[^>]*>/gi
+// Matches both the HTML `<img>` and the Next.js `<Image>` component (the common wrapper in
+// React/Astro codebases). The `\b` keeps `<imagemap>` / `<ImageGallery>` etc. from matching.
+const IMG_TAG = /<(?:img|image)\b[^>]*>/gi
 const ALT_ATTR = /(?:^|\s)alt\s*=\s*("([^"]*)"|'([^']*)')/i
 const SRC_ATTR = /(?:^|\s)src\s*=\s*("([^"]*)"|'([^']*)')/i
 

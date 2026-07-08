@@ -63,6 +63,15 @@ describe('computeConfidenceFlags — signal precision', () => {
     expect(computeConfidenceFlags([file('<img src="/a.png" data-alt="untitled">')])).toEqual([])
   })
 
+  it('matches the Next.js <Image> component, not just lowercase <img>', () => {
+    // The dominant image element in React/Next.js codebases.
+    const flags = computeConfidenceFlags([file('<Image src="/a.jpg" alt="DSC00423" width={9} height={9} />', 'tsx')])
+    expect(flags).toHaveLength(1)
+    expect(flags[0].signal).toBe('filename_as_alt')
+    // …but not an arbitrary component whose name merely starts with "Image".
+    expect(computeConfidenceFlags([file('<ImageGallery alt="DSC00423" />', 'tsx')])).toEqual([])
+  })
+
   it('computes the line number and handles multiple imgs per file', () => {
     const content = `<div>\n  ${img('DSC00423')}\n  ${img('Menu')}\n  ${img('untitled')}\n</div>`
     const flags = computeConfidenceFlags([file(content)])
