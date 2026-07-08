@@ -4,6 +4,7 @@ import { getAvailableScanners } from './scanners/index.js'
 import { computeScanResult } from './scoring/score.js'
 import { computeCoverage, honestTestedCriteria } from './coverage.js'
 import { computeConformance } from './conformance/index.js'
+import { computeConfidenceFlags } from './confidence/index.js'
 import { getCriteriaForStandardLevel } from './wcag-catalog.js'
 import { fingerprint } from './utils/fingerprint.js'
 import { isDocumentUnit } from './utils/html-extract.js'
@@ -166,6 +167,11 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
 
   // 12. Stamp the standard the conformance view was rendered against (BUR-161).
   result.standard = scanOptions.standard ?? 'wcag22'
+
+  // 13. Alt-quality confidence flags (BUR-164) — an ADVISORY over the raw file contents. Runs
+  // after the score + verdicts and only reads `files`, so it cannot alter any of them. Always
+  // attached ([] when none) for a stable JSON shape.
+  result.confidence_flags = computeConfidenceFlags(files)
 
   return result
 }

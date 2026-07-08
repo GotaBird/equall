@@ -115,6 +115,21 @@ export interface CriterionConformance {
   reason?: string                      // why not verifiable / not tested — verdicts 3–5 only
 }
 
+// Alt-quality confidence flag (BUR-164) — an ADVISORY, never a WCAG failure. Surfaces a
+// present-but-suspect `alt` (a filename, a generic placeholder, the src basename) that passes
+// automated checks (so the criterion's verdict stays `pass_automated`) but is likely useless to
+// a screen-reader user. Orthogonal metadata: it never touches issues, verdicts, the score, or
+// coverage. Precision-first — it only fires on near-certain junk. Routes to human/agent review.
+export interface ConfidenceFlag {
+  criterion: string                    // the criterion the advisory relates to (e.g. '1.1.1')
+  signal: string                       // which precision signal fired (see src/confidence)
+  value: string                        // the offending attribute value (the alt text)
+  file_path: string
+  line?: number                        // best-effort; absent when not derivable
+  reason: string                       // plain-language why it looks suspect
+  confidence: 'low'                    // advisory only — reserved for future tiers
+}
+
 // What we pass to each scanner
 export interface ScanContext {
   root_path: string                   // Absolute path to the project root
@@ -159,6 +174,9 @@ export interface ScanResult {
   // WCAG standard the conformance view was rendered against (BUR-161). Optional for older
   // consumers; runScan always sets it. `wcag22` (default) or `wcag21` (the legal-bar view).
   standard?: WcagStandard
+  // Alt-quality advisories (BUR-164) — additive, attached by runScan ([] when none). Never
+  // routed into the score, verdicts, coverage, or issues; a review suggestion only.
+  confidence_flags?: ConfidenceFlag[]
   scanned_at: string                   // ISO timestamp
   duration_ms: number
   // Version stamps so results are comparable across releases (BUR-159).

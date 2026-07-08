@@ -448,6 +448,22 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
     console.log()
   }
 
+  // Alt-quality confidence flags (BUR-164) — an ADVISORY, never a WCAG failure. Rendered
+  // unconditionally like "Not verifiable": a present-but-useless alt passes the automated check
+  // but is likely junk to a screen-reader user, so it's surfaced for human review. GRAY, never RED.
+  const confidenceFlags = result.confidence_flags ?? []
+  if (confidenceFlags.length > 0) {
+    console.log(`  ${BOLD}Low-confidence alt text${RESET} ${GRAY}— ${confidenceFlags.length} present but suspect · a review suggestion, not a WCAG violation${RESET}`)
+    console.log()
+    for (const flag of confidenceFlags) {
+      const loc = flag.line != null ? `:${flag.line}` : ''
+      const shown = flag.value.length > 80 ? `${flag.value.slice(0, 77)}…` : flag.value
+      console.log(`  ${GRAY}○${RESET} ${CYAN}${flag.file_path}${loc}${RESET}  ${GRAY}alt="${shown}" — ${flag.reason}${RESET}`)
+    }
+    console.log(`  ${GRAY}Automation can't tell if an alt is meaningful — check these actually describe the image.${RESET}`)
+    console.log()
+  }
+
   // Ignored issues (verbose only)
   if (options.showIgnored) {
     const ignoredIssues = result.issues.filter(i => i.ignored)

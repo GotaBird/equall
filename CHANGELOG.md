@@ -48,6 +48,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Low-confidence alt-text advisory — surfaces present-but-useless `alt` without ever failing.**
+  Static checks confirm an `alt` *exists*, not that it *helps*: `alt="DSC00423"`, `alt="untitled"`,
+  or the image's file name all pass. Equall now emits an **advisory** (`ScanResult.confidence_flags`,
+  each `{ criterion, signal, value, file_path, line?, reason, confidence }`) when an `<img>` alt looks
+  like a file name, a generic placeholder, the `src` basename, or gibberish — shown as a gray
+  "Low-confidence alt text — needs human review, not a WCAG violation" section. **Precision-first**:
+  it never fires on good short alts ("Menu", "Cart") or decorative `alt=""`, and it is purely
+  additive — it never changes an issue, a conformance verdict (1.1.1 stays `Supports (automated)`),
+  the score, or coverage.
 - **`--standard wcag22 | wcag21` — evaluate against a chosen WCAG version.** `wcag22` (default)
   is Equall's identity; `wcag21` renders the conformance table, coverage and verdict against
   WCAG 2.1 AA — the standard cited under the Web Accessibility Directive / EN 301 549 (the
