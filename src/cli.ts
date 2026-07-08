@@ -27,7 +27,7 @@ program
   .option('--exclude <patterns...>', 'Glob patterns to exclude')
   .option('--json', 'Output results as JSON')
   .option('-i, --show-ignored', 'Show ignored issues in output')
-  .option('-v, --verbose', 'Show all occurrences for best-practice issues')
+  .option('-v, --verbose', 'Expand the full per-criterion support table + all occurrences for best-practice issues')
   .option('-m, --show-manual', 'List WCAG criteria that require manual review')
   .option('--no-color', 'Disable colored output')
   .option('--no-readability', 'Disable readability (Flesch-Kincaid) scanner — English-only, experimental')

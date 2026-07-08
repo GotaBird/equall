@@ -5,6 +5,8 @@ export { runDiffScan, formatDiffGuardrail } from './diff-scan.js'
 export type { DiffScanOptions, DiffScanResult } from './diff-scan.js'
 export { computeCoverage, formatNoFailureVerdict } from './coverage.js'
 export type { CoverageReport, CriterionCoverage, CoverageStatus } from './types.js'
+export { computeConformance, VERDICT_VPAT_MAP } from './conformance/index.js'
+export type { CriterionConformance, ConformanceVerdict } from './types.js'
 export { computeScanResult } from './scoring/score.js'
 export { fingerprint } from './utils/fingerprint.js'
 export type {

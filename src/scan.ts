@@ -3,6 +3,7 @@ import { discoverFiles, fileTypeForPath, sanitizeVirtualPath } from './discover.
 import { getAvailableScanners } from './scanners/index.js'
 import { computeScanResult } from './scoring/score.js'
 import { computeCoverage, honestTestedCriteria } from './coverage.js'
+import { computeConformance } from './conformance/index.js'
 import { fingerprint } from './utils/fingerprint.js'
 import { isDocumentUnit } from './utils/html-extract.js'
 import { partitionPageLevelIssues, summarizeReclassified } from './rules/page-level.js'
@@ -147,12 +148,18 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
     list.map((issue) => ({ ...issue, fingerprint: fingerprint(issue) }))
 
   // Include ignored issues in output for transparency, update count
-  result.issues = [...withFingerprint(active), ...withFingerprint(ignored)]
+  const activeFingerprinted = withFingerprint(active)
+  result.issues = [...activeFingerprinted, ...withFingerprint(ignored)]
   result.summary.ignored_count = ignored.length
 
   // 10. Attach the honest coverage report computed above.
   // Always attached ([] when none) so the emitted JSON shape stays stable.
   result.coverage = coverage
+
+  // 11. Per-criterion conformance (BUR-160) — the E3 report backbone. Pure derivation from
+  // the fingerprinted active issues × coverage; `evidence` reuses the fingerprints attached
+  // above. Same additive-attach pattern as coverage (absent on the early-return paths).
+  result.criterion_conformance = computeConformance(scanOptions.wcag_level, activeFingerprinted, coverage)
 
   return result
 }

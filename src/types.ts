@@ -89,6 +89,28 @@ export interface CoverageReport {
   reclassified?: ReclassifiedRule[]
 }
 
+// Per-criterion conformance (BUR-160) — the honest, scan-scoped verdict the E3 audit
+// report stands on. Pure derivation from issues × coverage × reclassified; no scanning,
+// no scoring. This is the EVIDENCE layer, NOT the VPAT: the engine states only what
+// automation established this scan, and a documented map (VERDICT_VPAT_MAP in
+// conformance/) translates each verdict to the ITI VPAT vocabulary in E3-A4 + human
+// attestation. Automation never emits a bare "Supports".
+export type ConformanceVerdict =
+  | 'fail'                         // ≥1 active issue maps to the criterion — fail always wins
+  | 'pass_automated'              // exercised `auto` this scan, zero issues (automated checks only)
+  | 'not_verifiable_on_this_scan' // reclassified page-level rule on a fragment — verify on the rendered page
+  | 'not_tested_assisted'         // coverage `partial` (e.g. contrast) — needs a rendered/assisted check
+  | 'not_tested_manual'           // coverage `manual` or uncovered — verify manually
+
+export interface CriterionConformance {
+  criterion: string                    // '1.4.3'
+  level: WcagLevel                     // from the WCAG catalog
+  name: string                         // criterion name from the catalog (inline for report/MCP)
+  verdict: ConformanceVerdict
+  evidence?: string[]                  // failing issue fingerprints — `fail` only
+  reason?: string                      // why not verifiable / not tested — verdicts 3–5 only
+}
+
 // What we pass to each scanner
 export interface ScanContext {
   root_path: string                   // Absolute path to the project root
@@ -125,6 +147,10 @@ export interface ScanResult {
   criteria_covered: string[]           // Union of all scanner coveredCriteria
   criteria_total: number               // Total WCAG criteria for the target level
   coverage?: CoverageReport            // Honest, exercised coverage (T1.3) — attached by runScan
+  // Per-criterion conformance (BUR-160) — the E3 report backbone. Like `coverage?`, the `?`
+  // is for older-consumer compatibility; runScan ALWAYS attaches it (absent only on the
+  // early-return paths that also omit `coverage`). Never routed into the score.
+  criterion_conformance?: CriterionConformance[]
   scanned_at: string                   // ISO timestamp
   duration_ms: number
   // Version stamps so results are comparable across releases (BUR-159).

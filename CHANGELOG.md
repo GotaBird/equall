@@ -49,6 +49,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ScanResult.engine_version` and `ScanResult.score_model` — version stamps so two scan
   outputs from different releases are comparable. Per-scanner versions remain in
   `scanners_used[].version`.
+- **Per-criterion support verdicts (`ScanResult.criterion_conformance`).** For every WCAG
+  success criterion of the target level, the scan now states an honest, scan-scoped verdict
+  derived from what it actually established — `fail`, `pass_automated` (an automated basis
+  only, never a bare "pass"), `not_verifiable_on_this_scan` (a page-level rule needing the
+  rendered page), `not_tested_assisted` (partially covered, e.g. contrast), or
+  `not_tested_manual`. Each `fail` carries the failing issue fingerprints as `evidence`; the
+  not-tested verdicts carry a `reason`. The verdicts sum to the level's criteria total, so no
+  criterion is silently missing. This is the evidence layer behind an accessibility
+  statement / VPAT — it never emits a formal "Supports"; that is a human attestation applied
+  later against the documented verdict → VPAT-term mapping.
+- **The terminal now leads with a "WCAG 2.2 Support Summary"** — `Supports (automated) N ·
+  Does not support N · Not evaluated N` — and the 0–100 score moves below it, framed as a
+  trend indicator. `--verbose` expands the full per-criterion table.
 
 ### Known limitations
 

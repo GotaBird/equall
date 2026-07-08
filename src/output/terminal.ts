@@ -1,4 +1,4 @@
-import type { ScanResult, EquallIssue, Severity, WcagLevel } from '../types.js'
+import type { ScanResult, EquallIssue, Severity, WcagLevel, ConformanceVerdict } from '../types.js'
 import { getCriteriaForLevel, getCriterion } from '../wcag-catalog.js'
 import { formatNoFailureVerdict } from '../coverage.js'
 import { isBeyondTarget } from '../scoring/score.js'
@@ -174,8 +174,12 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
   // Target drives what counts as an in-scope violation vs. beyond-target advisory.
   const target = options.targetLevel ?? 'AA'
 
-  // Big score (a trend indicator, not a pass/fail grade) + the honest verified-subset
-  // verdict (BUR-159) — no "Meets"/badge that could read as a conformance claim.
+  // Leading section (BUR-160): the per-criterion Support Summary is the report headline;
+  // the 0-100 score follows it as a trend indicator (score demoted 2026-07-04).
+  printSupportSummary(result, target, options)
+
+  // Score (a trend indicator, not a pass/fail grade) + the honest verified-subset verdict
+  // (BUR-159), now BELOW the Support Summary — no badge that could read as a pass/fail claim.
   const verdict = formatVerifiedSubset(result, target)
   console.log(`  ${scoreBg(score)}${BOLD}${WHITE}  ${score}  ${RESET}  ${GRAY}WCAG 2.2 · score is a trend indicator${RESET}`)
   console.log(`  ${verdict.failing > 0 ? RED : GRAY}${verdict.line}${RESET}`)
@@ -490,6 +494,60 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
   }
 
   console.log(`  ${GRAY}Completed in ${(duration_ms / 1000).toFixed(1)}s${RESET}`)
+  console.log()
+}
+
+// Leading section (BUR-160): the honest per-criterion Support Summary — the E3 report
+// headline (the 0-100 score follows it, demoted to a trend indicator). Three VPAT-anchored
+// buckets — Supports (automated) / Does not support / Not evaluated — with `--verbose`
+// expanding the full per-criterion table and splitting "Not evaluated" into its three
+// reasons. Absent on early-return scans (no `criterion_conformance`), like `coverage`.
+// The engine states an automated BASIS, never a pass/fail claim: the banned words
+// (Meets/conformant/compliant/conformance) must never appear here — verdict.test.ts gates it.
+function printSupportSummary(result: ScanResult, target: WcagLevel, options: PrintOptions): void {
+  const entries = result.criterion_conformance
+  if (!entries || entries.length === 0) return
+
+  let supports = 0
+  let fails = 0
+  let notEvaluated = 0
+  for (const e of entries) {
+    if (e.verdict === 'fail') fails++
+    else if (e.verdict === 'pass_automated') supports++
+    else notEvaluated++
+  }
+
+  console.log(`  ${BOLD}WCAG 2.2 Support Summary${RESET} ${GRAY}— ${target} target · automated basis only${RESET}`)
+  console.log(
+    `  ${GREEN}✓ Supports (automated) ${supports}${RESET}   ` +
+    `${RED}✕ Does not support ${fails}${RESET}   ` +
+    `${GRAY}○ Not evaluated ${notEvaluated}${RESET}`
+  )
+
+  if (options.verbose) {
+    // Full per-criterion table, in WCAG catalog order. "Not evaluated" splits into its
+    // three honest reasons so the reader sees WHY each was not evaluated.
+    const label: Record<ConformanceVerdict, string> = {
+      fail: `${RED}Does not support${RESET}`,
+      pass_automated: `${GREEN}Supports (automated)${RESET}`,
+      not_verifiable_on_this_scan: `${GRAY}Not evaluated — rendered check${RESET}`,
+      not_tested_assisted: `${GRAY}Not evaluated — assisted${RESET}`,
+      not_tested_manual: `${GRAY}Not evaluated — manual${RESET}`,
+    }
+    const mark: Record<ConformanceVerdict, string> = {
+      fail: `${RED}✕${RESET}`,
+      pass_automated: `${GREEN}✓${RESET}`,
+      not_verifiable_on_this_scan: `${GRAY}○${RESET}`,
+      not_tested_assisted: `${GRAY}○${RESET}`,
+      not_tested_manual: `${GRAY}○${RESET}`,
+    }
+    console.log()
+    for (const e of entries) {
+      console.log(`  ${mark[e.verdict]} ${GRAY}${e.criterion}${RESET}  ${e.name}  ${label[e.verdict]}`)
+    }
+  } else {
+    console.log(`  ${GRAY}Automated verdicts only — a full statement needs manual + assistive-tech testing. Run --verbose for the per-criterion table.${RESET}`)
+  }
   console.log()
 }
 
