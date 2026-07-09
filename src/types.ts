@@ -189,7 +189,7 @@ export interface ScanResult {
   // Optional to keep older JSON consumers type-compatible, but runScan / computeScanResult
   // ALWAYS populate them — like `coverage?`, the `?` is compatibility, not "sometimes absent".
   // Per-scanner versions live in `scanners_used[].version`.
-  engine_version?: string              // Engine (package) version, e.g. "0.1.12"
+  engine_version?: string              // Engine (package) version, e.g. "0.2.0"
   score_model?: number                 // Scoring-model version (bumped when the formula/semantics change)
 }
 
