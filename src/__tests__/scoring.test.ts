@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { computeScanResult, isBeyondTarget } from '../scoring/score.js'
+import { runScan } from '../scan.js'
 import type { EquallIssue, WcagLevel } from '../types.js'
 
 function makeIssue(overrides: Partial<EquallIssue> = {}): EquallIssue {
@@ -49,26 +50,76 @@ describe('computeScore', () => {
     expect(critical.score).toBeLessThan(minor.score)
   })
 
-  it('caps penalty per criterion at 15', () => {
-    // 10 moderate issues (weight 2 each = 20) on same criterion should cap at 15
-    const issues = Array.from({ length: 10 }, () => makeIssue({ severity: 'moderate' }))
-    const capped = computeScanResult(issues, 10, [], 100)
-
-    // 1 critical issue (weight 10) + 1 serious (weight 5) = 15 on same criterion, exactly at cap
-    const atCap = computeScanResult(
-      [makeIssue({ severity: 'critical' }), makeIssue({ severity: 'serious' })],
-      10, [], 100
-    )
-
-    // Both should produce same score since penalty is capped at 15 for the same criterion
-    expect(capped.score).toBe(atCap.score)
+  it('fix-sensitivity: resolving one issue in a saturated criterion strictly raises the score', () => {
+    // Model 1 capped per-criterion penalty at 15, so fixing 1 of 30 identical
+    // failures moved nothing. Model 2 must credit every single fix.
+    const thirty = Array.from({ length: 30 }, () => makeIssue({ severity: 'critical' }))
+    const twentyNine = thirty.slice(0, 29)
+    const five = thirty.slice(0, 5)
+    const s30 = computeScanResult(thirty, 10, [], 100).score
+    const s29 = computeScanResult(twentyNine, 10, [], 100).score
+    const s5 = computeScanResult(five, 10, [], 100).score
+    expect(s29).toBeGreaterThan(s30)
+    expect(s5).toBeGreaterThan(s29)
   })
 
-  it('density scaling: large projects score higher than small with same issues', () => {
-    const issues = [makeIssue({ severity: 'serious' })]
-    const small = computeScanResult(issues, 5, [], 100)
-    const large = computeScanResult(issues, 500, [], 100)
-    expect(large.score).toBeGreaterThan(small.score)
+  it('severity-proportional fix credit: fixing a critical moves more than fixing a minor in the same criterion', () => {
+    const group = [
+      makeIssue({ severity: 'critical' }),
+      makeIssue({ severity: 'critical' }),
+      makeIssue({ severity: 'minor' }),
+    ]
+    const base = computeScanResult(group, 10, [], 100).score
+    const minorFixed = computeScanResult(group.slice(0, 2), 10, [], 100).score
+    const criticalFixed = computeScanResult(
+      [makeIssue({ severity: 'critical' }), makeIssue({ severity: 'minor' })],
+      10, [], 100
+    ).score
+    expect(minorFixed).toBeGreaterThan(base)
+    expect(criticalFixed).toBeGreaterThan(minorFixed)
+  })
+
+  it('rank damping: repetition on one criterion penalizes less than the same issues spread across criteria', () => {
+    const repeated = Array.from({ length: 5 }, () => makeIssue({ severity: 'serious' }))
+    const spread = Array.from({ length: 5 }, (_, i) =>
+      makeIssue({ severity: 'serious', wcag_criteria: [`1.${i + 1}.1`] })
+    )
+    const rep = computeScanResult(repeated, 10, [], 100).score
+    const spr = computeScanResult(spread, 10, [], 100).score
+    expect(rep).toBeGreaterThan(spr)
+  })
+
+  it('padding-resistance: the file count never moves the score (file-split / empty-file injection)', () => {
+    // Model 1 divided the penalty by a log of filesScanned, so adding clean
+    // files raised the score. Model 2's score is a function of the issue
+    // multiset only — identical for 1, 5, 500 files.
+    const issues = [makeIssue({ severity: 'serious' }), makeIssue({ severity: 'moderate', wcag_criteria: ['2.4.4'] })]
+    const one = computeScanResult(issues, 1, [], 100).score
+    const five = computeScanResult(issues, 5, [], 100).score
+    const many = computeScanResult(issues, 500, [], 100).score
+    expect(five).toBe(one)
+    expect(many).toBe(one)
+  })
+
+  it('mono-file fairness: a single-file scan is not structurally penalized', () => {
+    // The scanBuffer/MCP path scans one buffer: same issues, same score as
+    // the identical issue set inside a large repo.
+    const issues = [makeIssue({ severity: 'critical' })]
+    const solo = computeScanResult(issues, 1, [], 100).score
+    const inRepo = computeScanResult(issues, 100, [], 100).score
+    expect(solo).toBe(inRepo)
+  })
+
+  it('unmapped best-practice rules damp per rule, not against each other', () => {
+    const ruleA = Array.from({ length: 3 }, () =>
+      makeIssue({ wcag_criteria: [], wcag_level: null as unknown as WcagLevel, scanner_rule_id: 'rule-a' })
+    )
+    const ruleB = [makeIssue({ wcag_criteria: [], wcag_level: null as unknown as WcagLevel, scanner_rule_id: 'rule-b' })]
+    const together = computeScanResult([...ruleA, ...ruleB], 10, [], 100).score
+    const aOnly = computeScanResult(ruleA, 10, [], 100).score
+    // Adding a distinct rule's issue must penalize at full weight (rank 1 of
+    // its own key), i.e. strictly lower the score below the rule-a-only score.
+    expect(together).toBeLessThan(aOnly)
   })
 
   it('score never goes below 0', () => {
@@ -78,6 +129,53 @@ describe('computeScore', () => {
     const result = computeScanResult(manyIssues, 1, [], 100)
     expect(result.score).toBeGreaterThanOrEqual(0)
   })
+})
+
+describe('scoring gaming (integration, real pipeline)', () => {
+  const BAD_PAGE = (extraImgs: number) => `<!DOCTYPE html>
+<html lang="en">
+  <head><title>Fixture</title></head>
+  <body>
+    <main>
+      <h1>Fixture page</h1>
+      <img src="hero.jpg">
+      ${Array.from({ length: extraImgs }, (_, i) => `<img src="p${i}.jpg" alt="ok ${i}">`).join('\n      ')}
+    </main>
+  </body>
+</html>`
+
+  // A component that provably yields zero issues — verified by the clean-case
+  // assertion below before the padding comparisons rely on it.
+  const CLEAN_PAD = (i: number) => `export function Pad${i}() {
+  return (
+    <div>
+      <p>Static content block ${i}.</p>
+    </div>
+  )
+}
+`
+
+  it('the clean padding fixture really is inert (guards the padding tests)', async () => {
+    const clean = await runScan({ files: [{ path: 'Pad0.tsx', content: CLEAN_PAD(0) }] })
+    expect(clean.issues.filter(i => !i.ignored)).toHaveLength(0)
+  }, 30000)
+
+  it('identical-element padding: adding clean elements to a failing page never raises the score', async () => {
+    const bare = await runScan({ files: [{ path: 'page.html', content: BAD_PAGE(0) }] })
+    const padded = await runScan({ files: [{ path: 'page.html', content: BAD_PAGE(20) }] })
+    expect(bare.score).toBeLessThan(100)
+    expect(padded.score).toBeLessThanOrEqual(bare.score)
+  }, 30000)
+
+  it('empty-file injection: adding clean files to a failing scan never raises the score', async () => {
+    const bad = { path: 'page.html', content: BAD_PAGE(0) }
+    const bare = await runScan({ files: [bad] })
+    const padded = await runScan({
+      files: [bad, ...Array.from({ length: 20 }, (_, i) => ({ path: `Pad${i}.tsx`, content: CLEAN_PAD(i) }))],
+    })
+    expect(bare.score).toBeLessThan(100)
+    expect(padded.score).toBe(bare.score)
+  }, 60000)
 })
 
 describe('conformance level', () => {
