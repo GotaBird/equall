@@ -1,36 +1,34 @@
 #!/usr/bin/env node
 
 import { resolve, basename } from 'node:path'
-import { readFileSync, existsSync, statSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
+import { existsSync, statSync } from 'node:fs'
 import { Command } from 'commander'
 import ora from 'ora'
 import { runScan } from './scan.js'
 import { printResult, printJson } from './output/terminal.js'
 import { findIgnores, removeIgnore, clearAllIgnores, addIgnore, addIgnoreFile } from './ignores.js'
 import { computeExitCode } from './exit-code.js'
-import type { WcagLevel } from './types.js'
-
-const __dir = resolve(fileURLToPath(import.meta.url), '..')
-const pkg = JSON.parse(readFileSync(resolve(__dir, '..', 'package.json'), 'utf-8'))
+import { ENGINE_VERSION } from './engine-version.js'
+import type { WcagLevel, WcagStandard } from './types.js'
 
 const program = new Command()
 
 program
   .name('equall')
   .description('WCAG accessibility scanner for HTML, JSX, TSX, Vue, Svelte & Astro files')
-  .version(pkg.version)
+  .version(ENGINE_VERSION)
 
 program
   .command('scan')
   .description('Scan a project for accessibility issues')
   .argument('[path]', 'Path to project root', '.')
   .option('-l, --level <level>', 'WCAG conformance target: A, AA, or AAA', 'AA')
+  .option('--standard <standard>', 'WCAG version to evaluate against: wcag22 (default) or wcag21 (the public-sector legal bar, WAD/EN 301 549)', 'wcag22')
   .option('--include <patterns...>', 'Glob patterns to include')
   .option('--exclude <patterns...>', 'Glob patterns to exclude')
   .option('--json', 'Output results as JSON')
   .option('-i, --show-ignored', 'Show ignored issues in output')
-  .option('-v, --verbose', 'Show all occurrences for best-practice issues')
+  .option('-v, --verbose', 'Expand the full per-criterion support table + all occurrences for best-practice issues')
   .option('-m, --show-manual', 'List WCAG criteria that require manual review')
   .option('--no-color', 'Disable colored output')
   .option('--no-readability', 'Disable readability (Flesch-Kincaid) scanner — English-only, experimental')
@@ -46,10 +44,16 @@ Examples:
 
 Supported files: .html .htm .jsx .tsx .vue .svelte .astro
 `)
-  .action(async (path: string, opts: { level: string; include?: string[]; exclude?: string[]; json?: boolean; showIgnored?: boolean; verbose?: boolean; showManual?: boolean; readability?: boolean; minScore?: string }) => {
+  .action(async (path: string, opts: { level: string; standard?: string; include?: string[]; exclude?: string[]; json?: boolean; showIgnored?: boolean; verbose?: boolean; showManual?: boolean; readability?: boolean; minScore?: string }) => {
     const level = opts.level.toUpperCase() as WcagLevel
     if (!['A', 'AA', 'AAA'].includes(level)) {
       console.error(`Invalid level "${opts.level}". Use A, AA, or AAA.`)
+      process.exit(1)
+    }
+
+    const standard = (opts.standard ?? 'wcag22').toLowerCase() as WcagStandard
+    if (!['wcag22', 'wcag21'].includes(standard)) {
+      console.error(`Invalid standard "${opts.standard}". Use wcag22 or wcag21.`)
       process.exit(1)
     }
 
@@ -72,12 +76,17 @@ Supported files: .html .htm .jsx .tsx .vue .svelte .astro
       const result = await runScan({
         path,
         level,
+        standard,
         include: opts.include,
         exclude: opts.exclude,
         disableScanners: opts.readability === false ? ['readability'] : [],
       })
 
       spinner?.stop()
+
+      // Surface the engine's non-fatal scan warnings on stderr (the engine no longer writes to
+      // stderr itself; they also travel on result.diagnostics for --json / programmatic consumers).
+      for (const d of result.diagnostics ?? []) console.warn(`  ${d}`)
 
       if (result.summary.files_scanned === 0) {
         if (opts.json) {
@@ -94,7 +103,7 @@ Supported files: .html .htm .jsx .tsx .vue .svelte .astro
         printJson(result)
         console.error(`✓ JSON report written (${result.issues.length} issues)`)
       } else {
-        printResult(result, { showIgnored: opts.showIgnored, verbose: opts.verbose, showManual: opts.showManual, targetLevel: level })
+        printResult(result, { showIgnored: opts.showIgnored, verbose: opts.verbose, showManual: opts.showManual, targetLevel: level, standard })
       }
 
       // A scan that ran successfully exits 0. The score gate is opt-in (--min-score)

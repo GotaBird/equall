@@ -2,11 +2,15 @@ import { resolve } from 'node:path'
 import { discoverFiles, fileTypeForPath, sanitizeVirtualPath } from './discover.js'
 import { getAvailableScanners } from './scanners/index.js'
 import { computeScanResult } from './scoring/score.js'
-import { computeCoverage } from './coverage.js'
+import { computeCoverage, honestTestedCriteria } from './coverage.js'
+import { computeConformance } from './conformance/index.js'
+import { computeConfidenceFlags } from './confidence/index.js'
+import { getCriteriaForStandardLevel } from './wcag-catalog.js'
 import { fingerprint } from './utils/fingerprint.js'
 import { isDocumentUnit } from './utils/html-extract.js'
 import { partitionPageLevelIssues, summarizeReclassified } from './rules/page-level.js'
-import type { ScanOptions, ScanResult, ScannerInfo, EquallIssue, WcagLevel, FileEntry } from './types.js'
+import { mergeCrossEngineDuplicates } from './rules/equivalence.js'
+import type { ScanOptions, ScanResult, ScannerInfo, EquallIssue, WcagLevel, WcagStandard, FileEntry } from './types.js'
 
 // A single in-memory file: code provided directly instead of read from disk (T1.1).
 export interface FileInput {
@@ -17,6 +21,7 @@ export interface FileInput {
 export interface RunScanOptions {
   path?: string
   level?: WcagLevel
+  standard?: WcagStandard             // WCAG version view — 'wcag22' (default) | 'wcag21'
   include?: string[]
   exclude?: string[]
   disableScanners?: string[]
@@ -39,15 +44,38 @@ function buildFileEntries(inputs: FileInput[], rootPath: string): FileEntry[] {
   })
 }
 
+// Always-attach the report fields on the empty-scan early returns, so EVERY ScanResult carries
+// the shape the README's "Programmatic use" documents — coverage / criterion_conformance /
+// standard / confidence_flags are present, never `undefined`. No scanners ran on these paths →
+// coverage is all-manual and conformance all not_tested_manual; confidence still reads the files
+// (advisories are independent of the engines).
+function attachEmptyReport(result: ScanResult, files: FileEntry[], scanOptions: ScanOptions, diagnostics: string[]): ScanResult {
+  const standard = scanOptions.standard ?? 'wcag22'
+  const coverage = computeCoverage([], files)
+  coverage.reclassified = []
+  result.coverage = coverage
+  result.criterion_conformance = computeConformance(scanOptions.wcag_level, standard, [], coverage)
+  result.standard = standard
+  result.confidence_flags = computeConfidenceFlags(files)
+  result.diagnostics = diagnostics
+  return result
+}
+
 export async function runScan(options: RunScanOptions = {}): Promise<ScanResult> {
   const rootPath = resolve(options.path ?? process.cwd())
   const startTime = Date.now()
 
   const scanOptions: ScanOptions = {
     wcag_level: options.level ?? 'AA',
+    standard: options.standard ?? 'wcag22',
     include_patterns: options.include ?? [],
     exclude_patterns: options.exclude ?? [],
   }
+
+  // Non-fatal warnings collected during the scan (no scanners available, a scanner threw).
+  // Returned on ScanResult.diagnostics instead of written to stderr — the CLI prints them;
+  // a library / MCP consumer can capture them.
+  const diagnostics: string[] = []
 
   // 1. Get files — from in-memory buffers (T1.1) or by discovering them on disk.
   const inMemory = options.files != null
@@ -55,15 +83,17 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
     ? buildFileEntries(options.files!, rootPath)
     : await discoverFiles(rootPath, scanOptions)
   if (files.length === 0) {
-    return computeScanResult([], 0, [], Date.now() - startTime, scanOptions.wcag_level)
+    const result = computeScanResult([], 0, [], Date.now() - startTime, scanOptions.wcag_level)
+    return attachEmptyReport(result, files, scanOptions, diagnostics)
   }
 
   // 2. Get available scanners (minus any the user disabled via CLI flag)
   const disabled = new Set(options.disableScanners ?? [])
   const scanners = (await getAvailableScanners()).filter(s => !disabled.has(s.name))
   if (scanners.length === 0) {
-    console.warn('No scanners available. Install axe-core and jsdom for HTML scanning.')
-    return computeScanResult([], files.length, [], Date.now() - startTime, scanOptions.wcag_level)
+    diagnostics.push('No scanners available. Install axe-core and jsdom for HTML scanning.')
+    const result = computeScanResult([], files.length, [], Date.now() - startTime, scanOptions.wcag_level)
+    return attachEmptyReport(result, files, scanOptions, diagnostics)
   }
 
   // 3. Run all scanners in parallel
@@ -95,12 +125,15 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
       })
     } else {
       const err = result.reason instanceof Error ? result.reason.message : String(result.reason)
-      console.warn(`  [scanner] Failed: ${err.slice(0, 120)}`)
+      diagnostics.push(`[scanner] failed: ${err.slice(0, 120)}`)
     }
   }
 
-  // 5. Deduplicate issues (same file + same rule + same line = one issue)
-  const deduped = deduplicateIssues(allIssues)
+  // 5. Merge cross-engine duplicates (rule-equivalence table, conservative 1:1 —
+  // see rules/equivalence.ts), then deduplicate within engines (same file + same
+  // rule + same line = one issue). Both run before fingerprinting, so surviving
+  // issues keep the identity they would have had anyway.
+  const deduped = deduplicateIssues(mergeCrossEngineDuplicates(allIssues))
 
   // 5b. Reclassify page-level rules on fragment units — engine-agnostic
   // post-filter, after dedup (honest counts) and before ignores (an equall-ignore on a
@@ -115,16 +148,27 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
   // 6. Apply equall-ignore comments
   const { active, ignored } = applyIgnoreComments(kept, files)
 
-  // 7. Merge coverage from all active scanners
+  // 7. Merge coverage from all active scanners.
+  // criteria_covered is the CAPABLE union — it still feeds POUR scoring in score.ts and
+  // is stored as-is; never route honest coverage into the score.
   const criteriaCovered = [...new Set(scanners.flatMap(s => s.coveredCriteria))].sort()
 
-  // Total WCAG 2.2 criteria per level (4.1.1 Parsing excluded — obsolete in 2.2)
-  const WCAG_TOTAL: Record<string, number> = { A: 32, AA: 56, AAA: 86 }
-  const criteriaTotal = WCAG_TOTAL[scanOptions.wcag_level] ?? 56
+  // Total criteria for the selected standard + level — derived from the catalog (single
+  // source of truth); never hardcoded. 2.2: A=31/AA=55/AAA=86 · 2.1: A=30/AA=50/AAA=78.
+  const criteriaTotal = getCriteriaForStandardLevel(scanOptions.standard ?? 'wcag22', scanOptions.wcag_level).length
 
-  // 8. Compute score (only active issues affect scoring)
+  // 7b. Honest coverage (T1.3) — exercised criteria only, never "capable" as "tested".
+  // Computed BEFORE scoring so the genuinely-exercised set feeds the honest
+  // criteria_tested + POUR n/a gating. The reclassified summary is what honestTestedCriteria
+  // subtracts (page-level rules that can't be verified on a fragment).
+  const coverage = computeCoverage(scanners, files)
+  coverage.reclassified = summarizeReclassified(reclassified)
+  const exercised = honestTestedCriteria(coverage, coverage.reclassified)
+
+  // 8. Compute score (only active issues affect scoring). `exercised` drives the honest
+  // criteria_tested and the POUR n/a gating; `criteriaCovered` stays the stored capable union.
   const durationMs = Date.now() - startTime
-  const result = computeScanResult(active, files.length, scannersUsed, durationMs, scanOptions.wcag_level, criteriaCovered, criteriaTotal)
+  const result = computeScanResult(active, files.length, scannersUsed, durationMs, scanOptions.wcag_level, criteriaCovered, criteriaTotal, exercised)
 
   // 9. Attach stable fingerprints — identity for diff-aware scanning.
   // Metadata only: does not affect scoring (computed above from `active`).
@@ -132,14 +176,31 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
     list.map((issue) => ({ ...issue, fingerprint: fingerprint(issue) }))
 
   // Include ignored issues in output for transparency, update count
-  result.issues = [...withFingerprint(active), ...withFingerprint(ignored)]
+  const activeFingerprinted = withFingerprint(active)
+  result.issues = [...activeFingerprinted, ...withFingerprint(ignored)]
   result.summary.ignored_count = ignored.length
 
-  // 10. Honest coverage (T1.3) — exercised criteria only, never "capable" as "tested".
-  // Additive: does NOT touch criteria_covered (which feeds POUR scoring).
-  result.coverage = computeCoverage(scanners, files)
+  // 10. Attach the honest coverage report computed above.
   // Always attached ([] when none) so the emitted JSON shape stays stable.
-  result.coverage.reclassified = summarizeReclassified(reclassified)
+  result.coverage = coverage
+
+  // 11. Per-criterion conformance — the audit report backbone. Pure derivation from
+  // the fingerprinted active issues × coverage; `evidence` reuses the fingerprints attached
+  // above. Same additive-attach pattern as coverage (absent on the early-return paths).
+  // Pass ALL issues (active + ignored) so conformance can count accepted_exceptions per criterion;
+  // it re-filters to active for the failing set, so the ignored ones never become failures.
+  result.criterion_conformance = computeConformance(scanOptions.wcag_level, scanOptions.standard ?? 'wcag22', result.issues, coverage)
+
+  // 12. Stamp the standard the conformance view was rendered against.
+  result.standard = scanOptions.standard ?? 'wcag22'
+
+  // 13. Alt-quality confidence flags — an ADVISORY over the raw file contents. Runs
+  // after the score + verdicts and only reads `files`, so it cannot alter any of them. Always
+  // attached ([] when none) for a stable JSON shape.
+  result.confidence_flags = computeConfidenceFlags(files)
+
+  // 14. Non-fatal scan warnings — returned on the result, never written to the host's stderr.
+  result.diagnostics = diagnostics
 
   return result
 }

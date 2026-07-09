@@ -1,7 +1,5 @@
 import type {
   EquallIssue,
-  PourScores,
-  PourPrinciple,
   ConformanceLevel,
   Severity,
   WcagLevel,
@@ -9,6 +7,7 @@ import type {
   ScannerInfo,
   ScanResult,
 } from '../types.js'
+import { ENGINE_VERSION } from '../engine-version.js'
 
 // Severity weight for scoring — critical issues impact score more
 const SEVERITY_WEIGHT: Record<Severity, number> = {
@@ -18,8 +17,16 @@ const SEVERITY_WEIGHT: Record<Severity, number> = {
   minor: 1,
 }
 
-// Maximum penalty per criterion to avoid one rule destroying the score
-const MAX_PENALTY_PER_CRITERION = 15
+// Scoring-model version stamped on every ScanResult. Bump ONLY when the
+// scoring formula or its input semantics change, so two outputs from different
+// releases are comparable — model 2 replaces the capped/file-scaled model 1
+// with rank-damped severity summing (see computeScore).
+const SCORE_MODEL = 2
+
+// Asymptotic decay rate, recalibrated for model 2 against a fixed dogfood
+// corpus (minimizing score movement vs model 1 on repos where model 1 was
+// not structurally wrong). Model 1 used 0.02 on a file-scaled penalty.
+const SCORE_DECAY_K = 0.01
 
 // WCAG level ordering, used to scope conformance to the requested target.
 const LEVEL_RANK: Record<WcagLevel, number> = { A: 1, AA: 2, AAA: 3 }
@@ -40,17 +47,22 @@ export function computeScanResult(
   durationMs: number,
   targetLevel: WcagLevel = 'AA',
   criteriaCovered: string[] = [],
-  criteriaTotal: number = 0
+  criteriaTotal: number = 0,
+  // The criteria genuinely EXERCISED on this scan (coverage `auto` set, minus
+  // reclassified-on-fragment criteria) — see honestTestedCriteria in coverage.ts.
+  // Distinct from `criteriaCovered` (the capable union, which still feeds the
+  // stored `criteria_covered` field). Drives the honest `criteria_tested` set.
+  // Defaults to [] so callers that don't have coverage
+  // (early returns, unit tests) get an honest empty exercised set.
+  exercised: string[] = []
 ): ScanResult {
-  const summary = computeSummary(issues, filesScanned)
-  const score = computeScore(issues, filesScanned, targetLevel)
-  const pourScores = computePourScores(issues, filesScanned, criteriaCovered, targetLevel)
+  const summary = computeSummary(issues, filesScanned, exercised)
+  const score = computeScore(issues, targetLevel)
   const conformanceLevel = computeConformanceLevel(issues, summary, targetLevel)
 
   return {
     score,
     conformance_level: conformanceLevel,
-    pour_scores: pourScores,
     issues,
     summary,
     scanners_used: scannersUsed,
@@ -58,10 +70,12 @@ export function computeScanResult(
     criteria_total: criteriaTotal,
     scanned_at: new Date().toISOString(),
     duration_ms: durationMs,
+    engine_version: ENGINE_VERSION,
+    score_model: SCORE_MODEL,
   }
 }
 
-function computeSummary(issues: EquallIssue[], filesScanned: number): ScanSummary {
+function computeSummary(issues: EquallIssue[], filesScanned: number, exercised: string[] = []): ScanSummary {
   const bySeverity: Record<Severity, number> = {
     critical: 0,
     serious: 0,
@@ -69,14 +83,12 @@ function computeSummary(issues: EquallIssue[], filesScanned: number): ScanSummar
     minor: 0,
   }
   const byScanner: Record<string, number> = {}
-  const criteriaSet = new Set<string>()
   const failedCriteriaSet = new Set<string>()
 
   for (const issue of issues) {
     bySeverity[issue.severity]++
     byScanner[issue.scanner] = (byScanner[issue.scanner] ?? 0) + 1
     for (const c of issue.wcag_criteria) {
-      criteriaSet.add(c)
       failedCriteriaSet.add(c)
     }
   }
@@ -86,114 +98,70 @@ function computeSummary(issues: EquallIssue[], filesScanned: number): ScanSummar
     total_issues: issues.length,
     by_severity: bySeverity,
     by_scanner: byScanner,
-    criteria_tested: [...criteriaSet].sort(),
+    // criteria_tested is the genuinely EXERCISED set (coverage-derived),
+    // NOT the issue-derived set (which equalled criteria_failed and made the verdict
+    // coverage-blind). criteria_failed stays issue-derived — it IS the failure set.
+    criteria_tested: [...exercised].sort(),
     criteria_failed: [...failedCriteriaSet].sort(),
     ignored_count: 0,
   }
 }
 
-function computeScore(issues: EquallIssue[], filesScanned: number, targetLevel: WcagLevel): number {
+// Scoring model 2 — rank-damped severity summing. The penalty is a function of
+// the (deduplicated, non-ignored) issue multiset ONLY: no file count, no
+// per-criterion cap, no opportunity denominator. Model 1's file scaling let the
+// score rise by adding clean files (and structurally punished single-buffer
+// scans), and its 15-point cap froze the score while fixes landed inside a
+// saturated criterion. Model 2 guarantees instead:
+//   fix-sensitivity  — resolving ANY single issue strictly raises the score
+//                      (each issue contributes w/rank > 0);
+//   padding-resistance — adding files/elements/engines that surface no issue
+//                      cannot move the score (nothing else is an input);
+//   mono-file fairness — a single-buffer scan and the same issues inside a
+//                      repo produce the identical score.
+// Within a criterion, weights are sorted descending and damped by rank
+// (w₁/1 + w₂/2 + w₃/3 + …): the 30th identical failure weighs little, but
+// every fix is credited at its OWN severity — a minor fix inside a
+// critical-dominated criterion moves the score by its minor weight, not the
+// group's maximum.
+function computeScore(issues: EquallIssue[], targetLevel: WcagLevel): number {
   // Beyond-target criteria (e.g. AAA under an AA target) are advisory, not
   // conformance failures — they must not drag the conformance score down.
   const scoped = issues.filter(issue => !isBeyondTarget(issue, targetLevel))
   if (scoped.length === 0) return 100
 
-  // Group issues by WCAG criterion and compute penalty per criterion
-  const penaltyByCriterion = new Map<string, number>()
-
+  // Group issue weights by WCAG criterion (unmapped issues still penalize,
+  // keyed per rule so distinct best-practice rules don't damp each other).
+  const weightsByCriterion = new Map<string, number[]>()
   for (const issue of scoped) {
     const weight = SEVERITY_WEIGHT[issue.severity]
-    for (const criterion of issue.wcag_criteria) {
-      const current = penaltyByCriterion.get(criterion) ?? 0
-      penaltyByCriterion.set(criterion, Math.min(current + weight, MAX_PENALTY_PER_CRITERION))
-    }
-    // Issues without WCAG mapping still penalize
-    if (issue.wcag_criteria.length === 0) {
-      const key = `_${issue.scanner}:${issue.scanner_rule_id}`
-      const current = penaltyByCriterion.get(key) ?? 0
-      penaltyByCriterion.set(key, Math.min(current + weight, MAX_PENALTY_PER_CRITERION))
+    const keys = issue.wcag_criteria.length > 0
+      ? issue.wcag_criteria
+      : [`_${issue.scanner}:${issue.scanner_rule_id}`]
+    for (const key of keys) {
+      const weights = weightsByCriterion.get(key) ?? []
+      weights.push(weight)
+      weightsByCriterion.set(key, weights)
     }
   }
 
-  const totalRawPenalty = [...penaltyByCriterion.values()].reduce((a, b) => a + b, 0)
-  
-  // Density-based scaling: scales down penalty for large projects
-  const scaleFactor = 1 / (1 + Math.log10(Math.max(1, filesScanned)))
-  const scaledPenalty = totalRawPenalty * scaleFactor
-
-  // Asymptotic curve: k = 0.02 makes score drop fast but never touch 0
-  const k = 0.02
-  const score = 100 * Math.exp(-k * scaledPenalty)
-
-  return Math.max(0, Math.round(score))
-}
-
-function computePourScores(issues: EquallIssue[], filesScanned: number, criteriaCovered: string[] = [], targetLevel: WcagLevel = 'AA'): PourScores {
-  const pourIssues: Record<PourPrinciple, EquallIssue[]> = {
-    perceivable: [],
-    operable: [],
-    understandable: [],
-    robust: [],
-  }
-
-  // Map covered criteria to POUR principles (first digit: 1=P, 2=O, 3=U, 4=R)
-  const POUR_BY_PREFIX: Record<string, PourPrinciple> = { '1': 'perceivable', '2': 'operable', '3': 'understandable', '4': 'robust' }
-  const pourCovered: Record<PourPrinciple, boolean> = {
-    perceivable: false,
-    operable: false,
-    understandable: false,
-    robust: false,
-  }
-  for (const c of criteriaCovered) {
-    const principle = POUR_BY_PREFIX[c[0]]
-    if (principle) pourCovered[principle] = true
-  }
-
-  for (const issue of issues) {
-    if (!issue.pour) continue
-    // Keep POUR scores consistent with the global score: beyond-target
-    // (advisory) criteria do not count against the principle.
-    if (isBeyondTarget(issue, targetLevel)) continue
-    pourIssues[issue.pour].push(issue)
-  }
-
-  const scaleFactor = 1 / (1 + Math.log10(Math.max(1, filesScanned)))
-  const k = 0.02
-
-  // Score per POUR: Same formula as global score but isolated to the principle
-  function pourScore(principle: PourPrinciple): number | null {
-    const principleIssues = pourIssues[principle]
-
-    if (!pourCovered[principle] && principleIssues.length === 0) return null
-    if (principleIssues.length === 0) return 100
-
-    const penaltyByCriterion = new Map<string, number>()
-
-    for (const issue of principleIssues) {
-      const weight = SEVERITY_WEIGHT[issue.severity]
-      for (const criterion of issue.wcag_criteria) {
-        const current = penaltyByCriterion.get(criterion) ?? 0
-        penaltyByCriterion.set(criterion, Math.min(current + weight, MAX_PENALTY_PER_CRITERION))
-      }
-      if (issue.wcag_criteria.length === 0) {
-        const key = `_${issue.scanner}:${issue.scanner_rule_id}`
-        const current = penaltyByCriterion.get(key) ?? 0
-        penaltyByCriterion.set(key, Math.min(current + weight, MAX_PENALTY_PER_CRITERION))
-      }
+  // Rank-damped sum per criterion: heaviest failures first, each divided by
+  // its rank — repetition saturates smoothly with no hard cap.
+  let totalPenalty = 0
+  for (const weights of weightsByCriterion.values()) {
+    weights.sort((a, b) => b - a)
+    for (let i = 0; i < weights.length; i++) {
+      totalPenalty += weights[i] / (i + 1)
     }
-
-    const totalRawPenalty = [...penaltyByCriterion.values()].reduce((a, b) => a + b, 0)
-    const scaledPenalty = totalRawPenalty * scaleFactor
-
-    return Math.max(0, Math.round(100 * Math.exp(-k * scaledPenalty)))
   }
 
-  return {
-    perceivable: pourScore('perceivable'),
-    operable: pourScore('operable'),
-    understandable: pourScore('understandable'),
-    robust: pourScore('robust'),
-  }
+  // Asymptotic curve: drops fast at first, never touches 0.
+  const score = 100 * Math.exp(-SCORE_DECAY_K * totalPenalty)
+
+  // Two-decimal precision: small fixes inside heavily damped criteria move
+  // the score by fractions of a point — integer rounding would absorb them
+  // and break fix-sensitivity.
+  return Math.max(0, Math.round(score * 100) / 100)
 }
 
 function computeConformanceLevel(

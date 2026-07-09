@@ -17,7 +17,7 @@ export interface DiffScanOptions {
   level?: WcagLevel            // WCAG target, forwarded to scanBuffer (default 'AA')
 }
 
-// Diff-aware result: only-new is the wedge. `legacy` is surfaced for honesty (it
+// Diff-aware result: only the new violations are surfaced. `legacy` is surfaced for honesty (it
 // pre-existed the diff, so the agent is not asked to fix it). `not_testable` lists
 // changed files we could not statically assess — never claim "clean" on blind spots.
 export interface DiffScanResult {

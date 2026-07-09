@@ -1,18 +1,12 @@
-import type { ScanResult, EquallIssue, Severity, WcagLevel } from '../types.js'
-import { getCriteriaForLevel, getCriterion } from '../wcag-catalog.js'
-import { formatNoFailureVerdict } from '../coverage.js'
+import type { ScanResult, EquallIssue, Severity, WcagLevel, WcagStandard, ConformanceVerdict } from '../types.js'
+import { getCriteriaForStandardLevel, getCriterion } from '../wcag-catalog.js'
 import { isBeyondTarget } from '../scoring/score.js'
 
-// WCAG 2.2 Level A criteria (32 total, 4.1.1 Parsing excluded — obsolete in 2.2)
-// Used to partition coverage and failures by level in the summary display
-const WCAG_A_CRITERIA = new Set([
-  '1.1.1', '1.2.1', '1.2.2', '1.2.3', '1.3.1', '1.3.2', '1.3.3', '1.4.1', '1.4.2',
-  '2.1.1', '2.1.2', '2.1.4', '2.2.1', '2.2.2', '2.3.1',
-  '2.4.1', '2.4.2', '2.4.3', '2.4.4', '2.5.1', '2.5.2', '2.5.3', '2.5.4', '2.5.6',
-  '3.1.1', '3.2.1', '3.2.2', '3.2.6', '3.3.1', '3.3.2', '3.3.7',
-  '4.1.2',
-])
-const WCAG_A_TOTAL = 32
+// WCAG version label for the selected standard. The Level-A partition set/total
+// are derived per-scan from the catalog (standard-aware) inside printResult — never hardcoded.
+function standardLabel(standard: WcagStandard): string {
+  return standard === 'wcag21' ? 'WCAG 2.1' : 'WCAG 2.2'
+}
 
 // Best-practice rule explanations
 const BP_HINTS: Record<string, string> = {
@@ -41,18 +35,20 @@ const RED = '\x1b[31m'
 const YELLOW = '\x1b[33m'
 const GREEN = '\x1b[32m'
 const CYAN = '\x1b[36m'
-const MAGENTA = '\x1b[35m'
 const WHITE = '\x1b[37m'
 const BG_RED = '\x1b[41m'
 const BG_YELLOW = '\x1b[43m'
 const BG_GREEN = '\x1b[42m'
 const BG_CYAN = '\x1b[46m'
 
-function scoreColor(score: number): string {
-  if (score >= 80) return GREEN
-  if (score >= 50) return YELLOW
-  return RED
-}
+// Public docs page defining every verdict (what it asserts / does not) + the VPAT mapping.
+// Printed under the Support Summary so a reader of "Supports (automated)" has a reference.
+// NOTE: ships in the published CLI — keep in sync with the canonical public docs domain.
+const VERDICT_DOCS_URL = 'https://equallscan.com/docs/verdicts'
+
+// How to verify the reclassified page-level rules — the post-build "scan your dist/" recipe.
+// Also ships in the published CLI; same canonical docs domain as VERDICT_DOCS_URL.
+const POST_BUILD_DOCS_URL = 'https://equallscan.com/docs/verifying-page-level-rules'
 
 function scoreBg(score: number): string {
   if (score >= 80) return BG_GREEN
@@ -125,36 +121,28 @@ function formatSuggestion(raw: string, indent: string): string[] {
   return out
 }
 
-function conformanceBadge(level: string): string {
-  switch (level) {
-    case 'AAA': return `${BG_GREEN}${WHITE} AAA ${RESET}`
-    case 'AA': return `${BG_GREEN}${WHITE} AA ${RESET}`
-    case 'A': return `${BG_CYAN}${WHITE} A ${RESET}`
-    case 'Partial A': return `${BG_YELLOW}${WHITE} ~A ${RESET}`
-    case 'None': return `${BG_RED}${WHITE} — ${RESET}`
-    default: return level
-  }
-}
+// The honest verdict that replaces the old "Meets WCAG AA" badge + explainer.
+// It states exactly what automation established — how many in-target (A/AA) criteria are
+// failing, out of how many were genuinely verified, and how many were NOT evaluated — and
+// never makes a pass/fail claim ("Meets"/"conformant"). A clean scan reads
+// "0 A/AA failures among the N criteria automatically verified (M not evaluated)", never "None".
+function formatVerifiedSubset(result: ScanResult, target: WcagLevel): { line: string; failing: number } {
+  const verified = result.summary.criteria_tested.length
+  const notEvaluated = Math.max(0, result.criteria_total - verified)
 
-// One-line plain-language explainer for the conformance badge.
-// Shown right under the score so newcomers understand what "~A" or "AA" means.
-function describeConformance(level: string): string {
-  switch (level) {
-    case 'AAA': return 'Meets WCAG AAA — the highest level of automated conformance.'
-    case 'AA': return 'Meets WCAG AA — the standard most regulations require.'
-    case 'A': return 'Meets WCAG A — the legal minimum. Aim for AA next.'
-    case 'Partial A': return 'Not yet conformant. Some Level A criteria are failing (legal minimum).'
-    case 'None': return 'Conformance level could not be determined from this scan.'
-    default: return ''
+  // Distinct in-target failing criteria (advisory AAA-under-AA excluded), matching the
+  // Coverage block's "failing" count so the header and the coverage line agree.
+  const failing = new Set<string>()
+  for (const issue of result.issues) {
+    if (issue.ignored) continue
+    if (isBeyondTarget(issue, target)) continue
+    for (const c of issue.wcag_criteria) failing.add(c)
   }
-}
+  const f = failing.size
 
-function bar(value: number | null, width: number = 20): string {
-  if (value === null) return `${GRAY}${'░'.repeat(width)} n/a${RESET}`
-  const filled = Math.round((value / 100) * width)
-  const empty = width - filled
-  const color = scoreColor(value)
-  return `${color}${'█'.repeat(filled)}${GRAY}${'░'.repeat(empty)}${RESET} ${color}${value}${RESET}`
+  const scope = target === 'A' ? 'Level A' : target === 'AAA' ? 'A/AA/AAA' : 'A/AA'
+  const line = `${f} ${scope} failure${f === 1 ? '' : 's'} among the ${verified} criteri${verified === 1 ? 'on' : 'a'} automatically verified (${notEvaluated} not evaluated).`
+  return { line, failing: f }
 }
 
 export interface PrintOptions {
@@ -162,23 +150,22 @@ export interface PrintOptions {
   verbose?: boolean
   showManual?: boolean
   targetLevel?: WcagLevel
+  standard?: WcagStandard
 }
 
 export function printResult(result: ScanResult, options: PrintOptions = {}): void {
-  const { score, conformance_level, pour_scores, summary, scanners_used, duration_ms } = result
+  const { score, summary, scanners_used, duration_ms } = result
 
   console.log()
   console.log(`${BOLD}  ◆ EQUALL — Accessibility Score${RESET}`)
   console.log()
 
-  // Big score display with plain-language conformance explainer
-  const conformanceExplainer = describeConformance(conformance_level)
-  console.log(`  ${scoreBg(score)}${BOLD}${WHITE}  ${score}  ${RESET}  ${conformanceBadge(conformance_level)}  ${GRAY}WCAG 2.2${RESET}`)
-  console.log(`  ${GRAY}${conformanceExplainer}${RESET}`)
-  console.log()
-
-  // Conformance target drives what counts as a violation vs. beyond-target advisory.
+  // Target drives what counts as an in-scope violation vs. beyond-target advisory.
   const target = options.targetLevel ?? 'AA'
+
+  // Standard view — drives the "WCAG 2.1/2.2" labels (derived from the catalog).
+  const standard = options.standard ?? 'wcag22'
+
   // Beyond-target criteria (e.g. AAA reading-level under an AA target) are advisory:
   // they don't penalize the score and aren't counted among conformance violations.
   const isAdvisory = (i: EquallIssue) => i.wcag_criteria.length > 0 && isBeyondTarget(i, target)
@@ -213,54 +200,6 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
     console.log(`  ${GRAY}${summary.ignored_count} issue${summary.ignored_count > 1 ? 's' : ''} suppressed via equall-ignore${RESET}`)
   }
 
-  // Coverage line(s) — "X/Y criteria checked" makes coverage transparent.
-  // Score is already shown in the header, so we don't repeat it here.
-  if (result.criteria_total > 0) {
-    // Honest coverage (T1.3): "checked" counts only genuinely-exercised (`auto`) criteria,
-    // never the capable union. Falls back to criteria_covered if the report is absent.
-    const checked = result.coverage?.auto_criteria ?? result.criteria_covered
-    const covered = checked.length
-    const total = result.criteria_total
-
-    // Classify failed criteria by level from actual issues. Beyond-target
-    // (advisory) criteria are not conformance failures — exclude them here too.
-    const failedASet = new Set<string>()
-    const failedAllSet = new Set<string>()
-    for (const issue of result.issues) {
-      if (isBeyondTarget(issue, target)) continue
-      for (const c of issue.wcag_criteria) {
-        failedAllSet.add(c)
-        if (WCAG_A_CRITERIA.has(c)) failedASet.add(c)
-      }
-    }
-
-    const isTargetAA = total > WCAG_A_TOTAL && total <= 57
-    if (isTargetAA && failedASet.size > 0) {
-      // Two lines: Level A progress + Level AA progress
-      const coveredA = checked.filter(c => WCAG_A_CRITERIA.has(c)).length
-      const pctA = Math.round((coveredA / WCAG_A_TOTAL) * 100)
-      const pctAA = Math.round((covered / total) * 100)
-      console.log(`  ${BOLD}Coverage${RESET}  Level A   ${coveredA}/${WCAG_A_TOTAL} checked (${pctA}%)  ·  ${RED}${failedASet.size} failing${RESET}`)
-      console.log(`            Level AA  ${covered}/${total} checked (${pctAA}%)  ·  ${RED}${failedAllSet.size} failing${RESET}`)
-    } else {
-      // Single line
-      const levelLabel = total <= WCAG_A_TOTAL ? 'Level A' : 'Level AA'
-      const pct = Math.round((covered / total) * 100)
-      console.log(`  ${BOLD}Coverage${RESET}  ${levelLabel}  ${covered}/${total} checked (${pct}%)  ·  ${RED}${failedAllSet.size} failing${RESET}`)
-    }
-  }
-  console.log()
-
-  // POUR breakdown
-  console.log(`  ${BOLD}POUR Breakdown${RESET}`)
-  console.log(`  ${MAGENTA}P${RESET} Perceivable    ${bar(pour_scores.perceivable)}`)
-  console.log(`  ${MAGENTA}O${RESET} Operable       ${bar(pour_scores.operable)}`)
-  console.log(`  ${MAGENTA}U${RESET} Understandable ${bar(pour_scores.understandable)}`)
-  console.log(`  ${MAGENTA}R${RESET} Robust         ${bar(pour_scores.robust)}`)
-  console.log()
-
-  // Contextual coaching
-  printCoaching(result)
   console.log()
 
   // Only display non-ignored issues in terminal output
@@ -273,7 +212,7 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
 
   // Top issues (WCAG Violations) — these count against conformance
   if (wcagIssues.length > 0) {
-    console.log(`  ${BOLD}WCAG Violations${RESET} ${GRAY}— must fix to reach conformance${RESET}`)
+    console.log(`  ${BOLD}WCAG Violations${RESET} ${GRAY}— automated failures at your ${target} target, fix these first${RESET}`)
     console.log()
 
     const grouped = groupByCriterion(wcagIssues)
@@ -331,7 +270,7 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
   // under an AA target). Shown for awareness; they do NOT count against conformance
   // or the score, and are never framed as "must fix".
   if (advisoryIssues.length > 0) {
-    console.log(`  ${BOLD}Advisory${RESET} ${GRAY}— beyond your ${target} target (WCAG AAA), not required for conformance${RESET}`)
+    console.log(`  ${BOLD}Advisory${RESET} ${GRAY}— beyond your ${target} target (WCAG AAA), advisory only${RESET}`)
     console.log()
 
     const grouped = groupByCriterion(advisoryIssues)
@@ -442,7 +381,24 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
     }
 
     console.log(`  ${GRAY}These rules apply to the composed page, not a single component or partial.${RESET}`)
-    console.log(`  ${GRAY}Next step: verify them on the built HTML output or with a rendered check.${RESET}`)
+    console.log(`  ${GRAY}Verify on the built output:${RESET}  npx equall scan <build-dir>  ${GRAY}(e.g. astro build && npx equall scan dist/)${RESET}`)
+    console.log(`  ${GRAY}Guide: ${POST_BUILD_DOCS_URL}${RESET}`)
+    console.log()
+  }
+
+  // Alt-quality confidence flags — an ADVISORY, never a WCAG failure. Rendered
+  // unconditionally like "Not verifiable": a present-but-useless alt passes the automated check
+  // but is likely junk to a screen-reader user, so it's surfaced for human review. GRAY, never RED.
+  const confidenceFlags = result.confidence_flags ?? []
+  if (confidenceFlags.length > 0) {
+    console.log(`  ${BOLD}Low-confidence alt text${RESET} ${GRAY}— ${confidenceFlags.length} present but suspect · a review suggestion, not a WCAG violation${RESET}`)
+    console.log()
+    for (const flag of confidenceFlags) {
+      const loc = flag.line != null ? `:${flag.line}` : ''
+      const shown = flag.value.length > 80 ? `${flag.value.slice(0, 77)}…` : flag.value
+      console.log(`  ${GRAY}○${RESET} ${CYAN}${flag.file_path}${loc}${RESET}  ${GRAY}alt="${shown}" — ${flag.reason}${RESET}`)
+    }
+    console.log(`  ${GRAY}Automation can't tell if an alt is meaningful — check these actually describe the image.${RESET}`)
     console.log()
   }
 
@@ -462,7 +418,7 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
   // Manual review criteria
   if (options.showManual) {
     const level = options.targetLevel ?? 'AA'
-    const allForLevel = getCriteriaForLevel(level)
+    const allForLevel = getCriteriaForStandardLevel(standard, level)
     const coveredSet = new Set(result.coverage?.auto_criteria ?? result.criteria_covered)
     const untested = allForLevel.filter(c => !coveredSet.has(c.id))
 
@@ -476,77 +432,91 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
     }
   }
 
-  // Scanners used — transparency about what ran
-  const scannerLine = scanners_used
-    .map((s) => `${s.name} ${GRAY}v${s.version}${RESET} ${GRAY}(${s.issues_found})${RESET}`)
-    .join(`${GRAY} · ${RESET}`)
-  console.log(`  ${GRAY}Scanners:${RESET} ${scannerLine}`)
-
-  // Readability disclaimer — the scanner uses English-calibrated Flesch-Kincaid,
-  // so non-English documents are skipped and the grade is approximate.
-  if (scanners_used.some(s => s.name === 'readability')) {
-    console.log(`  ${GRAY}Note: readability uses Flesch-Kincaid on English text only. Non-English files are skipped. Grades are indicative — disable with --no-readability.${RESET}`)
+  // Scanners used — transparency about what ran. Verbose-only, to keep the default output tight.
+  if (options.verbose) {
+    const scannerLine = scanners_used
+      .map((s) => `${s.name} ${GRAY}v${s.version}${RESET} ${GRAY}(${s.issues_found})${RESET}`)
+      .join(`${GRAY} · ${RESET}`)
+    console.log(`  ${GRAY}Scanners:${RESET} ${scannerLine}`)
+    // Readability disclaimer — English-calibrated Flesch-Kincaid; non-English docs are skipped.
+    if (scanners_used.some(s => s.name === 'readability')) {
+      console.log(`  ${GRAY}Note: readability uses Flesch-Kincaid on English text only. Non-English files are skipped. Grades are indicative — disable with --no-readability.${RESET}`)
+    }
   }
 
   console.log(`  ${GRAY}Completed in ${(duration_ms / 1000).toFixed(1)}s${RESET}`)
   console.log()
+
+  // Headline at the END (moved 2026-07-08): in a terminal the bottom of the output is what
+  // stays on screen when the scan finishes, so the report's takeaway is printed last — read
+  // first without scrolling. The score (a trend indicator) sits just above the
+  // Support Summary, whose bucket line is the final content line.
+  const verdict = formatVerifiedSubset(result, target)
+  console.log(`  ${scoreBg(score)}${BOLD}${WHITE}  ${score}  ${RESET}  ${GRAY}${standardLabel(standard)} · score is a trend indicator${RESET}`)
+  console.log(`  ${verdict.failing > 0 ? RED : GRAY}${verdict.line}${RESET}`)
+  console.log()
+  printSupportSummary(result, target, options)
 }
 
-function printCoaching(result: ScanResult): void {
-  const { criteria_total } = result
-  // Honest "checked" set (T1.3) — exercised criteria only, not the capable union.
-  const checkedCount = (result.coverage?.auto_criteria ?? result.criteria_covered).length
+// Report headline. Printed at the END of the output (moved 2026-07-08): in a
+// terminal the bottom of the scan is what stays on screen when it finishes, so the report's
+// takeaway — the per-criterion Support Summary — is read first, without scrolling. Three
+// VPAT-anchored buckets (Supports (automated) / Does not support / Not evaluated); `--verbose`
+// prints the full per-criterion table ABOVE the buckets (so the bucket line stays the final,
+// read-first line) and splits "Not evaluated" into its three reasons. Absent on early-return
+// scans (no `criterion_conformance`), like `coverage`. The engine states an automated BASIS,
+// never a pass/fail claim: the banned words (Meets/conformant/compliant/conformance) must
+// never appear here — verdict.test.ts gates it.
+function printSupportSummary(result: ScanResult, target: WcagLevel, options: PrintOptions): void {
+  const entries = result.criterion_conformance
+  if (!entries || entries.length === 0) return
 
-  // Classify failed criteria by level
-  const levelAFailed: string[] = []
-  const levelAAFailed: string[] = []
-  for (const issue of result.issues) {
-    if (issue.wcag_criteria.length === 0) continue
-    if (issue.wcag_level === 'A') {
-      for (const c of issue.wcag_criteria) {
-        if (!levelAFailed.includes(c)) levelAFailed.push(c)
-      }
-    } else if (issue.wcag_level === 'AA') {
-      for (const c of issue.wcag_criteria) {
-        if (!levelAAFailed.includes(c)) levelAAFailed.push(c)
-      }
+  let supports = 0
+  let fails = 0
+  let notEvaluated = 0
+  for (const e of entries) {
+    if (e.verdict === 'fail') fails++
+    else if (e.verdict === 'pass_automated') supports++
+    else notEvaluated++
+  }
+
+  // --verbose: the full per-criterion table FIRST, so the bucket summary below stays the
+  // final (read-first) line. "Not evaluated" splits into its three honest reasons.
+  if (options.verbose) {
+    const label: Record<ConformanceVerdict, string> = {
+      fail: `${RED}Does not support${RESET}`,
+      pass_automated: `${GREEN}Supports (automated)${RESET}`,
+      not_verifiable_on_this_scan: `${GRAY}Not evaluated — rendered check${RESET}`,
+      not_tested_assisted: `${GRAY}Not evaluated — assisted${RESET}`,
+      not_tested_manual: `${GRAY}Not evaluated — manual${RESET}`,
     }
+    const mark: Record<ConformanceVerdict, string> = {
+      fail: `${RED}✕${RESET}`,
+      pass_automated: `${GREEN}✓${RESET}`,
+      not_verifiable_on_this_scan: `${GRAY}○${RESET}`,
+      not_tested_assisted: `${GRAY}○${RESET}`,
+      not_tested_manual: `${GRAY}○${RESET}`,
+    }
+    console.log(`  ${BOLD}Per-criterion${RESET} ${GRAY}— ${standardLabel(result.standard ?? 'wcag22')}, ${target} target${RESET}`)
+    for (const e of entries) {
+      console.log(`  ${mark[e.verdict]} ${GRAY}${e.criterion}${RESET}  ${e.name}  ${label[e.verdict]}`)
+    }
+    console.log()
   }
 
-  const remaining = criteria_total - checkedCount
-
-  // Format a list of criterion IDs with their plain-language names (max 3, then "+N more")
-  const formatCriteria = (ids: string[], max = 3): string => {
-    const sorted = [...ids].sort()
-    const shown = sorted.slice(0, max).map(id => {
-      const name = criterionName(id)
-      return name ? `${id} ${GRAY}${name}${RESET}` : id
-    })
-    const extra = sorted.length - max
-    return extra > 0 ? `${shown.join(', ')}, ${GRAY}+${extra} more${RESET}` : shown.join(', ')
+  // The headline bucket line — the last, read-first takeaway.
+  console.log(`  ${BOLD}${standardLabel(result.standard ?? 'wcag22')} Support Summary${RESET} ${GRAY}— ${target} target · automated basis only${RESET}`)
+  console.log(
+    `  ${GREEN}✓ Supports (automated) ${supports}${RESET}   ` +
+    `${RED}✕ Does not support ${fails}${RESET}   ` +
+    `${GRAY}○ Not evaluated ${notEvaluated}${RESET}`
+  )
+  if (!options.verbose) {
+    console.log(`  ${GRAY}Automated verdicts only — a full statement needs manual + assistive-tech testing. Run --verbose for the per-criterion table.${RESET}`)
   }
-
-  if (levelAFailed.length > 0) {
-    // Level A failures — most urgent
-    console.log(`  ${RED}${BOLD}▲ Action needed${RESET}  You're failing ${BOLD}${levelAFailed.length} Level A criteri${levelAFailed.length > 1 ? 'a' : 'on'}${RESET}.`)
-    console.log(`    Level A is the legal minimum — without it, some users literally cannot use your product.`)
-    console.log(`    ${GRAY}Failing:${RESET} ${formatCriteria(levelAFailed)}`)
-    console.log(`    ${GREEN}Next step:${RESET} scroll to ${BOLD}WCAG Violations${RESET} below and fix the critical/serious items first.`)
-  } else if (levelAAFailed.length > 0) {
-    // Level A passes, Level AA fails
-    console.log(`  ${GREEN}✓${RESET} ${BOLD}Level A passed.${RESET} Now working toward ${BOLD}AA${RESET} — ${levelAAFailed.length} criteri${levelAAFailed.length > 1 ? 'a' : 'on'} still failing.`)
-    console.log(`    Level AA is what most regulations (EAA, Section 508, RGAA) require in practice.`)
-    console.log(`    ${GRAY}Failing:${RESET} ${formatCriteria(levelAAFailed)}`)
-  } else {
-    // No automated failures — anti-"done" guardrail (T1.3): never claim the code is clean.
-    const [headline, ...rest] = formatNoFailureVerdict(result.coverage)
-    console.log(`  ${BOLD}${headline}${RESET}`)
-    for (const line of rest) console.log(`    ${GRAY}${line}${RESET}`)
-  }
-
-  if (remaining > 0) {
-    console.log(`    ${GRAY}${remaining} criteria still need manual testing — automation can't verify them.${RESET}`)
-  }
+  // Authoritative reference for what each verdict asserts (and does not) + the VPAT mapping.
+  console.log(`  ${GRAY}What each verdict means → ${VERDICT_DOCS_URL}${RESET}`)
+  console.log()
 }
 
 interface CriterionGroup {

@@ -108,8 +108,13 @@ describe('page-level reclassification on fragments', () => {
     const pageLevel = result.issues.filter((i) => PAGE_LEVEL_RULE_IDS.has(i.scanner_rule_id))
     expect(pageLevel).toHaveLength(0)
 
-    // …while element-level findings are untouched.
-    expect(result.issues.some((i) => i.scanner_rule_id === 'image-alt')).toBe(true)
+    // …while element-level findings are untouched (the missing alt survives — as the
+    // cross-engine merged issue when both engines flagged it).
+    expect(
+      result.issues.some(
+        (i) => i.scanner_rule_id === 'jsx-a11y/alt-text' || i.scanner_rule_id === 'image-alt'
+      )
+    ).toBe(true)
 
     // The reclassified rules are named in the coverage surface, honestly.
     const reclassified = result.coverage?.reclassified ?? []
@@ -170,9 +175,11 @@ describe('page-level reclassification on fragments', () => {
   it('keeps fingerprints of surviving issues byte-identical to the algorithm', async () => {
     const result = await runScan({ files: [{ path: 'src/Card.tsx', content: TSX_FRAGMENT }] })
 
-    const imageAlt = result.issues.find((i) => i.scanner_rule_id === 'image-alt')
-    expect(imageAlt).toBeDefined()
-    expect(imageAlt!.fingerprint).toBe(fingerprint(imageAlt!))
+    const missingAlt = result.issues.find(
+      (i) => i.scanner_rule_id === 'jsx-a11y/alt-text' || i.scanner_rule_id === 'image-alt'
+    )
+    expect(missingAlt).toBeDefined()
+    expect(missingAlt!.fingerprint).toBe(fingerprint(missingAlt!))
   })
 
   it('does not count reclassified issues as ignored', async () => {

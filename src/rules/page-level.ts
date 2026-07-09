@@ -13,8 +13,8 @@ import type { EquallIssue, ReclassifiedRule } from '../types.js'
 // - RECLASSIFY absence/context-triggered rules — they fire because surrounding page
 //   structure is missing, and that structure lives outside the scanned file.
 // - RECLASSIFY document-element rules (<html>, <title>) — a fragment cannot carry them.
-//   Today the synthetic wrapFragment shell masks most of these (hardcoded lang/title);
-//   listing them keeps correctness independent of the wrapper's internals.
+//   wrapFragment provides no lang/title, so these fire on a fragment and are reclassified here
+//   as "not verifiable on this scan" rather than a masked pass — honest about the layout gap.
 // - KEEP element-triggered rules — a bad element inside the fragment is real evidence.
 //   Audited and deliberately excluded: heading-order (axe passes the first heading
 //   unconditionally, so a fragment starting at <h3> does not false-positive; internal
@@ -29,7 +29,7 @@ export interface ContextualRule {
 }
 
 export const PAGE_LEVEL_REASON =
-  'Page-level rule — not verifiable on a per-file static scan of a fragment; verify on the rendered page.'
+  "Page-level rule — not verifiable on a per-file static scan of a fragment. Verify on the composed page: run 'equall scan' on your build output (e.g. dist/). Guide: https://equallscan.com/docs/verifying-page-level-rules"
 
 const rule = (rule_id: string, wcag_criteria: string[] = []): ContextualRule => ({
   rule_id,

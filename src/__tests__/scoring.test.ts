@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { computeScanResult, isBeyondTarget } from '../scoring/score.js'
+import { runScan } from '../scan.js'
 import type { EquallIssue, WcagLevel } from '../types.js'
 
 function makeIssue(overrides: Partial<EquallIssue> = {}): EquallIssue {
@@ -49,26 +50,76 @@ describe('computeScore', () => {
     expect(critical.score).toBeLessThan(minor.score)
   })
 
-  it('caps penalty per criterion at 15', () => {
-    // 10 moderate issues (weight 2 each = 20) on same criterion should cap at 15
-    const issues = Array.from({ length: 10 }, () => makeIssue({ severity: 'moderate' }))
-    const capped = computeScanResult(issues, 10, [], 100)
-
-    // 1 critical issue (weight 10) + 1 serious (weight 5) = 15 on same criterion, exactly at cap
-    const atCap = computeScanResult(
-      [makeIssue({ severity: 'critical' }), makeIssue({ severity: 'serious' })],
-      10, [], 100
-    )
-
-    // Both should produce same score since penalty is capped at 15 for the same criterion
-    expect(capped.score).toBe(atCap.score)
+  it('fix-sensitivity: resolving one issue in a saturated criterion strictly raises the score', () => {
+    // Model 1 capped per-criterion penalty at 15, so fixing 1 of 30 identical
+    // failures moved nothing. Model 2 must credit every single fix.
+    const thirty = Array.from({ length: 30 }, () => makeIssue({ severity: 'critical' }))
+    const twentyNine = thirty.slice(0, 29)
+    const five = thirty.slice(0, 5)
+    const s30 = computeScanResult(thirty, 10, [], 100).score
+    const s29 = computeScanResult(twentyNine, 10, [], 100).score
+    const s5 = computeScanResult(five, 10, [], 100).score
+    expect(s29).toBeGreaterThan(s30)
+    expect(s5).toBeGreaterThan(s29)
   })
 
-  it('density scaling: large projects score higher than small with same issues', () => {
-    const issues = [makeIssue({ severity: 'serious' })]
-    const small = computeScanResult(issues, 5, [], 100)
-    const large = computeScanResult(issues, 500, [], 100)
-    expect(large.score).toBeGreaterThan(small.score)
+  it('severity-proportional fix credit: fixing a critical moves more than fixing a minor in the same criterion', () => {
+    const group = [
+      makeIssue({ severity: 'critical' }),
+      makeIssue({ severity: 'critical' }),
+      makeIssue({ severity: 'minor' }),
+    ]
+    const base = computeScanResult(group, 10, [], 100).score
+    const minorFixed = computeScanResult(group.slice(0, 2), 10, [], 100).score
+    const criticalFixed = computeScanResult(
+      [makeIssue({ severity: 'critical' }), makeIssue({ severity: 'minor' })],
+      10, [], 100
+    ).score
+    expect(minorFixed).toBeGreaterThan(base)
+    expect(criticalFixed).toBeGreaterThan(minorFixed)
+  })
+
+  it('rank damping: repetition on one criterion penalizes less than the same issues spread across criteria', () => {
+    const repeated = Array.from({ length: 5 }, () => makeIssue({ severity: 'serious' }))
+    const spread = Array.from({ length: 5 }, (_, i) =>
+      makeIssue({ severity: 'serious', wcag_criteria: [`1.${i + 1}.1`] })
+    )
+    const rep = computeScanResult(repeated, 10, [], 100).score
+    const spr = computeScanResult(spread, 10, [], 100).score
+    expect(rep).toBeGreaterThan(spr)
+  })
+
+  it('padding-resistance: the file count never moves the score (file-split / empty-file injection)', () => {
+    // Model 1 divided the penalty by a log of filesScanned, so adding clean
+    // files raised the score. Model 2's score is a function of the issue
+    // multiset only — identical for 1, 5, 500 files.
+    const issues = [makeIssue({ severity: 'serious' }), makeIssue({ severity: 'moderate', wcag_criteria: ['2.4.4'] })]
+    const one = computeScanResult(issues, 1, [], 100).score
+    const five = computeScanResult(issues, 5, [], 100).score
+    const many = computeScanResult(issues, 500, [], 100).score
+    expect(five).toBe(one)
+    expect(many).toBe(one)
+  })
+
+  it('mono-file fairness: a single-file scan is not structurally penalized', () => {
+    // The scanBuffer/MCP path scans one buffer: same issues, same score as
+    // the identical issue set inside a large repo.
+    const issues = [makeIssue({ severity: 'critical' })]
+    const solo = computeScanResult(issues, 1, [], 100).score
+    const inRepo = computeScanResult(issues, 100, [], 100).score
+    expect(solo).toBe(inRepo)
+  })
+
+  it('unmapped best-practice rules damp per rule, not against each other', () => {
+    const ruleA = Array.from({ length: 3 }, () =>
+      makeIssue({ wcag_criteria: [], wcag_level: null as unknown as WcagLevel, scanner_rule_id: 'rule-a' })
+    )
+    const ruleB = [makeIssue({ wcag_criteria: [], wcag_level: null as unknown as WcagLevel, scanner_rule_id: 'rule-b' })]
+    const together = computeScanResult([...ruleA, ...ruleB], 10, [], 100).score
+    const aOnly = computeScanResult(ruleA, 10, [], 100).score
+    // Adding a distinct rule's issue must penalize at full weight (rank 1 of
+    // its own key), i.e. strictly lower the score below the rule-a-only score.
+    expect(together).toBeLessThan(aOnly)
   })
 
   it('score never goes below 0', () => {
@@ -80,41 +131,60 @@ describe('computeScore', () => {
   })
 })
 
-describe('POUR scores', () => {
-  it('returns null for principles with no issues and no criteria', () => {
-    const result = computeScanResult([], 10, [], 100)
-    expect(result.pour_scores.perceivable).toBeNull()
-    expect(result.pour_scores.operable).toBeNull()
-    expect(result.pour_scores.understandable).toBeNull()
-    expect(result.pour_scores.robust).toBeNull()
-  })
+describe('scoring gaming (integration, real pipeline)', () => {
+  const BAD_PAGE = (extraImgs: number) => `<!DOCTYPE html>
+<html lang="en">
+  <head><title>Fixture</title></head>
+  <body>
+    <main>
+      <h1>Fixture page</h1>
+      <img src="hero.jpg">
+      ${Array.from({ length: extraImgs }, (_, i) => `<img src="p${i}.jpg" alt="ok ${i}">`).join('\n      ')}
+    </main>
+  </body>
+</html>`
 
-  it('scores each principle independently', () => {
-    const issues = [
-      makeIssue({ pour: 'perceivable', severity: 'critical', wcag_criteria: ['1.1.1'] }),
-      makeIssue({ pour: 'operable', severity: 'minor', wcag_criteria: ['2.1.1'] }),
-    ]
-    const result = computeScanResult(issues, 10, [], 100)
-    expect(result.pour_scores.perceivable).not.toBeNull()
-    expect(result.pour_scores.operable).not.toBeNull()
-    expect(result.pour_scores.perceivable!).toBeLessThan(result.pour_scores.operable!)
-    expect(result.pour_scores.understandable).toBeNull()
-    expect(result.pour_scores.robust).toBeNull()
-  })
+  // A component that provably yields zero issues — verified by the clean-case
+  // assertion below before the padding comparisons rely on it.
+  const CLEAN_PAD = (i: number) => `export function Pad${i}() {
+  return (
+    <div>
+      <p>Static content block ${i}.</p>
+    </div>
+  )
+}
+`
 
-  it('returns 100 for principle with issues that have no WCAG criteria', () => {
-    // Issues without pour are skipped in POUR scoring
-    const issues = [makeIssue({ pour: null })]
-    const result = computeScanResult(issues, 10, [], 100)
-    expect(result.pour_scores.perceivable).toBeNull()
-  })
+  it('the clean padding fixture really is inert (guards the padding tests)', async () => {
+    const clean = await runScan({ files: [{ path: 'Pad0.tsx', content: CLEAN_PAD(0) }] })
+    expect(clean.issues.filter(i => !i.ignored)).toHaveLength(0)
+  }, 30000)
+
+  it('identical-element padding: adding clean elements to a failing page never raises the score', async () => {
+    const bare = await runScan({ files: [{ path: 'page.html', content: BAD_PAGE(0) }] })
+    const padded = await runScan({ files: [{ path: 'page.html', content: BAD_PAGE(20) }] })
+    expect(bare.score).toBeLessThan(100)
+    expect(padded.score).toBeLessThanOrEqual(bare.score)
+  }, 30000)
+
+  it('empty-file injection: adding clean files to a failing scan never raises the score', async () => {
+    const bad = { path: 'page.html', content: BAD_PAGE(0) }
+    const bare = await runScan({ files: [bad] })
+    const padded = await runScan({
+      files: [bad, ...Array.from({ length: 20 }, (_, i) => ({ path: `Pad${i}.tsx`, content: CLEAN_PAD(i) }))],
+    })
+    expect(bare.score).toBeLessThan(100)
+    expect(padded.score).toBe(bare.score)
+  }, 60000)
 })
 
 describe('conformance level', () => {
   it('returns A when targeting A with no Level A failures', () => {
+    // criteria_tested is now the exercised set: a non-empty exercised set
+    // means criteria WERE evaluated, so 0 Level A failures → 'A' (not 'None').
     const result = computeScanResult(
       [makeIssue({ wcag_level: 'AA', wcag_criteria: ['1.4.3'] })],
-      10, [], 100, 'A'
+      10, [], 100, 'A', [], 0, ['1.1.1']
     )
     expect(result.conformance_level).toBe('A')
   })
@@ -130,7 +200,7 @@ describe('conformance level', () => {
   it('returns AA when targeting AA with no A or AA failures', () => {
     const result = computeScanResult(
       [makeIssue({ wcag_level: 'AAA', wcag_criteria: ['1.4.6'] })],
-      10, [], 100, 'AA'
+      10, [], 100, 'AA', [], 0, ['1.1.1']
     )
     expect(result.conformance_level).toBe('AA')
   })
@@ -186,15 +256,6 @@ describe('beyond-target (AAA) exclusion from conformance', () => {
       4, [], 100, 'AA'
     )
     expect(aPlusAaa.score).toBe(aOnly.score)
-  })
-
-  it('POUR: a AAA understandable issue does not drag the principle at an AA target', () => {
-    const result = computeScanResult(
-      [makeIssue({ wcag_level: 'AAA', wcag_criteria: ['3.1.5'], pour: 'understandable', severity: 'critical' })],
-      4, [], 100, 'AA', ['3.1.1'], 100
-    )
-    // Understandable is covered (3.1.1) but the only issue is beyond-target → no penalty
-    expect(result.pour_scores.understandable).toBe(100)
   })
 })
 

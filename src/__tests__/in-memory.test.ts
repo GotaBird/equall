@@ -112,3 +112,18 @@ describe('fileTypeForPath', () => {
     expect(fileTypeForPath('a/b.md')).toBe('other')
   })
 })
+
+describe('empty scan carries the documented report shape (R1a)', () => {
+  it('attaches coverage / criterion_conformance / standard / confidence_flags even with nothing to scan', async () => {
+    // The README "Programmatic use" section promises these fields on ScanResult; the early-return
+    // paths must not omit them (or the docs lie).
+    const result = await runScan({ files: [] })
+    expect(result.coverage).toBeDefined()
+    expect(result.coverage?.reclassified).toEqual([])
+    expect(result.criterion_conformance?.length).toBeGreaterThan(0)
+    expect(result.criterion_conformance?.every((c) => c.verdict === 'not_tested_manual')).toBe(true)
+    expect(result.standard).toBe('wcag22')
+    expect(result.confidence_flags).toEqual([])
+    expect(result.diagnostics).toEqual([])
+  })
+})
