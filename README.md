@@ -20,7 +20,7 @@ npx equall scan .
 
   …grouped WCAG violations, each with how-to-fix and its scanner source…
 
-    55    WCAG 2.2 · score is a trend indicator
+    54.63    WCAG 2.2 · score is a trend indicator
   3 A/AA failures among the 25 criteria automatically verified (30 not evaluated).
 
   WCAG 2.2 Support Summary — AA target · automated basis only

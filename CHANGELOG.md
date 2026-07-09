@@ -24,6 +24,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Scoring model 2 — your score will move, and here is why.** The score is now a function of the
+  deduplicated issue set **only**: the file-count scaling and the 15-point per-criterion cap are
+  gone, replaced by rank-damped severity summing (within a criterion, the heaviest failures count
+  first and each repeat weighs less — but every failure weighs something). This fixes two real
+  integrity defects in the old formula:
+  - *Adding clean files raised the score.* The old density scaling divided the penalty by a log of
+    the file count, so 20 inert files could lift a score by 10+ points — and single-buffer scans
+    (the API/MCP path) were structurally penalized. Now the file count never touches the score:
+    small repos and single-component scans stop being punished (they typically **rise**), and
+    padding a repo cannot move the number.
+  - *Fixes inside a saturated criterion were invisible.* With the cap, going from 30 missing alts
+    to 5 left the score identical. Now **every fix strictly raises the score**, credited at the
+    severity of the issue actually fixed — repos with one spammy criterion typically **drop**,
+    because that criterion finally weighs its real size.
+  The decay constant is recalibrated (0.02 → 0.01) so scores stay comparable in magnitude, and the
+  score now carries two decimals — small fixes inside a heavily repeated criterion move the number
+  by fractions of a point, and integer rounding would have swallowed them. `score_model` is
+  stamped `2`; **do not compare scores across model versions** — re-scan both sides of any
+  comparison with the same CLI version. The score remains a trend indicator, never a conformance
+  claim; the full rationale lives in `docs/score-philosophy.md`.
 - **Tighter, less repetitive terminal output.** The redundant top blocks are gone: the `Coverage`
   line(s) and the coaching block restated the failing set the headline (score + verdict + Support
   Summary) already states — the same count appeared up to six times. The scanner list moved behind
