@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
+- **The programmatic surface is curated down to the result contract.** The package no longer
+  exports the internal producers `computeScanResult`, `computeConformance`, `computeCoverage`,
+  `VERDICT_VPAT_MAP`, and `formatNoFailureVerdict` — breaking for consumers that rebuilt a
+  result from the pieces: consume the `ScanResult` instead. The entry points are `runScan`,
+  `scanBuffer`, `runDiffScan`, `formatDiffGuardrail`, and `fingerprint`, and the exported types
+  now cover everything reachable from a `ScanResult` (adding `WcagStandard`, `ConfidenceFlag`,
+  `ScanSummary`, `ScannerInfo`, `ReclassifiedRule`).
 - **The POUR score breakdown (`pour_scores`) is gone.** The per-principle Perceivable / Operable /
   Understandable / Robust bars were a demoted-score artifact that masked which criteria actually
   failed or went unevaluated — the per-criterion Support Summary supersedes them. `ScanResult` no
