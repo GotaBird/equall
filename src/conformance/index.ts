@@ -63,8 +63,8 @@ export function computeConformance(
   }
 
   // Accepted exceptions per criterion: equall-ignore'd issues. Excluded from the failing set
-  // everywhere (canonical `ignored` rule, BUR-168), but the inventory is always carried — a count
-  // here (reasons deferred to BUR-158). Requires the caller to pass ALL issues (active + ignored).
+  // everywhere (canonical `ignored` rule), but the inventory is always carried — a count here
+  // (per-exception reasons are a planned follow-up). Requires ALL issues (active + ignored).
   const acceptedByCriterion = new Map<string, number>()
   for (const issue of issues) {
     if (!issue.ignored) continue
