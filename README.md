@@ -7,7 +7,7 @@ Equall aggregates `axe-core`, `eslint-plugin-jsx-a11y`, `text-readability`, and 
 **One command. Real score. No config.**
 
 ```bash
-npx equall scan .
+npx equall-cli scan .
 ```
 
 ```
@@ -44,7 +44,7 @@ Equall sits in that gap. It wraps existing open-source scanners and adds what th
 ## Install
 
 ```bash
-npm install -g equall-cli   # or run on demand with: npx equall scan .
+npm install -g equall-cli   # or run on demand with: npx equall-cli scan .
 ```
 
 ## Usage
