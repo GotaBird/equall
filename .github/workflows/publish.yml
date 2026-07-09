@@ -83,9 +83,10 @@ jobs:
           "$BIN" scan "$WORK/fixture"
 
       - name: Publish to npm (provenance / trusted publishing)
-        run: |
-          npm install -g npm@latest # OIDC trusted publishing needs npm >= 11.5.1
-          npm publish --provenance --access public
+        # OIDC trusted publishing needs npm >= 11.5.1. Run it via npx rather than
+        # `npm install -g npm@latest`: the in-place self-upgrade can leave the
+        # runner's npm broken (libnpmpublish missing its sigstore dependency).
+        run: npx -y npm@latest publish --provenance --access public
 
       - name: Extract release notes from CHANGELOG
         run: |
