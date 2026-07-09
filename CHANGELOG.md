@@ -5,7 +5,7 @@ All notable changes to Equall CLI are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.2.0] - 2026-07-09
 
 ### Removed
 
@@ -80,10 +80,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the A/AA/AAA determination had no awareness of coverage. It is now sourced from the exercised
   coverage (a scanner with eligible files ran the check), minus any page-level rule that could
   not be verified on a fragment. `summary.criteria_failed` is unchanged.
-- **A POUR principle that was never exercised now shows n/a instead of a green 100.** The bar
-  reads `—` when no criterion under that principle was actually checked on this scan, rather
-  than implying a perfect, tested result.
-
 - **A problem confirmed by two engines now counts once.** When axe-core and
   eslint-plugin-jsx-a11y flag the same issue on the same element — the canonical case is a
   missing `alt`, reported as both `image-alt` and `alt-text` — the scan now merges them into
@@ -137,6 +133,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   criterion is silently missing. This is the evidence layer behind an accessibility
   statement / VPAT — it never emits a formal "Supports"; that is a human attestation applied
   later against the documented verdict → VPAT-term mapping.
+- **Ignored issues are carried as accepted exceptions, never as failures.** Issues suppressed
+  with `equall-ignore` stay out of every failing set, but the inventory is always kept: each
+  per-criterion verdict now carries `accepted_exceptions: n` (absent = 0), so a criterion with
+  suppressed findings is never presented as a bare pass. Per-exception reasons are a planned
+  follow-up.
 - **The terminal closes with a "WCAG 2.2 Support Summary"** — `Supports (automated) N ·
   Does not support N · Not evaluated N` — printed last so it is the takeaway you read first
   when the scan finishes (a terminal shows the bottom of the output). The 0–100 score sits
