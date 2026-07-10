@@ -5,6 +5,17 @@ All notable changes to Equall CLI are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **The score headline and the Support Summary now agree on the criteria counts.** The
+  "N criteria automatically verified (M not evaluated)" line counted every exercised criterion —
+  including beyond-target ones (e.g. AAA 3.1.5 Reading Level under an AA target) — against the
+  level-scoped total, overstating "verified" and understating "not evaluated" by the same amount
+  (e.g. 25/30 next to a Support Summary saying 23/32). Both lines now derive from the same
+  per-criterion conformance verdicts, so they can no longer disagree.
+
 ## [0.2.0] - 2026-07-09
 
 ### Removed

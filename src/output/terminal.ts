@@ -127,18 +127,35 @@ function formatSuggestion(raw: string, indent: string): string[] {
 // never makes a pass/fail claim ("Meets"/"conformant"). A clean scan reads
 // "0 A/AA failures among the N criteria automatically verified (M not evaluated)", never "None".
 function formatVerifiedSubset(result: ScanResult, target: WcagLevel): { line: string; failing: number } {
-  const verified = result.summary.criteria_tested.length
-  const notEvaluated = Math.max(0, result.criteria_total - verified)
+  let verified: number
+  let notEvaluated: number
+  let f: number
 
-  // Distinct in-target failing criteria (advisory AAA-under-AA excluded), matching the
-  // Coverage block's "failing" count so the header and the coverage line agree.
-  const failing = new Set<string>()
-  for (const issue of result.issues) {
-    if (issue.ignored) continue
-    if (isBeyondTarget(issue, target)) continue
-    for (const c of issue.wcag_criteria) failing.add(c)
+  const entries = result.criterion_conformance
+  if (entries && entries.length > 0) {
+    // Derive from criterion_conformance — the same source as the Support Summary — so the
+    // two lines agree by construction. criteria_tested is the raw exercised set and may
+    // contain beyond-target criteria (e.g. AAA 3.1.5 under an AA target); counting it
+    // against the level-scoped criteria_total overstated "verified" and understated
+    // "not evaluated" by the same amount.
+    f = entries.filter((e) => e.verdict === 'fail').length
+    const passed = entries.filter((e) => e.verdict === 'pass_automated').length
+    verified = f + passed
+    notEvaluated = entries.length - verified
+  } else {
+    // Fallback (early-return scans without criterion_conformance): exercised count vs the
+    // level-scoped total, and in-target failing criteria derived from the issues.
+    verified = result.summary.criteria_tested.length
+    notEvaluated = Math.max(0, result.criteria_total - verified)
+
+    const failing = new Set<string>()
+    for (const issue of result.issues) {
+      if (issue.ignored) continue
+      if (isBeyondTarget(issue, target)) continue
+      for (const c of issue.wcag_criteria) failing.add(c)
+    }
+    f = failing.size
   }
-  const f = failing.size
 
   const scope = target === 'A' ? 'Level A' : target === 'AAA' ? 'A/AA/AAA' : 'A/AA'
   const line = `${f} ${scope} failure${f === 1 ? '' : 's'} among the ${verified} criteri${verified === 1 ? 'on' : 'a'} automatically verified (${notEvaluated} not evaluated).`
