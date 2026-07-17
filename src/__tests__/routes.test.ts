@@ -92,6 +92,7 @@ describe('next-app', () => {
 describe('next-pages', () => {
   it('collapses index, excludes _internals and api/, keeps 404/500 (URL-addressable)', async () => {
     await layout(tempDir, {
+      'package.json': JSON.stringify({ dependencies: { next: '^15.0.0' } }),
       'pages/index.tsx': '',
       'pages/about/index.tsx': '',
       'pages/p/[id].tsx': '',
@@ -110,6 +111,31 @@ describe('next-pages', () => {
     expect(routes.find((r) => r.pattern === '/404')?.dynamic).toBe(false)
     expect(routes.find((r) => r.pattern === '/p/[id]')?.dynamic).toBe(true)
     expect(diagnostics.some((d) => d.includes('2 file(s) under pages/api/'))).toBe(true)
+  })
+
+  it('never maps a pages/ directory without the Next marker (phantom-route guard)', async () => {
+    // A pages/ folder of js files is not distinctive — any repo can have one. Without
+    // the marker (next dependency or next.config.*) it must yield ZERO routes.
+    await layout(tempDir, {
+      'pages/index.tsx': '',
+      'pages/about.tsx': '',
+    })
+
+    const { routes, diagnostics } = await detectRoutes(tempDir)
+
+    expect(routes).toEqual([])
+    expect(diagnostics).toEqual(['[routes] no supported file-based routing detected (Next.js App/Pages Router, Astro, plain HTML).'])
+  })
+
+  it('never maps src/pages js (or lone .md) without a marker — a React component or docs layout', async () => {
+    await layout(tempDir, {
+      'src/pages/Home.tsx': '',
+      'src/pages/notes.md': '',
+    })
+
+    const { routes } = await detectRoutes(tempDir)
+
+    expect(routes).toEqual([])
   })
 })
 
@@ -167,6 +193,7 @@ describe('astro', () => {
 describe('mixed and fallback trees', () => {
   it('emits both app/ and pages/ during an incremental Next migration', async () => {
     await layout(tempDir, {
+      'package.json': JSON.stringify({ dependencies: { next: '^15.0.0' } }),
       'app/dashboard/page.tsx': '',
       'pages/legacy.tsx': '',
     })
@@ -309,7 +336,10 @@ describe('runScan integration', () => {
   })
 
   it('still attaches routes on the zero-scannable-files early return (pure .js Pages Router)', async () => {
-    await layout(tempDir, { 'pages/a.js': '' })
+    await layout(tempDir, {
+      'package.json': JSON.stringify({ dependencies: { next: '^15.0.0' } }),
+      'pages/a.js': '',
+    })
 
     const result = await runScan({ path: tempDir })
 

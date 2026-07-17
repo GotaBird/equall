@@ -3,9 +3,12 @@
 // no rendering; the only file contents read are <root>/package.json (framework markers).
 // Routes are inert metadata — never routed into the score, verdicts, or coverage.
 //
-// Supported conventions: Next.js App Router (app/**/page.*), Next.js Pages Router
-// (pages/**), Astro (src/pages/**), and plain .html trees (fallback only — emitted when
-// no framework routing and no framework marker was found, so a Next project's public/
+// Supported conventions: Next.js App Router (app/**/page.* — the filename convention is
+// distinctive, no marker required), Next.js Pages Router (pages/**, src/pages/** — NOT
+// distinctive, mapped only when the Next marker is present, or any repo with a pages/
+// folder would grow phantom routes), Astro (src/pages/** — marker, or a .astro file as
+// the distinctive shape), and plain .html trees (fallback only — emitted when no
+// framework routing and no framework marker was found, so a Next project's public/
 // snapshots never become routes). SvelteKit and Nuxt are not supported: their markers
 // produce an explicit diagnostic instead of a guess (routes are never silently omitted).
 //
@@ -198,24 +201,27 @@ export async function detectRoutes(rootPath: string): Promise<RouteDetection> {
     diagnostics.push(`[routes] ${app.skipped} page file(s) under Next.js parallel/intercepting segments (@slot, (.)…) have no standalone URL and are not listed.`)
   }
 
-  // 2. Root pages/ — Nuxt also routes from pages/, so a Nuxt marker means the diagnostic
-  // above already covers it; never map it as Next.
+  // 2. Root pages/ — unlike app/**/page.*, a pages/ directory of js files is not
+  // distinctive (any repo can have one), so mapping it REQUIRES the Next marker or every
+  // such repo would grow phantom routes. A Nuxt marker vetoes it: Nuxt also routes from
+  // pages/, and the diagnostic above already covers it.
   let apiCount = 0
-  if (!markers.nuxt) {
+  if (markers.next && !markers.nuxt) {
     const pagesFiles = await globRoutes(rootPath, [`pages/**/*.{${PAGE_EXTENSIONS}}`])
     const pages = derivePagesRoutes(pagesFiles, 'pages')
     routes.push(...pages.routes)
     apiCount += pages.apiCount
   }
 
-  // 3. src/pages/ — the Next-vs-Astro collision: markers decide; without one, the content
-  // shape does (any Astro-family file → Astro, else js-family → Pages Router).
+  // 3. src/pages/ — the Next-vs-Astro collision: markers decide. Without one, only a
+  // .astro file is distinctive enough to infer Astro; js (or .md alone) under src/pages
+  // is a routine component/docs layout, never mapped without a marker (same phantom-route
+  // rule as root pages/).
   if (await pathExists(rootPath, 'src/pages')) {
     let flavor: 'astro' | 'next-pages' | null = null
     if (markers.astro) flavor = 'astro'
-    else if (markers.next) flavor = 'next-pages'
-    else if ((await globRoutes(rootPath, ['src/pages/**/*.{astro,md,mdx}'])).length > 0) flavor = 'astro'
-    else if ((await globRoutes(rootPath, [`src/pages/**/*.{${PAGE_EXTENSIONS}}`])).length > 0) flavor = 'next-pages'
+    else if (markers.next && !markers.nuxt) flavor = 'next-pages'
+    else if ((await globRoutes(rootPath, ['src/pages/**/*.astro'])).length > 0) flavor = 'astro'
 
     if (flavor === 'astro') {
       const astroFiles = await globRoutes(rootPath, ['src/pages/**/*.{astro,md,mdx,html}'])

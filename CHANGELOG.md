@@ -11,9 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Route inventory from file-based routing.** Disk scans now carry `ScanResult.routes` — the
   URL patterns the project's file-based routing defines: Next.js App Router (`app/**/page.*`,
-  route groups stripped), Next.js Pages Router (`pages/**`, API routes excluded), Astro
-  (`src/pages/**`), and plain `.html` trees (fallback only, so a framework project's stray
-  HTML never becomes a route). Each entry is `{ pattern, file, framework, dynamic }`, with
+  route groups stripped), Next.js Pages Router (`pages/**` — mapped only when the project
+  declares Next via a dependency or `next.config.*`, so a repo that merely has a `pages/`
+  folder never grows phantom routes; API routes excluded), Astro (`src/pages/**`), and plain
+  `.html` trees (fallback only, so a framework project's stray HTML never becomes a route). Each entry is `{ pattern, file, framework, dynamic }`, with
   dynamic segments keeping their bracket syntax (`/products/[slug]`). The field is tri-state:
   absent when detection was not attempted (in-memory input), `[]` when the scanned tree had no
   supported routing — both declared on `diagnostics`, never silently. Projects using SvelteKit
