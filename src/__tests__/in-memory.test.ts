@@ -41,7 +41,16 @@ describe('scanBuffer / runScan parity', () => {
     const disk = await runScan({ path: tempDir })
     const buffer = await scanBuffer(HTML_WITH_VIOLATION, 'x.html')
 
-    expect(stable(buffer)).toEqual(stable(disk))
+    // The route inventory is a property of the project TREE, not of the file: a disk scan
+    // carries `routes` (+ its [routes] notes), a buffer scan declares the skip instead.
+    // Everything else must stay identical.
+    const withoutRoutes = (result: ScanResult) => {
+      const { routes: _r, ...rest } = stable(result)
+      return { ...rest, diagnostics: rest.diagnostics?.filter((d) => !d.startsWith('[routes]')) }
+    }
+    expect(withoutRoutes(buffer)).toEqual(withoutRoutes(disk))
+    expect(disk.routes).toBeDefined()
+    expect(buffer.routes).toBeUndefined()
   })
 })
 
@@ -124,6 +133,9 @@ describe('empty scan carries the documented report shape (R1a)', () => {
     expect(result.criterion_conformance?.every((c) => c.verdict === 'not_tested_manual')).toBe(true)
     expect(result.standard).toBe('wcag22')
     expect(result.confidence_flags).toEqual([])
-    expect(result.diagnostics).toEqual([])
+    // In-memory input: route detection is not attempted — declared, and `routes` stays
+    // absent (tri-state; see ScanResult.routes).
+    expect(result.diagnostics).toEqual(['[routes] skipped for in-memory input — no project tree to derive routes from.'])
+    expect(result.routes).toBeUndefined()
   })
 })

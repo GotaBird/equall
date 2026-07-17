@@ -81,6 +81,13 @@ console.log('Verdicts:', result.criterion_conformance)
 (what was actually exercised), `summary`, `standard`, and `engine_version` / `score_model`
 version stamps so results stay comparable across releases.
 
+Disk scans also carry `routes` — the URL patterns the project's file-based routing defines
+(Next.js App/Pages Router, Astro, plain `.html`), each as `{ pattern, file, framework,
+dynamic }` with dynamic segments keeping their bracket syntax (`/products/[slug]`). The
+field is tri-state: absent when detection was not attempted (in-memory input), `[]` when
+the tree had no supported routing — both declared on `diagnostics`. Routes are inventory
+metadata only and never affect the score, verdicts, or coverage.
+
 ## Documentation
 
 Full guide — scanners, the scoring model, the verdict reference, ignoring issues, CI gates

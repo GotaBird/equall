@@ -10,6 +10,7 @@ import { fingerprint } from './utils/fingerprint.js'
 import { isDocumentUnit } from './utils/html-extract.js'
 import { partitionPageLevelIssues, summarizeReclassified } from './rules/page-level.js'
 import { mergeCrossEngineDuplicates } from './rules/equivalence.js'
+import { detectRoutes, type RouteDetection } from './routes.js'
 import type { ScanOptions, ScanResult, ScannerInfo, EquallIssue, WcagLevel, WcagStandard, FileEntry } from './types.js'
 
 // A single in-memory file: code provided directly instead of read from disk (T1.1).
@@ -49,7 +50,7 @@ function buildFileEntries(inputs: FileInput[], rootPath: string): FileEntry[] {
 // standard / confidence_flags are present, never `undefined`. No scanners ran on these paths →
 // coverage is all-manual and conformance all not_tested_manual; confidence still reads the files
 // (advisories are independent of the engines).
-function attachEmptyReport(result: ScanResult, files: FileEntry[], scanOptions: ScanOptions, diagnostics: string[]): ScanResult {
+function attachEmptyReport(result: ScanResult, files: FileEntry[], scanOptions: ScanOptions, diagnostics: string[], detection?: RouteDetection): ScanResult {
   const standard = scanOptions.standard ?? 'wcag22'
   const coverage = computeCoverage([], files)
   coverage.reclassified = []
@@ -58,6 +59,8 @@ function attachEmptyReport(result: ScanResult, files: FileEntry[], scanOptions: 
   result.standard = standard
   result.confidence_flags = computeConfidenceFlags(files)
   result.diagnostics = diagnostics
+  // Tri-state (see ScanResult.routes): absent when detection was not attempted.
+  if (detection) result.routes = detection.routes
   return result
 }
 
@@ -82,9 +85,21 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
   const files = inMemory
     ? buildFileEntries(options.files!, rootPath)
     : await discoverFiles(rootPath, scanOptions)
+
+  // 1b. File-based route detection — disk mode only (a buffer has no project tree to
+  // derive routes from). Runs BEFORE the early returns: a Pages-Router project of plain
+  // .js files has zero scannable files yet real routes. Inert additive metadata — never
+  // routed into the score, verdicts, or coverage (attached in step 15).
+  const detection = inMemory ? undefined : await detectRoutes(rootPath)
+  if (detection) {
+    diagnostics.push(...detection.diagnostics)
+  } else {
+    diagnostics.push('[routes] skipped for in-memory input — no project tree to derive routes from.')
+  }
+
   if (files.length === 0) {
     const result = computeScanResult([], 0, [], Date.now() - startTime, scanOptions.wcag_level)
-    return attachEmptyReport(result, files, scanOptions, diagnostics)
+    return attachEmptyReport(result, files, scanOptions, diagnostics, detection)
   }
 
   // 2. Get available scanners (minus any the user disabled via CLI flag)
@@ -93,7 +108,7 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
   if (scanners.length === 0) {
     diagnostics.push('No scanners available. Install axe-core and jsdom for HTML scanning.')
     const result = computeScanResult([], files.length, [], Date.now() - startTime, scanOptions.wcag_level)
-    return attachEmptyReport(result, files, scanOptions, diagnostics)
+    return attachEmptyReport(result, files, scanOptions, diagnostics, detection)
   }
 
   // 3. Run all scanners in parallel
@@ -201,6 +216,12 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
 
   // 14. Non-fatal scan warnings — returned on the result, never written to the host's stderr.
   result.diagnostics = diagnostics
+
+  // 15. File-based routes — the additive inventory detected in step 1b. Tri-state (see
+  // ScanResult.routes): absent when detection was not attempted (in-memory input), []
+  // when the tree had no supported routing. Never routed into the score, verdicts, or
+  // coverage.
+  if (detection) result.routes = detection.routes
 
   return result
 }

@@ -183,6 +183,12 @@ export interface ScanResult {
   // runScan ([] when none) so the engine never writes to the host's stderr — the CLI decides
   // whether to print them, and a library / MCP consumer can capture them.
   diagnostics?: string[]
+  // File-based routes detected in the scanned tree (Next.js App/Pages Router, Astro, plain
+  // HTML) — an additive inventory, never routed into the score, verdicts, or coverage.
+  // UNLIKE `coverage?`, absence is meaningful here (tri-state): the field is absent when
+  // detection was not attempted (in-memory input — no project tree), [] when the tree was
+  // scanned and no supported routing was found. Both cases carry a `diagnostics` note.
+  routes?: RouteInfo[]
   scanned_at: string                   // ISO timestamp
   duration_ms: number
   // Version stamps so results are comparable across releases.
@@ -210,4 +216,23 @@ export interface ScannerInfo {
   version: string
   rules_count: number
   issues_found: number
+}
+
+// Routing convention a route was derived from. SvelteKit and Nuxt are not yet supported —
+// when their markers are detected, the scan says so on `diagnostics` instead of guessing
+// (routes are never silently omitted).
+export type RouteFramework = 'next-app' | 'next-pages' | 'astro' | 'html'
+
+// A URL route derived from file-based routing conventions — an inventory of what the
+// project's router serves, so consumers can join scan results to URLs. Derived from file
+// paths only (no crawling, no network, no rendering).
+export interface RouteInfo {
+  // URL pattern — leading '/', POSIX separators; dynamic segments keep their source
+  // syntax (e.g. '/products/[slug]', '/docs/[...path]')
+  pattern: string
+  // Source file the route derives from, relative to the scanned root (POSIX)
+  file: string
+  framework: RouteFramework
+  // true when the pattern contains a dynamic segment
+  dynamic: boolean
 }

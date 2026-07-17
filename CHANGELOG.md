@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Route inventory from file-based routing.** Disk scans now carry `ScanResult.routes` — the
+  URL patterns the project's file-based routing defines: Next.js App Router (`app/**/page.*`,
+  route groups stripped), Next.js Pages Router (`pages/**`, API routes excluded), Astro
+  (`src/pages/**`), and plain `.html` trees (fallback only, so a framework project's stray
+  HTML never becomes a route). Each entry is `{ pattern, file, framework, dynamic }`, with
+  dynamic segments keeping their bracket syntax (`/products/[slug]`). The field is tri-state:
+  absent when detection was not attempted (in-memory input), `[]` when the scanned tree had no
+  supported routing — both declared on `diagnostics`, never silently. Projects using SvelteKit
+  or Nuxt routing get an explicit diagnostic that their routes are not yet mapped, and pages
+  under Next.js parallel/intercepting segments are declared rather than guessed. Routes are
+  inventory metadata only — they never affect the score, verdicts, or coverage. The terminal
+  Summary shows a quiet per-framework count when routes are found; the new `RouteInfo` and
+  `RouteFramework` types are exported.
+  Known limitations: a custom Next `pageExtensions` and a custom Astro `srcDir` are not
+  parsed, and detection is anchored to the scanned root (monorepo sub-apps: scan the package
+  directory).
+
 ### Fixed
 
 - **The score headline and the Support Summary now agree on the criteria counts.** The

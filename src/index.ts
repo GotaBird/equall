@@ -29,6 +29,8 @@ export type {
   CriterionConformance,
   ConformanceVerdict,
   ConfidenceFlag,
+  RouteInfo,
+  RouteFramework,
   // Inputs / adapter contract
   ScanContext,
   ScanOptions,

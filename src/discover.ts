@@ -49,7 +49,9 @@ const DEFAULT_INCLUDE = [
   '**/*.astro',
 ]
 
-const DEFAULT_EXCLUDE = [
+// Shared with route detection (routes.ts) so a gitignored or built page never
+// becomes a route either.
+export const DEFAULT_EXCLUDE = [
   '**/node_modules/**',
   '**/dist/**',
   '**/build/**',

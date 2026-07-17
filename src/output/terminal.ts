@@ -213,6 +213,15 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
     `${severityIcon('minor')} ${GRAY}${sevCounts.minor} minor${RESET}`
   )
   console.log(`  ${GRAY}critical/serious = fix before shipping · moderate/minor = fix in next iteration${RESET}`)
+  // File-based route inventory — one quiet line, only when routes were found (the
+  // zero-route and not-attempted cases are already carried by the [routes] diagnostics).
+  const routes = result.routes ?? []
+  if (routes.length > 0) {
+    const byFramework = new Map<string, number>()
+    for (const route of routes) byFramework.set(route.framework, (byFramework.get(route.framework) ?? 0) + 1)
+    const breakdown = [...byFramework.entries()].map(([framework, count]) => `${framework} ${count}`).join(' · ')
+    console.log(`  ${GRAY}${routes.length} route${routes.length === 1 ? '' : 's'} detected · ${breakdown}${RESET}`)
+  }
   if (summary.ignored_count > 0) {
     console.log(`  ${GRAY}${summary.ignored_count} issue${summary.ignored_count > 1 ? 's' : ''} suppressed via equall-ignore${RESET}`)
   }
