@@ -5,7 +5,7 @@ All notable changes to Equall CLI are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.2.1] - 2026-07-17
 
 ### Added
 
@@ -14,18 +14,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   route groups stripped), Next.js Pages Router (`pages/**` — mapped only when the project
   declares Next via a dependency or `next.config.*`, so a repo that merely has a `pages/`
   folder never grows phantom routes; API routes excluded), Astro (`src/pages/**`), and plain
-  `.html` trees (fallback only, so a framework project's stray HTML never becomes a route). Each entry is `{ pattern, file, framework, dynamic }`, with
-  dynamic segments keeping their bracket syntax (`/products/[slug]`). The field is tri-state:
-  absent when detection was not attempted (in-memory input), `[]` when the scanned tree had no
-  supported routing — both declared on `diagnostics`, never silently. Projects using SvelteKit
-  or Nuxt routing get an explicit diagnostic that their routes are not yet mapped, and pages
-  under Next.js parallel/intercepting segments are declared rather than guessed. Routes are
-  inventory metadata only — they never affect the score, verdicts, or coverage. The terminal
-  Summary shows a quiet per-framework count when routes are found; the new `RouteInfo` and
+  `.html` trees (fallback only, so a framework project's stray HTML never becomes a route).
+  Each entry is `{ pattern, file, framework, dynamic }`, with dynamic segments keeping their
+  bracket syntax (`/products/[slug]`). The field is tri-state: absent when detection was not
+  attempted (in-memory input), `[]` when the scanned tree had no supported routing — both
+  declared on `diagnostics`, never silently. Projects using SvelteKit or Nuxt routing get an
+  explicit diagnostic that their routes are not yet mapped, and pages under Next.js
+  parallel/intercepting segments are declared rather than guessed. Routes are inventory
+  metadata only — they never affect the score, verdicts, or coverage. The terminal Summary
+  shows a quiet per-framework count when routes are found; the new `RouteInfo` and
   `RouteFramework` types are exported.
-  Known limitations: a custom Next `pageExtensions` and a custom Astro `srcDir` are not
-  parsed, and detection is anchored to the scanned root (monorepo sub-apps: scan the package
-  directory).
 
 ### Fixed
 
@@ -35,6 +33,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   level-scoped total, overstating "verified" and understating "not evaluated" by the same amount
   (e.g. 25/30 next to a Support Summary saying 23/32). Both lines now derive from the same
   per-criterion conformance verdicts, so they can no longer disagree.
+
+### Known limitations
+
+- Route detection reads routing conventions, not framework config: a custom Next
+  `pageExtensions` and a custom Astro `srcDir` are not parsed. Detection is anchored to the
+  scanned root — for monorepo sub-apps, scan the package directory. In-memory scans
+  (`scanBuffer`, buffer input) skip route detection and say so on `diagnostics`.
 
 ## [0.2.0] - 2026-07-09
 
