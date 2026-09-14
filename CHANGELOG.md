@@ -45,20 +45,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Low-confidence alt-text advisory — surfaces present-but-useless `alt` without ever failing.**
-  Static checks confirm an `alt` _exists_, not that it _helps_: `alt="DSC00423"`, `alt="untitled"`,
-  or the file name all pass. Equall now emits an **advisory** (`ScanResult.confidence_flags`) when
-  an `<img>` or Next.js `<Image>`'s alt looks like a file name, a placeholder, the `src` basename,
-  or gibberish — shown as a gray "Low-confidence alt text — needs human review, not a WCAG
-  violation" section. **Precision-first**: it never fires on good short alts ("Menu", "Cart") or
-  decorative `alt=""`, and it never changes an issue, a conformance verdict (1.1.1 stays `Supports
-(automated)`), the score, or coverage.
-- **`--standard wcag22 | wcag21` — evaluate against a chosen WCAG version.** `wcag22` (default)
-  is Equall's identity; `wcag21` renders the conformance table, coverage and verdict against
-  WCAG 2.1 AA — the standard cited under the EU Web Accessibility Directive / EN 301 549 (the
-  public-sector legal bar). It's a view filter only: the 0–100 score is **identical** across
-  standards. Under `wcag21`, the 9 criteria new in 2.2 leave the table (findings on them stay
-  visible as issues) and `4.1.1 Parsing` reappears as a documented pass (obsolete per W3C
-  erratum). The chosen `standard` is stamped on `ScanResult` and labelled in the terminal.
+  Equall now emits an **advisory** (`ScanResult.confidence_flags`) when an `<img>` or Next.js
+  `<Image>`'s alt looks like a file name (`alt="DSC00423"`), a placeholder (`alt="untitled"`),
+  the `src` basename, or gibberish — shown as a gray "Low-confidence alt text — needs human
+  review, not a WCAG violation" section. It never fires on good short alts ("Menu", "Cart") or
+  decorative `alt=""`, and it never changes an issue, a conformance verdict (1.1.1 stays
+  `Supports (automated)`), the score, or coverage.
+- **`--standard wcag22 | wcag21` — evaluate against a chosen WCAG version.** `wcag22` is the
+  default; `wcag21` renders the conformance table, coverage and verdict against WCAG 2.1 AA —
+  the standard cited under the EU Web Accessibility Directive / EN 301 549. The 0–100 score is
+  **identical** across standards. Under `wcag21`, the 9 criteria new in 2.2 leave the table
+  (findings on them stay visible as issues) and `4.1.1 Parsing` reappears as a documented pass
+  (obsolete per W3C erratum). The chosen `standard` is stamped on `ScanResult` and labelled in
+  the terminal.
 - `EquallIssue.scanners` — the engines that independently confirmed an issue
   (e.g. `["eslint-jsx-a11y", "axe-core"]`). `scanner` still names the engine of the
   surviving report, so existing consumers are unaffected.
@@ -66,11 +65,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   outputs from different releases are comparable. Per-scanner versions remain in
   `scanners_used[].version`.
 - **Per-criterion support verdicts (`ScanResult.criterion_conformance`).** For every WCAG
-  success criterion of the target level, the scan now states an honest, scan-scoped verdict
-  derived from what it actually established, summing to the level's criteria total so none is
-  silently missing. This is the evidence layer behind an accessibility statement or VPAT — it
-  never emits a formal "Supports"; that's a human attestation applied later against the
-  documented verdict → VPAT-term mapping.
+  success criterion of the target level, the scan now states a scan-scoped verdict derived
+  from what it actually established, summing to the level's criteria total so none is
+  silently missing. It never emits a formal "Supports"; that's a human attestation applied
+  later, using the documented verdict → VPAT-term mapping.
   - Verdicts: `fail` (carries the failing fingerprints as `evidence`), `pass_automated` (an
     automated basis only, never a bare "pass"), `not_verifiable_on_this_scan` (a page-level
     rule needing the rendered page), `not_tested_assisted` (partially covered, e.g. contrast),
@@ -80,11 +78,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   per-criterion verdict now carries `accepted_exceptions: n` (absent = 0), so a criterion with
   suppressed findings is never presented as a bare pass. Per-exception reasons are a planned
   follow-up.
-- **The terminal closes with a "WCAG 2.2 Support Summary"** — `Supports (automated) N ·
-Does not support N · Not evaluated N` — printed last so it is the takeaway you read first
-  when the scan finishes (a terminal shows the bottom of the output). The 0–100 score sits
-  just above it, framed as a trend indicator. `--verbose` prints the full per-criterion table
-  above the summary, keeping the bucket line the final line.
+- **The terminal now closes with a "WCAG 2.2 Support Summary."** `Supports (automated) N ·
+Does not support N · Not evaluated N` prints last, after the 0–100 score (framed as a
+  trend indicator). `--verbose` prints the full per-criterion table above the summary,
+  keeping the bucket line the final line.
 - **A verdict reference is one click away.** The Support Summary now points to a docs page
   defining what each verdict asserts (and what it does not) plus the VPAT mapping, so a reader
   of "Supports (automated)" has an authoritative reference — not just a colour.
@@ -98,10 +95,9 @@ Does not support N · Not evaluated N` — printed last so it is the takeaway yo
   exported types now cover everything reachable from a `ScanResult` (adding `WcagStandard`,
   `ConfidenceFlag`, `ScanSummary`, `ScannerInfo`, `ReclassifiedRule`). Pin `0.1.11` if you need
   time to migrate.
-- **Breaking: the POUR score breakdown (`pour_scores`) is gone.** The per-principle
-  Perceivable / Operable / Understandable / Robust bars were a demoted-score artifact that
-  masked which criteria actually failed or went unevaluated — the per-criterion Support
-  Summary supersedes them. `ScanResult` no longer carries `pour_scores`; the per-issue `pour`
+- **Breaking: the POUR score breakdown (`pour_scores`) is gone — read the per-criterion
+  Support Summary instead.** The per-principle Perceivable / Operable / Understandable /
+  Robust bars are removed. `ScanResult` no longer carries `pour_scores`; the per-issue `pour`
   field is unchanged. Pin `0.1.11` if you need time.
 
 ### Fixed
@@ -113,26 +109,15 @@ Does not support N · Not evaluated N` — printed last so it is the takeaway yo
 
 ### Changed
 
-- **Scoring model 2 — your score will move, and here is why.** The score is now a function of the
-  deduplicated issue set **only**: the file-count scaling and the 15-point per-criterion cap are
-  gone, replaced by rank-damped severity summing (within a criterion, the heaviest failures count
-  first and each repeat weighs less — but every failure weighs something). This fixes two real
-  integrity defects in the old formula:
-  - _Adding clean files raised the score._ The old density scaling divided the penalty by a log of
-    the file count, so 20 inert files could lift a score by 10+ points — and single-buffer scans
-    (the API/MCP path) were structurally penalized. Now the file count never touches the score:
-    small repos and single-component scans stop being punished (they typically **rise**), and
-    padding a repo cannot move the number.
-  - _Fixes inside a saturated criterion were invisible._ With the cap, going from 30 missing alts
-    to 5 left the score identical. Now **every fix strictly raises the score**, credited at the
-    severity of the issue actually fixed — repos with one spammy criterion typically **drop**,
-    because that criterion finally weighs its real size.
-    The decay constant is recalibrated (0.02 → 0.01) so scores stay comparable in magnitude, and the
-    score now carries two decimals — small fixes inside a heavily repeated criterion move the number
-    by fractions of a point, and integer rounding would have swallowed them. `score_model` is
-    stamped `2`; **do not compare scores across model versions** — re-scan both sides of any
-    comparison with the same CLI version. The score remains a trend indicator, never a conformance
-    claim; the full rationale lives in `docs/score-philosophy.md`.
+- **Scoring model 2: the score is now a function of the deduplicated issue set only.** The
+  file-count scaling and the 15-point per-criterion cap are gone, replaced by rank-damped
+  severity summing per criterion. File count no longer affects the score — padding a repo
+  cannot move the number, and small repos or single-component scans typically rise. Every
+  fix strictly raises the score, credited at the severity of the issue fixed; repos with one
+  heavily repeated criterion typically drop as that criterion counts its real size.
+- **`score_model` is stamped `2` — do not compare scores across model versions.** The decay
+  constant changes from 0.02 to 0.01, and the score now carries two decimals so small fixes
+  inside a heavily repeated criterion are visible. Rationale: `docs/score-philosophy.md`.
 - **Tighter, less repetitive terminal output.** The redundant top blocks are gone: the `Coverage`
   line(s) and the coaching block restated the failing set the headline (score + verdict + Support
   Summary) already states — the same count appeared up to six times. The scanner list moved behind
@@ -143,44 +128,38 @@ Does not support N · Not evaluated N` — printed last so it is the takeaway yo
   `console.warn`'d from `runScan` — a library / MCP consumer can capture them, and `--json` output
   carries them. The CLI still prints them to stderr.
 - **"Not verifiable on this scan" now tells you how to verify.** Page-level rules (landmarks,
-  skip link, document title, `<html lang>`) reclassified out of a fragment scan — the
-  `not_verifiable_on_this_scan` conformance verdict — now name the concrete next step: run
-  `equall scan` on your **built output** (`dist/`), where they execute as real documents and
-  move from "Not evaluated" to Supports / Does-not-support. Both the terminal section and the
-  verdict `reason` carry the command and a link to the guide. No new capability — the same
-  static scan, pointed at the composed page.
+  skip link, document title, `<html lang>`) carrying the `not_verifiable_on_this_scan` verdict
+  on a fragment scan now name the next step: run `equall scan` on your **built output**
+  (`dist/`), where they execute as real documents and move from "Not evaluated" to
+  Supports / Does-not-support. Both the terminal section and the verdict `reason` carry the
+  command and a link to the guide.
 - **Fragments no longer falsely pass page title / language.** A component can't know the page's
   `<title>` or `lang` — they live in the layout — so `document-title` (2.4.2) and `html-has-lang`
   (3.1.1) now read `not_verifiable_on_this_scan` on a fragment scan instead of a masked "Supports
-  (automated)". They evaluate honestly on a document / built-output scan (this is what makes the
-  post-build coverage uplift real).
+  (automated)". They evaluate correctly on a document / built-output scan.
 - **WCAG criteria totals corrected — a real over-count is fixed.** `2.5.6 Concurrent Input
 Mechanisms` was mis-catalogued as Level A; it is Level AAA. So the WCAG 2.2 totals drop by
   one: Level A 32→31, Level A+AA 56→55 (`criteria_total` in the JSON). Totals are now derived
-  from the catalog (single source of truth) instead of hardcoded, so this class of drift can't
-  recur. This is a correction, not a scope change.
+  from the catalog (single source of truth) instead of hardcoded.
 - **The verdict now states what was actually verified, and never claims conformance.** A scan
   whose only finding was a AAA advisory used to print "Meets WCAG AA"; a clean scan reported
-  "None". Both were misleading. The score header now reads, e.g., "0 A/AA failures among the
-  25 criteria automatically verified (31 not evaluated)" — an honest subset statement. The
-  words "Meets", "conformant", "compliant" and the "None" verdict are gone from every output.
+  "None". The score header now reads, e.g., "0 A/AA failures among the 25 criteria
+  automatically verified (31 not evaluated)". The words "Meets", "conformant", "compliant" and
+  the "None" verdict are gone from every output.
 - **"Criteria tested" now means the criteria actually exercised, not the ones that failed.**
-  Previously the tested set was derived from the issues found, so it equalled the failed set —
-  the A/AA/AAA determination had no awareness of coverage. It is now sourced from the exercised
-  coverage (a scanner with eligible files ran the check), minus any page-level rule that could
-  not be verified on a fragment. `summary.criteria_failed` is unchanged.
+  It is now sourced from the exercised coverage (a scanner with eligible files ran the check),
+  minus any page-level rule that could not be verified on a fragment — previously it was
+  derived from the failed set. `summary.criteria_failed` is unchanged.
 - **A problem two engines both flag now counts once.** When axe-core and eslint-plugin-jsx-a11y
   report the same defect on the same element — the canonical case is a missing `alt`, reported
   as both `image-alt` and `alt-text` — the scan keeps one issue instead of two, crediting every
   engine that agreed (see `scanners` under Added). Equivalent rules are declared in a
   rule-equivalence table (`src/rules/equivalence.ts`): declarative, so supporting another engine
-  means adding rows, not merge logic. Scores on multi-engine projects may rise slightly — the
-  formula is unchanged, the deduplicated set is just smaller; a counting correction, not a
-  relaxation.
+  means adding rows, not merge logic. Scores on multi-engine projects may rise slightly since
+  the deduplicated set is smaller; the formula is unchanged.
   - Merging is deliberately conservative: in plain HTML the offending element is always
     locatable in the source; in JSX/TSX, Astro or Vue, a pair merges only when it can't be
-    confused with another occurrence in the same file. Ambiguous cases keep both issues — an
-    occasional double count is a visible cost, a dropped finding is not.
+    confused with another occurrence in the same file. Ambiguous cases keep both issues.
 
 ### Known limitations
 
@@ -194,22 +173,20 @@ Mechanisms` was mis-catalogued as Level A; it is Level AAA. So the WCAG 2.2 tota
 ### Changed
 
 - **Fragment scans no longer report page-level rules as violations.** Components and
-  partials — JSX/TSX/Vue/Svelte files, an Astro page that renders into a layout, a partial
-  `.html` include — can't carry page structure: landmarks, the skip link, the document
-  title, `<html lang>` live in the layout that composes them at render time. Those rules
-  are now reclassified instead of failing: they're named in the honest-coverage report
-  (`coverage.reclassified`, plus a "Not verifiable on this scan" terminal section) with
-  occurrence counts and affected files. Full documents — a complete `.html` page, an Astro
-  layout or component carrying its own `<html>` — are unaffected; these rules still fire
-  there.
+  partials — JSX/TSX/Vue/Svelte files, an Astro page rendered into a layout, a partial
+  `.html` include — can't carry page structure: landmarks, skip link, document title,
+  `<html lang>` live in the composing layout. Those rules are now reclassified instead of
+  failing, named in the honest-coverage report (`coverage.reclassified`, plus a "Not
+  verifiable on this scan" terminal section) with occurrence counts and affected files.
   - Rules concerned: `region`, `landmark-one-main` and the rest of the `landmark-*`
     family, `page-has-heading-one`, `bypass`, `skip-link`, `document-title`,
     `html-has-lang`.
+- **Full documents are unaffected — these rules still fire there.** A complete `.html`
+  page, an Astro layout, or a component carrying its own `<html>` is scanned as before.
 - **Scores rise on component-heavy projects as a result.** Reclassified findings no
   longer count against the score or the conformance level (`region` alone was previously
-  the majority of reported issues on fragment-heavy codebases). This is a reporting
-  correction, not a relaxation: the rules still apply to the rendered page, and the CLI
-  now names exactly which ones to verify there.
+  the majority of reported issues on fragment-heavy codebases). The rules still apply to
+  the rendered page, and the CLI names exactly which ones to verify there.
 
 ### Known limitations
 
