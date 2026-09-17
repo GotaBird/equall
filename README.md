@@ -47,6 +47,8 @@ Equall sits in that gap. It wraps existing open-source scanners and adds what th
 npm install -g equall-cli   # or run on demand with: npx equall-cli scan .
 ```
 
+Requires Node.js 20 or later.
+
 ## Usage
 
 ```bash
