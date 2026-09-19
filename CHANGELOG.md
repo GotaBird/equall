@@ -5,6 +5,24 @@ All notable changes to Equall CLI are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2] - 2026-09-19
+
+### Fixed
+
+- **A fresh install resolves only patched transitive dependencies.** Four packages reached
+  through `eslint` and `@typescript-eslint/parser` — `js-yaml`, `brace-expansion` (both the
+  1.x and 5.x lines) and `@humanfs/node` — carry denial-of-service and symlink-following
+  advisories at the versions the 0.2.1 lockfile resolved. No declared dependency range changes: the fixed releases
+  already fall inside them, and the refreshed lockfile now pins `js-yaml` 4.3.2,
+  `brace-expansion` 1.1.21 / 5.0.12 and `@humanfs/node` 0.16.8, so a production audit of
+  the tree reports zero findings. Scanning behavior, scores and output are unchanged.
+
+### Known limitations
+
+- `jsdom` 25 still depends on the deprecated `whatwg-encoding`. Dropping it requires
+  `jsdom` 30, which raises the Node floor above the 20.x this release supports; that upgrade
+  is tracked separately.
+
 ## [0.2.1] - 2026-07-17
 
 ### Added
