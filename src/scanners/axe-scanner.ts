@@ -184,13 +184,6 @@ export class AxeScanner implements ScannerAdapter {
     // Determine axe run tags based on target level
     const runTags = buildRunTags(context.options.wcag_level)
 
-    // Configure once before the file loop (not per-file)
-    axe.configure({
-      rules: [
-        { id: 'color-contrast', enabled: false },
-        { id: 'color-contrast-enhanced', enabled: false },
-      ],
-    })
 
     for (const file of scannableFiles) {
       try {
@@ -250,7 +243,18 @@ export class AxeScanner implements ScannerAdapter {
         }
       }
 
-      const results = await axe.run(document.documentElement, {
+      // Run a fresh axe-core injected into THIS document's window (the injection pattern axe
+      // is designed for) rather than the module instance. axe keeps global state and resets it
+      // after every run; eslint-plugin-jsx-a11y drives the same module instance internally
+      // (autocomplete-valid), so sharing it made axe throw on any JSX with autoComplete= and
+      // left jsx-a11y reading a torn-down window. Whether the two shared one instance depended
+      // on how the engine was loaded (from source they did; the bundled build ships two
+      // copies), so tests and the published CLI disagreed. One axe per document removes the
+      // shared state in every build, and makes concurrent scans in one process safe.
+      dom.window.eval(axe.source)
+      const windowAxe = (dom.window as unknown as { axe: typeof axe }).axe
+      windowAxe.configure({ rules: AXE_RULE_OVERRIDES })
+      const results = await windowAxe.run(document.documentElement, {
         runOnly: {
           type: 'tag',
           values: runTags,
@@ -312,6 +316,13 @@ function componentReviewReason(
   }
   return null
 }
+
+// Contrast needs real rendering (computed colors, layout, backgrounds): disabled here, and
+// declared partial (1.4.3) so it is never reported as tested.
+const AXE_RULE_OVERRIDES = [
+  { id: 'color-contrast', enabled: false },
+  { id: 'color-contrast-enhanced', enabled: false },
+]
 
 // Build the tag filter for axe.run based on target WCAG level
 function buildRunTags(level: WcagLevel): string[] {
