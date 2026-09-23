@@ -112,7 +112,8 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
   }
 
   // 3. Run all scanners in parallel
-  const scanContext = { root_path: rootPath, files, options: scanOptions, in_memory: inMemory }
+  // Scanners report what they could not analyse on the shared diagnostics list.
+  const scanContext = { root_path: rootPath, files, options: scanOptions, in_memory: inMemory, diagnostics }
 
   const scannerResults = await Promise.allSettled(
     scanners.map(async (scanner) => {
@@ -127,6 +128,7 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
   // 4. Aggregate results
   const allIssues: EquallIssue[] = []
   const scannersUsed: ScannerInfo[] = []
+  const failedScanners = new Set<string>()
 
   for (const result of scannerResults) {
     if (result.status === 'fulfilled') {
@@ -141,6 +143,7 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
     } else {
       const err = result.reason instanceof Error ? result.reason.message : String(result.reason)
       diagnostics.push(`[scanner] failed: ${err.slice(0, 120)}`)
+      failedScanners.add(scanners[scannerResults.indexOf(result)].name)
     }
   }
 
@@ -183,7 +186,7 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
   // Computed BEFORE scoring so the genuinely-exercised set feeds the honest
   // criteria_tested + POUR n/a gating. The reclassified summary is what honestTestedCriteria
   // subtracts (page-level rules that can't be verified on a fragment).
-  const coverage = computeCoverage(scanners, files)
+  const coverage = computeCoverage(scanners, files, failedScanners)
   coverage.reclassified = summarizeReclassified(reclassified)
   const exercised = honestTestedCriteria(coverage, coverage.reclassified)
 

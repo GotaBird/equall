@@ -149,6 +149,10 @@ export interface ScanContext {
   in_memory?: boolean                 // true when files come from buffers (T1.1) and
                                       // do not exist on disk — scanners that read the
                                       // filesystem (eslint) must use their in-memory path
+  diagnostics?: string[]              // where a scanner reports what it could NOT analyse
+                                      // (a file it skipped or failed to parse). runScan
+                                      // returns them on ScanResult.diagnostics; scanners
+                                      // never write to stderr themselves.
 }
 
 export interface FileEntry {
