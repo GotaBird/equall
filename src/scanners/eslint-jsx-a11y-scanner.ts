@@ -32,22 +32,22 @@ const RULE_WCAG_MAP: Record<string, { criteria: string[]; pour: PourPrinciple }>
   'jsx-a11y/heading-has-content':         { criteria: ['2.4.6'], pour: 'operable' },
   'jsx-a11y/html-has-lang':               { criteria: ['3.1.1'], pour: 'understandable' },
   'jsx-a11y/iframe-has-title':            { criteria: ['2.4.1', '4.1.2'], pour: 'operable' },
-  'jsx-a11y/img-redundant-alt':           { criteria: ['1.1.1'], pour: 'perceivable' },
-  'jsx-a11y/interactive-supports-focus':   { criteria: ['2.1.1', '2.4.7'], pour: 'operable' },
+  'jsx-a11y/img-redundant-alt':           { criteria: [], pour: 'perceivable' }, // MEASUREMENT H3: best-practice
+  'jsx-a11y/interactive-supports-focus':   { criteria: ['2.1.1'], pour: 'operable' }, // MEASUREMENT H3: 2.4.7 dropped
   'jsx-a11y/label-has-associated-control': { criteria: ['1.3.1', '3.3.2'], pour: 'perceivable' },
   'jsx-a11y/lang':                        { criteria: ['3.1.2'], pour: 'understandable' },
   'jsx-a11y/media-has-caption':           { criteria: ['1.2.2', '1.2.3'], pour: 'perceivable' },
   'jsx-a11y/mouse-events-have-key-events': { criteria: ['2.1.1'], pour: 'operable' },
   'jsx-a11y/no-access-key':               { criteria: ['2.1.1'], pour: 'operable' },
-  'jsx-a11y/no-autofocus':                { criteria: ['2.4.3'], pour: 'operable' },
-  'jsx-a11y/no-distracting-elements':     { criteria: ['2.3.1'], pour: 'operable' },
+  'jsx-a11y/no-autofocus':                { criteria: [], pour: 'operable' }, // MEASUREMENT H3: best-practice
+  'jsx-a11y/no-distracting-elements':     { criteria: ['2.2.2'], pour: 'operable' }, // MEASUREMENT H3: 2.3.1 -> 2.2.2 (Pause, Stop, Hide)
   'jsx-a11y/no-interactive-element-to-noninteractive-role': { criteria: ['4.1.2'], pour: 'robust' },
   'jsx-a11y/no-noninteractive-element-interactions': { criteria: ['2.1.1'], pour: 'operable' },
   'jsx-a11y/no-noninteractive-element-to-interactive-role': { criteria: ['4.1.2'], pour: 'robust' },
   'jsx-a11y/no-noninteractive-tabindex':  { criteria: ['2.4.3'], pour: 'operable' },
   'jsx-a11y/no-redundant-roles':          { criteria: ['4.1.2'], pour: 'robust' },
   'jsx-a11y/no-static-element-interactions': { criteria: ['2.1.1'], pour: 'operable' },
-  'jsx-a11y/prefer-tag-over-role':        { criteria: ['4.1.2'], pour: 'robust' },
+  'jsx-a11y/prefer-tag-over-role':        { criteria: [], pour: 'robust' }, // MEASUREMENT H3: best-practice
   'jsx-a11y/role-has-required-aria-props': { criteria: ['4.1.2'], pour: 'robust' },
   'jsx-a11y/role-supports-aria-props':    { criteria: ['4.1.2'], pour: 'robust' },
   'jsx-a11y/scope':                       { criteria: ['1.3.1'], pour: 'perceivable' },
