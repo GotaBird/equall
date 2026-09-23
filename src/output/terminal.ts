@@ -162,9 +162,16 @@ function formatVerifiedSubset(result: ScanResult, target: WcagLevel): { line: st
   return { line, failing: f }
 }
 
+// Default caps on every list in the report (criteria, occurrences, affected files); `--all`
+// lifts them all (`--verbose` still lifts the file lists, as before). Any cut is always
+// announced with a notice naming `--all` — never a silent truncation.
+const MAX_CRITERIA = 8
+const MAX_OCCURRENCES = 2
+
 export interface PrintOptions {
   showIgnored?: boolean
   verbose?: boolean
+  all?: boolean
   showManual?: boolean
   targetLevel?: WcagLevel
   standard?: WcagStandard
@@ -244,9 +251,11 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
     const grouped = groupByCriterion(wcagIssues)
     const sorted = [...grouped.entries()]
       .sort((a, b) => b[1].weight - a[1].weight)
-      .slice(0, 8) // Show top 8
+    // Top MAX_CRITERIA by default; the remainder is announced below, never dropped silently.
+    const shown = options.all ? sorted : sorted.slice(0, MAX_CRITERIA)
+    const hidden = sorted.slice(shown.length)
 
-    for (const [criterion, group] of sorted) {
+    for (const [criterion, group] of shown) {
       const topSeverity = group.issues[0].severity
       const name = criterionName(criterion)
       const levelSuffix = group.issues[0].wcag_level ? ` ${GRAY}Level ${group.issues[0].wcag_level}${RESET}` : ''
@@ -260,18 +269,11 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
       )
 
       // Collapse duplicate file+line entries so the same issue isn't repeated.
-      // Show first 2 unique occurrences with suggestion + help_url.
-      const seen = new Set<string>()
-      const uniqueIssues: EquallIssue[] = []
-      for (const issue of group.issues) {
-        const key = `${issue.file_path}:${issue.line ?? ''}:${issue.message}`
-        if (!seen.has(key)) {
-          seen.add(key)
-          uniqueIssues.push(issue)
-        }
-      }
+      // Show the first MAX_OCCURRENCES unique occurrences (all with --all).
+      const uniqueIssues = uniqueOccurrences(group.issues)
+      const occurrences = options.all ? uniqueIssues : uniqueIssues.slice(0, MAX_OCCURRENCES)
 
-      for (const issue of uniqueIssues.slice(0, 2)) {
+      for (const issue of occurrences) {
         const location = issue.line ? `:${issue.line}` : ''
         const col = issue.column ? `:${issue.column}` : ''
         console.log(`    ${GRAY}↳${RESET} ${CYAN}${issue.file_path}${location}${col}${RESET}`)
@@ -285,9 +287,24 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
           console.log(`      ${GRAY}Learn more: ${issue.help_url}${RESET}`)
         }
       }
-      if (uniqueIssues.length > 2) {
-        console.log(`    ${GRAY}↳ and ${uniqueIssues.length - 2} more occurrence${uniqueIssues.length - 2 > 1 ? 's' : ''} of the same issue${RESET}`)
-      }
+      printOccurrenceCut(uniqueIssues.length - occurrences.length)
+      console.log()
+    }
+
+    // Criteria beyond the top MAX_CRITERIA: name what was cut (with its critical/serious
+    // counts) so a serious criterion ranked lower is never hidden without a trace.
+    if (hidden.length > 0) {
+      const hiddenIssues = hidden.flatMap(([, group]) => group.issues)
+      const critical = hiddenIssues.filter(i => i.severity === 'critical').length
+      const serious = hiddenIssues.filter(i => i.severity === 'serious').length
+      const severe = [
+        critical > 0 ? `${critical} critical` : '',
+        serious > 0 ? `${serious} serious` : '',
+      ].filter(Boolean).join(', ')
+      console.log(
+        `  ${GRAY}↳ ${hidden.length} more WCAG criteri${hidden.length === 1 ? 'on' : 'a'} not shown ` +
+        `(${hiddenIssues.length} occurrence${hiddenIssues.length === 1 ? '' : 's'}${severe ? `, incl. ${severe}` : ''}) · run with --all to list every criterion${RESET}`
+      )
       console.log()
     }
   }
@@ -312,13 +329,9 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
         `${GRAY}(${count} occurrence${count > 1 ? 's' : ''})${RESET}`
       )
 
-      const seen = new Set<string>()
-      const uniqueIssues: EquallIssue[] = []
-      for (const issue of group.issues) {
-        const key = `${issue.file_path}:${issue.line ?? ''}:${issue.message}`
-        if (!seen.has(key)) { seen.add(key); uniqueIssues.push(issue) }
-      }
-      for (const issue of uniqueIssues.slice(0, 2)) {
+      const uniqueIssues = uniqueOccurrences(group.issues)
+      const occurrences = options.all ? uniqueIssues : uniqueIssues.slice(0, MAX_OCCURRENCES)
+      for (const issue of occurrences) {
         const location = issue.line ? `:${issue.line}` : ''
         console.log(`    ${GRAY}↳${RESET} ${CYAN}${issue.file_path}${location}${RESET}`)
         console.log(`      ${GRAY}${cleanMessage(issue.message)}${RESET}`)
@@ -326,9 +339,7 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
           console.log(`      ${GRAY}Learn more: ${issue.help_url}${RESET}`)
         }
       }
-      if (uniqueIssues.length > 2) {
-        console.log(`    ${GRAY}↳ and ${uniqueIssues.length - 2} more occurrence${uniqueIssues.length - 2 > 1 ? 's' : ''} of the same issue${RESET}`)
-      }
+      printOccurrenceCut(uniqueIssues.length - occurrences.length)
       console.log()
     }
   }
@@ -352,8 +363,8 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
       )
       console.log(`      ${hint}`)
 
-      // Show affected files: all in verbose mode, first 2 otherwise
-      const maxFiles = options.verbose ? group.issues.length : 2
+      // Show affected files: all with --all (or --verbose), first MAX_OCCURRENCES otherwise
+      const listAll = options.all || options.verbose
       const seen = new Set<string>()
       const uniqueIssues: EquallIssue[] = []
       for (const issue of group.issues) {
@@ -363,13 +374,12 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
         }
       }
 
-      for (const issue of uniqueIssues.slice(0, maxFiles)) {
+      const files = listAll ? uniqueIssues : uniqueIssues.slice(0, MAX_OCCURRENCES)
+      for (const issue of files) {
         const location = issue.line ? `:${issue.line}` : ''
         console.log(`      ${GRAY}↳${RESET} ${CYAN}${issue.file_path}${location}${RESET}`)
       }
-      if (!options.verbose && uniqueIssues.length > 2) {
-        console.log(`      ${GRAY}↳ and ${uniqueIssues.length - 2} more file${uniqueIssues.length - 2 > 1 ? 's' : ''} (run with --verbose to list all)${RESET}`)
-      }
+      printFileCut(uniqueIssues.length - files.length)
       console.log()
     }
   }
@@ -396,13 +406,11 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
       const hint = BP_HINTS[entry.rule_id]
       if (hint) console.log(`      ${GRAY}${hint}${RESET}`)
 
-      const maxFiles = options.verbose ? entry.files.length : 2
-      for (const file of entry.files.slice(0, maxFiles)) {
+      const files = options.all || options.verbose ? entry.files : entry.files.slice(0, MAX_OCCURRENCES)
+      for (const file of files) {
         console.log(`      ${GRAY}↳${RESET} ${CYAN}${file}${RESET}`)
       }
-      if (!options.verbose && entry.files.length > 2) {
-        console.log(`      ${GRAY}↳ and ${entry.files.length - 2} more file${entry.files.length - 2 > 1 ? 's' : ''} (run with --verbose to list all)${RESET}`)
-      }
+      printFileCut(entry.files.length - files.length)
       console.log()
     }
 
@@ -543,6 +551,32 @@ function printSupportSummary(result: ScanResult, target: WcagLevel, options: Pri
   // Authoritative reference for what each verdict asserts (and does not) + the VPAT mapping.
   console.log(`  ${GRAY}What each verdict means → ${VERDICT_DOCS_URL}${RESET}`)
   console.log()
+}
+
+// Collapse issues sharing file + line + message — the same occurrence reported twice.
+function uniqueOccurrences(issues: EquallIssue[]): EquallIssue[] {
+  const seen = new Set<string>()
+  const unique: EquallIssue[] = []
+  for (const issue of issues) {
+    const key = `${issue.file_path}:${issue.line ?? ''}:${issue.message}`
+    if (!seen.has(key)) {
+      seen.add(key)
+      unique.push(issue)
+    }
+  }
+  return unique
+}
+
+// Notice for occurrences cut from a criterion — printed only when something was cut.
+function printOccurrenceCut(hidden: number): void {
+  if (hidden <= 0) return
+  console.log(`    ${GRAY}↳ and ${hidden} more occurrence${hidden > 1 ? 's' : ''} of the same issue · run with --all to list them${RESET}`)
+}
+
+// Notice for affected files cut from a best-practice / page-level rule — only when something was cut.
+function printFileCut(hidden: number): void {
+  if (hidden <= 0) return
+  console.log(`      ${GRAY}↳ and ${hidden} more file${hidden > 1 ? 's' : ''} · run with --all to list them${RESET}`)
 }
 
 interface CriterionGroup {

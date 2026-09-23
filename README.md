@@ -54,6 +54,7 @@ equall scan .                      # score the current directory (WCAG 2.2, Leve
 equall scan . --standard wcag21    # WCAG 2.1 AA — the public-sector legal bar
 equall scan . --level A            # target a different conformance level
 equall scan . --verbose            # full per-criterion support table
+equall scan . --all                # list everything: all criteria, occurrences and files
 equall scan . --json               # machine-readable output for CI / tooling
 equall scan . --min-score 90       # CI gate: exit 1 if the score is below 90
 equall --help                      # all commands and options
