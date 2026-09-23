@@ -5,6 +5,23 @@ All notable changes to Equall CLI are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **`--all` lists everything the terminal report would otherwise cut.** By default the
+  report shows the eight highest-weighted WCAG criteria and two occurrences of each, and two
+  affected files per best-practice or page-level rule; `equall scan . --all` lifts every one
+  of these caps, so every critical and serious occurrence is reachable without switching to
+  `--json`. `--verbose` still expands the file lists and the per-criterion support table.
+
+### Changed
+
+- **Truncation is always announced.** Criteria past the default top eight used to be
+  dropped from the terminal report without a trace; they are now summarized in one line
+  with their occurrence count and how many are critical or serious. Every cut — criteria,
+  occurrences or files — now names `--all` (file-list cuts used to point at `--verbose`). The JSON output, score and counts are unchanged.
+
 ## [0.2.2] - 2026-09-19
 
 ### Fixed

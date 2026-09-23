@@ -29,6 +29,7 @@ program
   .option('--json', 'Output results as JSON')
   .option('-i, --show-ignored', 'Show ignored issues in output')
   .option('-v, --verbose', 'Expand the full per-criterion support table + all occurrences for best-practice issues')
+  .option('-a, --all', 'List everything: all WCAG criteria, all occurrences and all affected files (default: top 8 criteria, 2 of each)')
   .option('-m, --show-manual', 'List WCAG criteria that require manual review')
   .option('--no-color', 'Disable colored output')
   .option('--no-readability', 'Disable readability (Flesch-Kincaid) scanner — English-only, experimental')
@@ -44,7 +45,7 @@ Examples:
 
 Supported files: .html .htm .jsx .tsx .vue .svelte .astro
 `)
-  .action(async (path: string, opts: { level: string; standard?: string; include?: string[]; exclude?: string[]; json?: boolean; showIgnored?: boolean; verbose?: boolean; showManual?: boolean; readability?: boolean; minScore?: string }) => {
+  .action(async (path: string, opts: { level: string; standard?: string; include?: string[]; exclude?: string[]; json?: boolean; showIgnored?: boolean; verbose?: boolean; all?: boolean; showManual?: boolean; readability?: boolean; minScore?: string }) => {
     const level = opts.level.toUpperCase() as WcagLevel
     if (!['A', 'AA', 'AAA'].includes(level)) {
       console.error(`Invalid level "${opts.level}". Use A, AA, or AAA.`)
@@ -103,7 +104,7 @@ Supported files: .html .htm .jsx .tsx .vue .svelte .astro
         printJson(result)
         console.error(`✓ JSON report written (${result.issues.length} issues)`)
       } else {
-        printResult(result, { showIgnored: opts.showIgnored, verbose: opts.verbose, showManual: opts.showManual, targetLevel: level, standard })
+        printResult(result, { showIgnored: opts.showIgnored, verbose: opts.verbose, all: opts.all, showManual: opts.showManual, targetLevel: level, standard })
       }
 
       // A scan that ran successfully exits 0. The score gate is opt-in (--min-score)
