@@ -23,6 +23,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The same code always produces the same JSON.** Files were scanned in filesystem-walk
+  order and results collected as scanners finished, so two scans of an unchanged tree could
+  list issues, page-level files and diagnostics in a different order (different bytes, same
+  content). Files, issues, reclassified page-level files and diagnostics are now sorted; only
+  `scanned_at` and `duration_ms` differ between two scans. Fingerprints are unchanged.
 - **A file the engine could not analyse is reported, never passed as clean.** A JSX/TSX file
   that failed to parse used to produce no finding and no warning (score 100). Files skipped
   or not parsed by any scanner are now listed on `diagnostics` (printed on stderr by the CLI,
