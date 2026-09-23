@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **No criterion is reported as automatically tested unless a check can conclude on it.**
+  Seven criteria were credited as "Supports (automated)" without a real test: 1.2.1,
+  1.3.4 and 2.5.3 (their axe rules are deprecated or experimental and never run), 1.4.1
+  and 2.5.8 (the rules run but cannot conclude without a rendered layout — a 10×10px
+  button passed the target-size check), and 2.4.7 and 2.3.1 (only touched indirectly by
+  the JSX lint rules). The first three are now "Not evaluated — manual"; the other four
+  "Not evaluated — needs the rendered check". Issues, fingerprints and the score are
+  unchanged; only the conformance verdicts and the coverage counts move.
+
 - **Plain-text output when colors are off.** `--no-color` was accepted but ignored, so a
   report redirected to a file (`equall scan . --all > report.txt`) or read in a CI log was
   full of ANSI escape codes. Colors are now off with `--no-color`, when `NO_COLOR` is set

@@ -98,6 +98,11 @@ export class EslintJsxA11yScanner implements ScannerAdapter {
   name = 'eslint-jsx-a11y'
   version = ''
   fileTypes: FileType[] = ['jsx', 'tsx', 'astro']
+  // Criteria this scanner only touches indirectly, so they are never reported as
+  // automatically tested: 2.4.7 Focus Visible comes from interactive-supports-focus (is the
+  // element focusable at all, not whether focus is visible) and 2.3.1 Three Flashes from
+  // no-distracting-elements (<marquee>/<blink>, not flash frequency).
+  partialCriteria = ['2.4.7', '2.3.1']
   coveredCriteria = [
     '1.1.1', '1.2.2', '1.2.3', '1.3.1', '1.3.5',
     '2.1.1', '2.3.1', '2.4.1', '2.4.3', '2.4.4', '2.4.6', '2.4.7',
