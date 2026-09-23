@@ -207,13 +207,13 @@ export class EslintJsxA11yScanner implements ScannerAdapter {
           // that moves the line keeps the identity stable.
           const tokenContext = fileEntry ? extractTokenContext(fileEntry.content, msg) : null
 
-          // Split criteria by WCAG level so each issue has a single level
-          const aCriteria = criteria.filter(c => !AA_CRITERIA.has(c))
-          const aaCriteria = criteria.filter(c => AA_CRITERIA.has(c))
-          const groups: { criteria: string[]; level: WcagLevel }[] = []
-          if (aCriteria.length > 0) groups.push({ criteria: aCriteria, level: 'A' })
-          if (aaCriteria.length > 0) groups.push({ criteria: aaCriteria, level: 'AA' })
-          if (groups.length === 0) groups.push({ criteria, level: 'A' })
+          // MEASUREMENT H2: one issue per eslint message, carrying every mapped criterion.
+          // Level = the least demanding level among them (A if any A criterion), so the
+          // issue still counts in an A-level scan.
+          const hasA = criteria.some(c => !AA_CRITERIA.has(c))
+          const groups: { criteria: string[]; level: WcagLevel }[] = [
+            { criteria, level: hasA || criteria.length === 0 ? 'A' : 'AA' },
+          ]
 
           for (const group of groups) {
             allIssues.push({
