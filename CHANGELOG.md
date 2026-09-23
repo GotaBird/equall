@@ -5,6 +5,16 @@ All notable changes to Equall CLI are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **Plain-text output when colors are off.** `--no-color` was accepted but ignored, so a
+  report redirected to a file (`equall scan . --all > report.txt`) or read in a CI log was
+  full of ANSI escape codes. Colors are now off with `--no-color`, when `NO_COLOR` is set
+  (no-color.org), or when the output is not a terminal; `FORCE_COLOR` turns them back on.
+  Severity stays readable without color: every level keeps its own shape (■ ▲ ● ○).
+
 ## [0.2.3] - 2026-09-23
 
 ### Added

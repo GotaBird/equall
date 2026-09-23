@@ -1,6 +1,7 @@
 import type { ScanResult, EquallIssue, Severity, WcagLevel, WcagStandard, ConformanceVerdict } from '../types.js'
 import { getCriteriaForStandardLevel, getCriterion } from '../wcag-catalog.js'
 import { isBeyondTarget } from '../scoring/score.js'
+import { BOLD, GRAY, RESET, RED, YELLOW, GREEN, CYAN, WHITE, BG_RED, BG_YELLOW, BG_GREEN, setColorEnabled } from './color.js'
 
 // WCAG version label for the selected standard. The Level-A partition set/total
 // are derived per-scan from the catalog (standard-aware) inside printResult — never hardcoded.
@@ -25,21 +26,6 @@ const BP_HINTS: Record<string, string> = {
   'skip-link': 'Skip links let keyboard users jump past repeated content',
 }
 
-// ANSI color helpers (chalk-free fallback for minimal deps)
-const BOLD = '\x1b[1m'
-// Use bright black (\x1b[90m) rather than the DIM attribute (\x1b[2m) —
-// DIM renders inconsistently and near-invisible on many terminals
-const GRAY = '\x1b[90m'
-const RESET = '\x1b[0m'
-const RED = '\x1b[31m'
-const YELLOW = '\x1b[33m'
-const GREEN = '\x1b[32m'
-const CYAN = '\x1b[36m'
-const WHITE = '\x1b[37m'
-const BG_RED = '\x1b[41m'
-const BG_YELLOW = '\x1b[43m'
-const BG_GREEN = '\x1b[42m'
-const BG_CYAN = '\x1b[46m'
 
 // Public docs page defining every verdict (what it asserts / does not) + the VPAT mapping.
 // Printed under the Support Summary so a reader of "Supports (automated)" has a reference.
@@ -173,6 +159,9 @@ export interface PrintOptions {
   verbose?: boolean
   all?: boolean
   showManual?: boolean
+  // ANSI colors on/off. Defaults to on; the CLI resolves it with shouldUseColor()
+  // (--no-color, NO_COLOR, FORCE_COLOR, TTY detection).
+  color?: boolean
   targetLevel?: WcagLevel
   standard?: WcagStandard
 }
@@ -200,6 +189,7 @@ function partitionIssues(result: ScanResult, target: WcagLevel): ReportIssues {
 }
 
 export function printResult(result: ScanResult, options: PrintOptions = {}): void {
+  setColorEnabled(options.color ?? true)
   const target = options.targetLevel ?? 'AA'
   const standard = options.standard ?? 'wcag22'
   const parts = partitionIssues(result, target)
