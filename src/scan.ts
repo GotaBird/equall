@@ -7,7 +7,7 @@ import { computeConformance } from './conformance/index.js'
 import { computeConfidenceFlags } from './confidence/index.js'
 import { getCriteriaForStandardLevel } from './wcag-catalog.js'
 import { fingerprint } from './utils/fingerprint.js'
-import { isDocumentUnit } from './utils/html-extract.js'
+import { extractHtmlDetailed, isDocumentUnit } from './utils/html-extract.js'
 import { partitionPageLevelIssues, summarizeReclassified } from './rules/page-level.js'
 import { mergeCrossEngineDuplicates } from './rules/equivalence.js'
 import { detectRoutes, type RouteDetection } from './routes.js'
@@ -155,6 +155,33 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
   // reclassified issue is a harmless no-op, ignored_count stays meaningful). Reclassified
   // issues leave `issues` entirely and surface in coverage.reclassified (step 10).
   const fragmentByPath = new Map(files.map((f) => [f.path, !isDocumentUnit(f.content, f.type)]))
+
+  // 5c. JSX/TSX extraction residue — stated, never scored. An extraction artefact (a
+  // multi-line `className={cn(…)}` the neutralizer could not consume, a return block the
+  // balanced scan could not close) is not a finding: it gets no issue, no fingerprint, no
+  // ignore. It is reported per file on `diagnostics`, in the same spirit as
+  // `coverage.reclassified`.
+  //
+  // DELIBERATE TRADE — read before "optimizing": this re-runs the extraction once more per
+  // file (the axe, readability and error-identification scanners each run it already, and
+  // so does `isDocumentUnit` just above). It is a pure function over small files, so the
+  // cost is negligible. The fix is NOT to grow `ScanContext` / the `ScannerAdapter`
+  // contract (public API in types.ts) to thread a diagnostics sink through the scanners.
+  // If the repeat ever matters, memoize the extraction per file inside html-extract.ts.
+  for (const f of files) {
+    if (f.type !== 'jsx' && f.type !== 'tsx') continue
+    // Same "renders HTML" predicate the axe scanner applies before extracting.
+    if (!f.content.includes('<') || !f.content.includes('return')) continue
+    const { report } = extractHtmlDetailed(f.content, f.type)
+    if (report.dropped > 0) {
+      const noun = report.dropped === 1 ? 'token' : 'tokens'
+      diagnostics.push(`[extract] ${f.path}: ${report.dropped} attribute ${noun} dropped as JSX extraction residue`)
+    }
+    if (report.fallback) {
+      diagnostics.push(`[extract] ${f.path}: no balanced return block found — fell back to lazy extraction`)
+    }
+  }
+
   const { kept, reclassified } = partitionPageLevelIssues(
     deduped,
     (path) => fragmentByPath.get(path) ?? true // unknown path → conservative: fragment

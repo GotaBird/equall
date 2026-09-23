@@ -5,6 +5,41 @@ All notable changes to Equall CLI are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.3] - Unreleased
+
+### Fixed
+
+- **A multi-line `className` in JSX/TSX no longer produces phantom ARIA violations.** A
+  component whose `className` spans several lines — `cn(…)`, `clsx(…)`, a template literal,
+  the shape of every shadcn/ui-style atom — used to be cut mid-tag by the return-block
+  extraction, so Tailwind tokens such as `aria-invalid:border-destructive` reached axe as
+  attribute names and were reported as CRITICAL `aria-valid-attr` findings under 4.1.2. The
+  return block is now extracted by a balanced scan that ignores parens inside strings,
+  template literals, comments and JSX text, and a safety net drops any extraction residue
+  left inside a tag before the markup reaches the parser. Effects on the next scan: these
+  4.1.2 phantoms disappear (they were never real findings, so nothing was "fixed" in your
+  code). The whole return block is now scanned instead of the part before the first
+  multi-line expression, so components that were only partially covered before may surface
+  findings that were always there — the score of a Tailwind/shadcn repository can move in
+  either direction, and a `list`/`region` finding may get a new fingerprint because its
+  snippet now spans the full element.
+  - Extraction residue is stated, never scored: each affected file gets a `[extract]` line
+    on `ScanResult.diagnostics` (printed to stderr by the CLI, carried in `--json`) with the
+    number of attribute tokens dropped, or a note that the balanced scan fell back to the
+    previous extraction. No issue, fingerprint or ignore is ever created for it.
+  - Rendered `.html` input is untouched: a class value like `aria-invalid:border-destructive`
+    is legitimate in a real DOM and is passed through byte-for-byte.
+
+### Known limitations
+
+- The return-block scan is a tokenizer, not a JSX parser. A `return (` inside a string or
+  comment that precedes the component's real return is taken as the block start, and a JSX
+  tag whose `<` directly follows a character such as `)` is read as an operator, so the
+  block may end early. Both cases fall back to the previous extraction and are reported on
+  `diagnostics`.
+- The residue safety net applies to `.jsx`/`.tsx` only; `.vue` and `.astro` keep their
+  previous extraction behaviour.
+
 ## [0.2.2] - 2026-09-19
 
 ### Fixed
