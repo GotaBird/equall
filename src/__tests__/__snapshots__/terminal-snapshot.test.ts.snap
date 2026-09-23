@@ -1,0 +1,949 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`terminal report snapshot > renders byte-identically: all 1`] = `
+"
+[1m  ◆ EQUALL — Accessibility Score[0m
+
+  [1mSummary[0m
+  24 files scanned  ·  [1m16[0m WCAG violations  ·  [90m5 best-practice recommendations[0m  ·  [90m3 AAA advisory[0m  ·  [90m6 page-level (needs rendered page)[0m
+  [31m[1m■[0m [31m13 critical[0m   [33m[1m▲[0m [33m2 serious[0m   [36m●[0m [36m5 moderate[0m   [90m○[0m [90m1 minor[0m
+  [90mcritical/serious = fix before shipping · moderate/minor = fix in next iteration[0m
+  [90m3 routes detected · next-app 2 · html 1[0m
+  [90m1 issue suppressed via equall-ignore[0m
+
+  [1mWCAG Violations[0m [90m— automated failures at your AA target, fix these first[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 1.1.1[0m [1mNon-text Content[0m [90mLevel A[0m  [90m(5 occurrences)[0m
+    [90m↳[0m [36msrc/img-1.tsx:3:5[0m
+      Violation of 1.1.1
+      [32mHow to fix[0m [90m(Do any one of these:)[0m
+        [32m·[0m Element does not have an alt attribute
+        [32m·[0m aria-label attribute does not exist or is empty
+      [90mLearn more: https://example.test/help[0m
+    [90m↳[0m [36msrc/img-2.tsx:3:5[0m
+      Violation of 1.1.1
+      [32mHow to fix[0m [90m(Do any one of these:)[0m
+        [32m·[0m Element does not have an alt attribute
+        [32m·[0m aria-label attribute does not exist or is empty
+      [90mLearn more: https://example.test/help[0m
+    [90m↳[0m [36msrc/img-3.tsx:3:5[0m
+      Violation of 1.1.1
+      [32mHow to fix[0m [90m(Do any one of these:)[0m
+        [32m·[0m Element does not have an alt attribute
+        [32m·[0m aria-label attribute does not exist or is empty
+      [90mLearn more: https://example.test/help[0m
+    [90m↳[0m [36msrc/img-4.tsx:3:5[0m
+      Violation of 1.1.1
+      [32mHow to fix[0m [90m(Do any one of these:)[0m
+        [32m·[0m Element does not have an alt attribute
+        [32m·[0m aria-label attribute does not exist or is empty
+      [90mLearn more: https://example.test/help[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 1.3.1[0m [1mInfo and Relationships[0m [90mLevel A[0m  [90m(1 occurrence)[0m
+    [90m↳[0m [36msrc/1.3.1.tsx:3:5[0m
+      Violation of 1.3.1
+      [32m→ Add a label to the control[0m
+      [90mLearn more: https://example.test/help[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 2.1.1[0m [1mKeyboard[0m [90mLevel A[0m  [90m(1 occurrence)[0m
+    [90m↳[0m [36msrc/2.1.1.tsx:3:5[0m
+      Violation of 2.1.1
+      [32m→ Add a label to the control[0m
+      [90mLearn more: https://example.test/help[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 2.4.4[0m [1mLink Purpose (In Context)[0m [90mLevel A[0m  [90m(1 occurrence)[0m
+    [90m↳[0m [36msrc/2.4.4.tsx:3:5[0m
+      Violation of 2.4.4
+      [32m→ Add a label to the control[0m
+      [90mLearn more: https://example.test/help[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 3.1.1[0m [1mLanguage of Page[0m [90mLevel A[0m  [90m(1 occurrence)[0m
+    [90m↳[0m [36msrc/3.1.1.tsx:3:5[0m
+      Violation of 3.1.1
+      [32m→ Add a label to the control[0m
+      [90mLearn more: https://example.test/help[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 4.1.2[0m [1mName, Role, Value[0m [90mLevel A[0m  [90m(1 occurrence)[0m
+    [90m↳[0m [36msrc/4.1.2.tsx:3:5[0m
+      Violation of 4.1.2
+      [32m→ Add a label to the control[0m
+      [90mLearn more: https://example.test/help[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 1.2.1[0m [1mAudio-only and Video-only (Prerecorded)[0m [90mLevel A[0m  [90m(1 occurrence)[0m
+    [90m↳[0m [36msrc/1.2.1.tsx:3:5[0m
+      Violation of 1.2.1
+      [32m→ Add a label to the control[0m
+      [90mLearn more: https://example.test/help[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 2.2.1[0m [1mTiming Adjustable[0m [90mLevel A[0m  [90m(1 occurrence)[0m
+    [90m↳[0m [36msrc/2.2.1.tsx:3:5[0m
+      Violation of 2.2.1
+      [32m→ Add a label to the control[0m
+      [90mLearn more: https://example.test/help[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 2.4.1[0m [1mBypass Blocks[0m [90mLevel A[0m  [90m(1 occurrence)[0m
+    [90m↳[0m [36msrc/2.4.1.tsx:3:5[0m
+      Violation of 2.4.1
+      [32m→ Add a label to the control[0m
+      [90mLearn more: https://example.test/help[0m
+
+  [33m[1m▲[0m [33m[1mSERIOUS[0m  [1mWCAG 2.4.2[0m [1mPage Titled[0m [90mLevel A[0m  [90m(1 occurrence)[0m
+    [90m↳[0m [36msrc/title.tsx[0m
+      Violation of 2.4.2
+      [90mLearn more: https://example.test/help[0m
+
+  [36m●[0m [36mMODERATE[0m  [1mWCAG 3.3.2[0m [1mLabels or Instructions[0m [90mLevel A[0m  [90m(1 occurrence)[0m
+    [90m↳[0m [36msrc/form.tsx:3:5[0m
+      Violation of 3.3.2
+      [90mLearn more: https://example.test/help[0m
+
+  [1mAdvisory[0m [90m— beyond your AA target (WCAG AAA), advisory only[0m
+
+  [90m◇[0m [1mWCAG 3.1.5[0m [1mReading Level[0m [90mLevel AAA[0m  [90m(3 occurrences)[0m
+    [90m↳[0m [36mcontent/page-1.md:3[0m
+      [90mViolation of 3.1.5[0m
+      [90mLearn more: https://example.test/help[0m
+    [90m↳[0m [36mcontent/page-2.md:3[0m
+      [90mViolation of 3.1.5[0m
+      [90mLearn more: https://example.test/help[0m
+    [90m↳[0m [36mcontent/page-3.md:3[0m
+      [90mViolation of 3.1.5[0m
+      [90mLearn more: https://example.test/help[0m
+
+  [1mBest-Practice Recommendations[0m [90m— not WCAG failures, but improve usability[0m
+
+  [36m●[0m [1mregion[0m  [90m4 occurrences[0m
+      Landmarks help screen reader users navigate page sections
+      [90m↳[0m [36msrc/layout-1.tsx:3[0m
+      [90m↳[0m [36msrc/layout-2.tsx:3[0m
+      [90m↳[0m [36msrc/layout-3.tsx:3[0m
+      [90m↳[0m [36msrc/layout-4.tsx:3[0m
+
+  [90m○[0m [1mcustom-rule[0m  [90m1 occurrence[0m
+      See the rule documentation for context.
+      [90m↳[0m [36msrc/misc.tsx:3[0m
+
+  [1mNot verifiable on this scan[0m [90m— 2 page-level rules on fragment files[0m
+
+  [90m○[0m [1mregion[0m  [90m5 occurrences[0m
+      [90mLandmarks help screen reader users navigate page sections[0m
+      [90m↳[0m [36msrc/a.tsx[0m
+      [90m↳[0m [36msrc/b.tsx[0m
+      [90m↳[0m [36msrc/c.tsx[0m
+      [90m↳[0m [36msrc/d.tsx[0m
+      [90m↳[0m [36msrc/e.tsx[0m
+
+  [90m○[0m [1mbypass[0m  [90m1 occurrence[0m  [90mWCAG 2.4.1 Bypass Blocks[0m
+      [90m↳[0m [36msrc/page.tsx[0m
+
+  [90mThese rules apply to the composed page, not a single component or partial.[0m
+  [90mVerify on the built output:[0m  npx equall scan <build-dir>  [90m(e.g. astro build && npx equall scan dist/)[0m
+  [90mGuide: https://equallscan.com/docs/verifying-page-level-rules[0m
+
+  [1mLow-confidence alt text[0m [90m— 2 present but suspect · a review suggestion, not a WCAG violation[0m
+
+  [90m○[0m [36msrc/gallery.tsx:12[0m  [90malt="DSC00423.jpg" — looks like a filename[0m
+  [90m○[0m [36msrc/hero.tsx[0m  [90malt="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx…" — generic placeholder[0m
+  [90mAutomation can't tell if an alt is meaningful — check these actually describe the image.[0m
+
+  [90mCompleted in 1.2s[0m
+
+  [43m[1m[37m  57.31  [0m  [90mWCAG 2.2 · score is a trend indicator[0m
+  [31m1 A/AA failure among the 2 criteria automatically verified (3 not evaluated).[0m
+
+  [1mWCAG 2.2 Support Summary[0m [90m— AA target · automated basis only[0m
+  [32m✓ Supports (automated) 1[0m   [31m✕ Does not support 1[0m   [90m○ Not evaluated 3[0m
+  [90mAutomated verdicts only — a full statement needs manual + assistive-tech testing. Run --verbose for the per-criterion table.[0m
+  [90mWhat each verdict means → https://equallscan.com/docs/verdicts[0m
+"
+`;
+
+exports[`terminal report snapshot > renders byte-identically: clean scan (no issues, no conformance) 1`] = `
+"
+[1m  ◆ EQUALL — Accessibility Score[0m
+
+  [1mSummary[0m
+  24 files scanned  ·  [1m0[0m WCAG violations  ·  [90m0 best-practice recommendations[0m
+  [31m[1m■[0m [31m0 critical[0m   [33m[1m▲[0m [33m0 serious[0m   [36m●[0m [36m0 moderate[0m   [90m○[0m [90m0 minor[0m
+  [90mcritical/serious = fix before shipping · moderate/minor = fix in next iteration[0m
+
+  [90mCompleted in 1.2s[0m
+
+  [43m[1m[37m  57.31  [0m  [90mWCAG 2.2 · score is a trend indicator[0m
+  [90m0 A/AA failures among the 5 criteria automatically verified (50 not evaluated).[0m
+"
+`;
+
+exports[`terminal report snapshot > renders byte-identically: default 1`] = `
+"
+[1m  ◆ EQUALL — Accessibility Score[0m
+
+  [1mSummary[0m
+  24 files scanned  ·  [1m16[0m WCAG violations  ·  [90m5 best-practice recommendations[0m  ·  [90m3 AAA advisory[0m  ·  [90m6 page-level (needs rendered page)[0m
+  [31m[1m■[0m [31m13 critical[0m   [33m[1m▲[0m [33m2 serious[0m   [36m●[0m [36m5 moderate[0m   [90m○[0m [90m1 minor[0m
+  [90mcritical/serious = fix before shipping · moderate/minor = fix in next iteration[0m
+  [90m3 routes detected · next-app 2 · html 1[0m
+  [90m1 issue suppressed via equall-ignore[0m
+
+  [1mWCAG Violations[0m [90m— automated failures at your AA target, fix these first[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 1.1.1[0m [1mNon-text Content[0m [90mLevel A[0m  [90m(5 occurrences)[0m
+    [90m↳[0m [36msrc/img-1.tsx:3:5[0m
+      Violation of 1.1.1
+      [32mHow to fix[0m [90m(Do any one of these:)[0m
+        [32m·[0m Element does not have an alt attribute
+        [32m·[0m aria-label attribute does not exist or is empty
+      [90mLearn more: https://example.test/help[0m
+    [90m↳[0m [36msrc/img-2.tsx:3:5[0m
+      Violation of 1.1.1
+      [32mHow to fix[0m [90m(Do any one of these:)[0m
+        [32m·[0m Element does not have an alt attribute
+        [32m·[0m aria-label attribute does not exist or is empty
+      [90mLearn more: https://example.test/help[0m
+    [90m↳ and 2 more occurrences of the same issue · run with --all to list them[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 1.3.1[0m [1mInfo and Relationships[0m [90mLevel A[0m  [90m(1 occurrence)[0m
+    [90m↳[0m [36msrc/1.3.1.tsx:3:5[0m
+      Violation of 1.3.1
+      [32m→ Add a label to the control[0m
+      [90mLearn more: https://example.test/help[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 2.1.1[0m [1mKeyboard[0m [90mLevel A[0m  [90m(1 occurrence)[0m
+    [90m↳[0m [36msrc/2.1.1.tsx:3:5[0m
+      Violation of 2.1.1
+      [32m→ Add a label to the control[0m
+      [90mLearn more: https://example.test/help[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 2.4.4[0m [1mLink Purpose (In Context)[0m [90mLevel A[0m  [90m(1 occurrence)[0m
+    [90m↳[0m [36msrc/2.4.4.tsx:3:5[0m
+      Violation of 2.4.4
+      [32m→ Add a label to the control[0m
+      [90mLearn more: https://example.test/help[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 3.1.1[0m [1mLanguage of Page[0m [90mLevel A[0m  [90m(1 occurrence)[0m
+    [90m↳[0m [36msrc/3.1.1.tsx:3:5[0m
+      Violation of 3.1.1
+      [32m→ Add a label to the control[0m
+      [90mLearn more: https://example.test/help[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 4.1.2[0m [1mName, Role, Value[0m [90mLevel A[0m  [90m(1 occurrence)[0m
+    [90m↳[0m [36msrc/4.1.2.tsx:3:5[0m
+      Violation of 4.1.2
+      [32m→ Add a label to the control[0m
+      [90mLearn more: https://example.test/help[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 1.2.1[0m [1mAudio-only and Video-only (Prerecorded)[0m [90mLevel A[0m  [90m(1 occurrence)[0m
+    [90m↳[0m [36msrc/1.2.1.tsx:3:5[0m
+      Violation of 1.2.1
+      [32m→ Add a label to the control[0m
+      [90mLearn more: https://example.test/help[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 2.2.1[0m [1mTiming Adjustable[0m [90mLevel A[0m  [90m(1 occurrence)[0m
+    [90m↳[0m [36msrc/2.2.1.tsx:3:5[0m
+      Violation of 2.2.1
+      [32m→ Add a label to the control[0m
+      [90mLearn more: https://example.test/help[0m
+
+  [90m↳ 3 more WCAG criteria not shown (3 occurrences, incl. 1 critical, 1 serious) · run with --all to list every criterion[0m
+
+  [1mAdvisory[0m [90m— beyond your AA target (WCAG AAA), advisory only[0m
+
+  [90m◇[0m [1mWCAG 3.1.5[0m [1mReading Level[0m [90mLevel AAA[0m  [90m(3 occurrences)[0m
+    [90m↳[0m [36mcontent/page-1.md:3[0m
+      [90mViolation of 3.1.5[0m
+      [90mLearn more: https://example.test/help[0m
+    [90m↳[0m [36mcontent/page-2.md:3[0m
+      [90mViolation of 3.1.5[0m
+      [90mLearn more: https://example.test/help[0m
+    [90m↳ and 1 more occurrence of the same issue · run with --all to list them[0m
+
+  [1mBest-Practice Recommendations[0m [90m— not WCAG failures, but improve usability[0m
+
+  [36m●[0m [1mregion[0m  [90m4 occurrences[0m
+      Landmarks help screen reader users navigate page sections
+      [90m↳[0m [36msrc/layout-1.tsx:3[0m
+      [90m↳[0m [36msrc/layout-2.tsx:3[0m
+      [90m↳ and 2 more files · run with --all to list them[0m
+
+  [90m○[0m [1mcustom-rule[0m  [90m1 occurrence[0m
+      See the rule documentation for context.
+      [90m↳[0m [36msrc/misc.tsx:3[0m
+
+  [1mNot verifiable on this scan[0m [90m— 2 page-level rules on fragment files[0m
+
+  [90m○[0m [1mregion[0m  [90m5 occurrences[0m
+      [90mLandmarks help screen reader users navigate page sections[0m
+      [90m↳[0m [36msrc/a.tsx[0m
+      [90m↳[0m [36msrc/b.tsx[0m
+      [90m↳ and 3 more files · run with --all to list them[0m
+
+  [90m○[0m [1mbypass[0m  [90m1 occurrence[0m  [90mWCAG 2.4.1 Bypass Blocks[0m
+      [90m↳[0m [36msrc/page.tsx[0m
+
+  [90mThese rules apply to the composed page, not a single component or partial.[0m
+  [90mVerify on the built output:[0m  npx equall scan <build-dir>  [90m(e.g. astro build && npx equall scan dist/)[0m
+  [90mGuide: https://equallscan.com/docs/verifying-page-level-rules[0m
+
+  [1mLow-confidence alt text[0m [90m— 2 present but suspect · a review suggestion, not a WCAG violation[0m
+
+  [90m○[0m [36msrc/gallery.tsx:12[0m  [90malt="DSC00423.jpg" — looks like a filename[0m
+  [90m○[0m [36msrc/hero.tsx[0m  [90malt="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx…" — generic placeholder[0m
+  [90mAutomation can't tell if an alt is meaningful — check these actually describe the image.[0m
+
+  [90mCompleted in 1.2s[0m
+
+  [43m[1m[37m  57.31  [0m  [90mWCAG 2.2 · score is a trend indicator[0m
+  [31m1 A/AA failure among the 2 criteria automatically verified (3 not evaluated).[0m
+
+  [1mWCAG 2.2 Support Summary[0m [90m— AA target · automated basis only[0m
+  [32m✓ Supports (automated) 1[0m   [31m✕ Does not support 1[0m   [90m○ Not evaluated 3[0m
+  [90mAutomated verdicts only — a full statement needs manual + assistive-tech testing. Run --verbose for the per-criterion table.[0m
+  [90mWhat each verdict means → https://equallscan.com/docs/verdicts[0m
+"
+`;
+
+exports[`terminal report snapshot > renders byte-identically: everything + wcag21 + A target 1`] = `
+"
+[1m  ◆ EQUALL — Accessibility Score[0m
+
+  [1mSummary[0m
+  24 files scanned  ·  [1m16[0m WCAG violations  ·  [90m5 best-practice recommendations[0m  ·  [90m3 AAA advisory[0m  ·  [90m6 page-level (needs rendered page)[0m
+  [31m[1m■[0m [31m13 critical[0m   [33m[1m▲[0m [33m2 serious[0m   [36m●[0m [36m5 moderate[0m   [90m○[0m [90m1 minor[0m
+  [90mcritical/serious = fix before shipping · moderate/minor = fix in next iteration[0m
+  [90m3 routes detected · next-app 2 · html 1[0m
+  [90m1 issue suppressed via equall-ignore[0m
+
+  [1mWCAG Violations[0m [90m— automated failures at your A target, fix these first[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 1.1.1[0m [1mNon-text Content[0m [90mLevel A[0m  [90m(5 occurrences)[0m
+    [90m↳[0m [36msrc/img-1.tsx:3:5[0m
+      Violation of 1.1.1
+      [32mHow to fix[0m [90m(Do any one of these:)[0m
+        [32m·[0m Element does not have an alt attribute
+        [32m·[0m aria-label attribute does not exist or is empty
+      [90mLearn more: https://example.test/help[0m
+    [90m↳[0m [36msrc/img-2.tsx:3:5[0m
+      Violation of 1.1.1
+      [32mHow to fix[0m [90m(Do any one of these:)[0m
+        [32m·[0m Element does not have an alt attribute
+        [32m·[0m aria-label attribute does not exist or is empty
+      [90mLearn more: https://example.test/help[0m
+    [90m↳[0m [36msrc/img-3.tsx:3:5[0m
+      Violation of 1.1.1
+      [32mHow to fix[0m [90m(Do any one of these:)[0m
+        [32m·[0m Element does not have an alt attribute
+        [32m·[0m aria-label attribute does not exist or is empty
+      [90mLearn more: https://example.test/help[0m
+    [90m↳[0m [36msrc/img-4.tsx:3:5[0m
+      Violation of 1.1.1
+      [32mHow to fix[0m [90m(Do any one of these:)[0m
+        [32m·[0m Element does not have an alt attribute
+        [32m·[0m aria-label attribute does not exist or is empty
+      [90mLearn more: https://example.test/help[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 1.3.1[0m [1mInfo and Relationships[0m [90mLevel A[0m  [90m(1 occurrence)[0m
+    [90m↳[0m [36msrc/1.3.1.tsx:3:5[0m
+      Violation of 1.3.1
+      [32m→ Add a label to the control[0m
+      [90mLearn more: https://example.test/help[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 2.1.1[0m [1mKeyboard[0m [90mLevel A[0m  [90m(1 occurrence)[0m
+    [90m↳[0m [36msrc/2.1.1.tsx:3:5[0m
+      Violation of 2.1.1
+      [32m→ Add a label to the control[0m
+      [90mLearn more: https://example.test/help[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 2.4.4[0m [1mLink Purpose (In Context)[0m [90mLevel A[0m  [90m(1 occurrence)[0m
+    [90m↳[0m [36msrc/2.4.4.tsx:3:5[0m
+      Violation of 2.4.4
+      [32m→ Add a label to the control[0m
+      [90mLearn more: https://example.test/help[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 3.1.1[0m [1mLanguage of Page[0m [90mLevel A[0m  [90m(1 occurrence)[0m
+    [90m↳[0m [36msrc/3.1.1.tsx:3:5[0m
+      Violation of 3.1.1
+      [32m→ Add a label to the control[0m
+      [90mLearn more: https://example.test/help[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 4.1.2[0m [1mName, Role, Value[0m [90mLevel A[0m  [90m(1 occurrence)[0m
+    [90m↳[0m [36msrc/4.1.2.tsx:3:5[0m
+      Violation of 4.1.2
+      [32m→ Add a label to the control[0m
+      [90mLearn more: https://example.test/help[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 1.2.1[0m [1mAudio-only and Video-only (Prerecorded)[0m [90mLevel A[0m  [90m(1 occurrence)[0m
+    [90m↳[0m [36msrc/1.2.1.tsx:3:5[0m
+      Violation of 1.2.1
+      [32m→ Add a label to the control[0m
+      [90mLearn more: https://example.test/help[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 2.2.1[0m [1mTiming Adjustable[0m [90mLevel A[0m  [90m(1 occurrence)[0m
+    [90m↳[0m [36msrc/2.2.1.tsx:3:5[0m
+      Violation of 2.2.1
+      [32m→ Add a label to the control[0m
+      [90mLearn more: https://example.test/help[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 2.4.1[0m [1mBypass Blocks[0m [90mLevel A[0m  [90m(1 occurrence)[0m
+    [90m↳[0m [36msrc/2.4.1.tsx:3:5[0m
+      Violation of 2.4.1
+      [32m→ Add a label to the control[0m
+      [90mLearn more: https://example.test/help[0m
+
+  [33m[1m▲[0m [33m[1mSERIOUS[0m  [1mWCAG 2.4.2[0m [1mPage Titled[0m [90mLevel A[0m  [90m(1 occurrence)[0m
+    [90m↳[0m [36msrc/title.tsx[0m
+      Violation of 2.4.2
+      [90mLearn more: https://example.test/help[0m
+
+  [36m●[0m [36mMODERATE[0m  [1mWCAG 3.3.2[0m [1mLabels or Instructions[0m [90mLevel A[0m  [90m(1 occurrence)[0m
+    [90m↳[0m [36msrc/form.tsx:3:5[0m
+      Violation of 3.3.2
+      [90mLearn more: https://example.test/help[0m
+
+  [1mAdvisory[0m [90m— beyond your A target (WCAG AAA), advisory only[0m
+
+  [90m◇[0m [1mWCAG 3.1.5[0m [1mReading Level[0m [90mLevel AAA[0m  [90m(3 occurrences)[0m
+    [90m↳[0m [36mcontent/page-1.md:3[0m
+      [90mViolation of 3.1.5[0m
+      [90mLearn more: https://example.test/help[0m
+    [90m↳[0m [36mcontent/page-2.md:3[0m
+      [90mViolation of 3.1.5[0m
+      [90mLearn more: https://example.test/help[0m
+    [90m↳[0m [36mcontent/page-3.md:3[0m
+      [90mViolation of 3.1.5[0m
+      [90mLearn more: https://example.test/help[0m
+
+  [1mBest-Practice Recommendations[0m [90m— not WCAG failures, but improve usability[0m
+
+  [36m●[0m [1mregion[0m  [90m4 occurrences[0m
+      Landmarks help screen reader users navigate page sections
+      [90m↳[0m [36msrc/layout-1.tsx:3[0m
+      [90m↳[0m [36msrc/layout-2.tsx:3[0m
+      [90m↳[0m [36msrc/layout-3.tsx:3[0m
+      [90m↳[0m [36msrc/layout-4.tsx:3[0m
+
+  [90m○[0m [1mcustom-rule[0m  [90m1 occurrence[0m
+      See the rule documentation for context.
+      [90m↳[0m [36msrc/misc.tsx:3[0m
+
+  [1mNot verifiable on this scan[0m [90m— 2 page-level rules on fragment files[0m
+
+  [90m○[0m [1mregion[0m  [90m5 occurrences[0m
+      [90mLandmarks help screen reader users navigate page sections[0m
+      [90m↳[0m [36msrc/a.tsx[0m
+      [90m↳[0m [36msrc/b.tsx[0m
+      [90m↳[0m [36msrc/c.tsx[0m
+      [90m↳[0m [36msrc/d.tsx[0m
+      [90m↳[0m [36msrc/e.tsx[0m
+
+  [90m○[0m [1mbypass[0m  [90m1 occurrence[0m  [90mWCAG 2.4.1 Bypass Blocks[0m
+      [90m↳[0m [36msrc/page.tsx[0m
+
+  [90mThese rules apply to the composed page, not a single component or partial.[0m
+  [90mVerify on the built output:[0m  npx equall scan <build-dir>  [90m(e.g. astro build && npx equall scan dist/)[0m
+  [90mGuide: https://equallscan.com/docs/verifying-page-level-rules[0m
+
+  [1mLow-confidence alt text[0m [90m— 2 present but suspect · a review suggestion, not a WCAG violation[0m
+
+  [90m○[0m [36msrc/gallery.tsx:12[0m  [90malt="DSC00423.jpg" — looks like a filename[0m
+  [90m○[0m [36msrc/hero.tsx[0m  [90malt="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx…" — generic placeholder[0m
+  [90mAutomation can't tell if an alt is meaningful — check these actually describe the image.[0m
+
+  [1mIgnored[0m
+  [90m⊘[0m [90msrc/ignored.tsx:3[0m  link-in-text-block
+
+  [1mNeeds manual review[0m [90m— 25 criteria automation can't verify[0m
+  [90m1.2.1[0m  Audio-only and Video-only (Prerecorded) [90m— Perceivable[0m
+  [90m1.2.2[0m  Captions (Prerecorded) [90m— Perceivable[0m
+  [90m1.2.3[0m  Audio Description or Media Alternative [90m— Perceivable[0m
+  [90m1.3.2[0m  Meaningful Sequence [90m— Perceivable[0m
+  [90m1.3.3[0m  Sensory Characteristics [90m— Perceivable[0m
+  [90m1.4.1[0m  Use of Color [90m— Perceivable[0m
+  [90m1.4.2[0m  Audio Control [90m— Perceivable[0m
+  [90m2.1.2[0m  No Keyboard Trap [90m— Operable[0m
+  [90m2.1.4[0m  Character Key Shortcuts [90m— Operable[0m
+  [90m2.2.1[0m  Timing Adjustable [90m— Operable[0m
+  [90m2.2.2[0m  Pause, Stop, Hide [90m— Operable[0m
+  [90m2.3.1[0m  Three Flashes or Below Threshold [90m— Operable[0m
+  [90m2.4.1[0m  Bypass Blocks [90m— Operable[0m
+  [90m2.4.3[0m  Focus Order [90m— Operable[0m
+  [90m2.4.4[0m  Link Purpose (In Context) [90m— Operable[0m
+  [90m2.5.1[0m  Pointer Gestures [90m— Operable[0m
+  [90m2.5.2[0m  Pointer Cancellation [90m— Operable[0m
+  [90m2.5.3[0m  Label in Name [90m— Operable[0m
+  [90m2.5.4[0m  Motion Actuation [90m— Operable[0m
+  [90m3.1.1[0m  Language of Page [90m— Understandable[0m
+  [90m3.2.1[0m  On Focus [90m— Understandable[0m
+  [90m3.2.2[0m  On Input [90m— Understandable[0m
+  [90m3.3.1[0m  Error Identification [90m— Understandable[0m
+  [90m3.3.2[0m  Labels or Instructions [90m— Understandable[0m
+  [90m4.1.1[0m  Parsing [90m— Robust[0m
+
+  [90mScanners:[0m axe-core [90mv4.10.0[0m [90m(20)[0m[90m · [0mreadability [90mv1.0.0[0m [90m(3)[0m
+  [90mNote: readability uses Flesch-Kincaid on English text only. Non-English files are skipped. Grades are indicative — disable with --no-readability.[0m
+  [90mCompleted in 1.2s[0m
+
+  [43m[1m[37m  57.31  [0m  [90mWCAG 2.1 · score is a trend indicator[0m
+  [31m1 Level A failure among the 2 criteria automatically verified (3 not evaluated).[0m
+
+  [1mPer-criterion[0m [90m— WCAG 2.2, A target[0m
+  [31m✕[0m [90m1.1.1[0m  Non-text Content  [31mDoes not support[0m
+  [32m✓[0m [90m1.3.1[0m  Info and Relationships  [32mSupports (automated)[0m
+  [90m○[0m [90m1.4.3[0m  Contrast (Minimum)  [90mNot evaluated — assisted[0m
+  [90m○[0m [90m2.4.1[0m  Bypass Blocks  [90mNot evaluated — rendered check[0m
+  [90m○[0m [90m2.1.2[0m  No Keyboard Trap  [90mNot evaluated — manual[0m
+
+  [1mWCAG 2.2 Support Summary[0m [90m— A target · automated basis only[0m
+  [32m✓ Supports (automated) 1[0m   [31m✕ Does not support 1[0m   [90m○ Not evaluated 3[0m
+  [90mWhat each verdict means → https://equallscan.com/docs/verdicts[0m
+"
+`;
+
+exports[`terminal report snapshot > renders byte-identically: show-ignored 1`] = `
+"
+[1m  ◆ EQUALL — Accessibility Score[0m
+
+  [1mSummary[0m
+  24 files scanned  ·  [1m16[0m WCAG violations  ·  [90m5 best-practice recommendations[0m  ·  [90m3 AAA advisory[0m  ·  [90m6 page-level (needs rendered page)[0m
+  [31m[1m■[0m [31m13 critical[0m   [33m[1m▲[0m [33m2 serious[0m   [36m●[0m [36m5 moderate[0m   [90m○[0m [90m1 minor[0m
+  [90mcritical/serious = fix before shipping · moderate/minor = fix in next iteration[0m
+  [90m3 routes detected · next-app 2 · html 1[0m
+  [90m1 issue suppressed via equall-ignore[0m
+
+  [1mWCAG Violations[0m [90m— automated failures at your AA target, fix these first[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 1.1.1[0m [1mNon-text Content[0m [90mLevel A[0m  [90m(5 occurrences)[0m
+    [90m↳[0m [36msrc/img-1.tsx:3:5[0m
+      Violation of 1.1.1
+      [32mHow to fix[0m [90m(Do any one of these:)[0m
+        [32m·[0m Element does not have an alt attribute
+        [32m·[0m aria-label attribute does not exist or is empty
+      [90mLearn more: https://example.test/help[0m
+    [90m↳[0m [36msrc/img-2.tsx:3:5[0m
+      Violation of 1.1.1
+      [32mHow to fix[0m [90m(Do any one of these:)[0m
+        [32m·[0m Element does not have an alt attribute
+        [32m·[0m aria-label attribute does not exist or is empty
+      [90mLearn more: https://example.test/help[0m
+    [90m↳ and 2 more occurrences of the same issue · run with --all to list them[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 1.3.1[0m [1mInfo and Relationships[0m [90mLevel A[0m  [90m(1 occurrence)[0m
+    [90m↳[0m [36msrc/1.3.1.tsx:3:5[0m
+      Violation of 1.3.1
+      [32m→ Add a label to the control[0m
+      [90mLearn more: https://example.test/help[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 2.1.1[0m [1mKeyboard[0m [90mLevel A[0m  [90m(1 occurrence)[0m
+    [90m↳[0m [36msrc/2.1.1.tsx:3:5[0m
+      Violation of 2.1.1
+      [32m→ Add a label to the control[0m
+      [90mLearn more: https://example.test/help[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 2.4.4[0m [1mLink Purpose (In Context)[0m [90mLevel A[0m  [90m(1 occurrence)[0m
+    [90m↳[0m [36msrc/2.4.4.tsx:3:5[0m
+      Violation of 2.4.4
+      [32m→ Add a label to the control[0m
+      [90mLearn more: https://example.test/help[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 3.1.1[0m [1mLanguage of Page[0m [90mLevel A[0m  [90m(1 occurrence)[0m
+    [90m↳[0m [36msrc/3.1.1.tsx:3:5[0m
+      Violation of 3.1.1
+      [32m→ Add a label to the control[0m
+      [90mLearn more: https://example.test/help[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 4.1.2[0m [1mName, Role, Value[0m [90mLevel A[0m  [90m(1 occurrence)[0m
+    [90m↳[0m [36msrc/4.1.2.tsx:3:5[0m
+      Violation of 4.1.2
+      [32m→ Add a label to the control[0m
+      [90mLearn more: https://example.test/help[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 1.2.1[0m [1mAudio-only and Video-only (Prerecorded)[0m [90mLevel A[0m  [90m(1 occurrence)[0m
+    [90m↳[0m [36msrc/1.2.1.tsx:3:5[0m
+      Violation of 1.2.1
+      [32m→ Add a label to the control[0m
+      [90mLearn more: https://example.test/help[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 2.2.1[0m [1mTiming Adjustable[0m [90mLevel A[0m  [90m(1 occurrence)[0m
+    [90m↳[0m [36msrc/2.2.1.tsx:3:5[0m
+      Violation of 2.2.1
+      [32m→ Add a label to the control[0m
+      [90mLearn more: https://example.test/help[0m
+
+  [90m↳ 3 more WCAG criteria not shown (3 occurrences, incl. 1 critical, 1 serious) · run with --all to list every criterion[0m
+
+  [1mAdvisory[0m [90m— beyond your AA target (WCAG AAA), advisory only[0m
+
+  [90m◇[0m [1mWCAG 3.1.5[0m [1mReading Level[0m [90mLevel AAA[0m  [90m(3 occurrences)[0m
+    [90m↳[0m [36mcontent/page-1.md:3[0m
+      [90mViolation of 3.1.5[0m
+      [90mLearn more: https://example.test/help[0m
+    [90m↳[0m [36mcontent/page-2.md:3[0m
+      [90mViolation of 3.1.5[0m
+      [90mLearn more: https://example.test/help[0m
+    [90m↳ and 1 more occurrence of the same issue · run with --all to list them[0m
+
+  [1mBest-Practice Recommendations[0m [90m— not WCAG failures, but improve usability[0m
+
+  [36m●[0m [1mregion[0m  [90m4 occurrences[0m
+      Landmarks help screen reader users navigate page sections
+      [90m↳[0m [36msrc/layout-1.tsx:3[0m
+      [90m↳[0m [36msrc/layout-2.tsx:3[0m
+      [90m↳ and 2 more files · run with --all to list them[0m
+
+  [90m○[0m [1mcustom-rule[0m  [90m1 occurrence[0m
+      See the rule documentation for context.
+      [90m↳[0m [36msrc/misc.tsx:3[0m
+
+  [1mNot verifiable on this scan[0m [90m— 2 page-level rules on fragment files[0m
+
+  [90m○[0m [1mregion[0m  [90m5 occurrences[0m
+      [90mLandmarks help screen reader users navigate page sections[0m
+      [90m↳[0m [36msrc/a.tsx[0m
+      [90m↳[0m [36msrc/b.tsx[0m
+      [90m↳ and 3 more files · run with --all to list them[0m
+
+  [90m○[0m [1mbypass[0m  [90m1 occurrence[0m  [90mWCAG 2.4.1 Bypass Blocks[0m
+      [90m↳[0m [36msrc/page.tsx[0m
+
+  [90mThese rules apply to the composed page, not a single component or partial.[0m
+  [90mVerify on the built output:[0m  npx equall scan <build-dir>  [90m(e.g. astro build && npx equall scan dist/)[0m
+  [90mGuide: https://equallscan.com/docs/verifying-page-level-rules[0m
+
+  [1mLow-confidence alt text[0m [90m— 2 present but suspect · a review suggestion, not a WCAG violation[0m
+
+  [90m○[0m [36msrc/gallery.tsx:12[0m  [90malt="DSC00423.jpg" — looks like a filename[0m
+  [90m○[0m [36msrc/hero.tsx[0m  [90malt="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx…" — generic placeholder[0m
+  [90mAutomation can't tell if an alt is meaningful — check these actually describe the image.[0m
+
+  [1mIgnored[0m
+  [90m⊘[0m [90msrc/ignored.tsx:3[0m  link-in-text-block
+
+  [90mCompleted in 1.2s[0m
+
+  [43m[1m[37m  57.31  [0m  [90mWCAG 2.2 · score is a trend indicator[0m
+  [31m1 A/AA failure among the 2 criteria automatically verified (3 not evaluated).[0m
+
+  [1mWCAG 2.2 Support Summary[0m [90m— AA target · automated basis only[0m
+  [32m✓ Supports (automated) 1[0m   [31m✕ Does not support 1[0m   [90m○ Not evaluated 3[0m
+  [90mAutomated verdicts only — a full statement needs manual + assistive-tech testing. Run --verbose for the per-criterion table.[0m
+  [90mWhat each verdict means → https://equallscan.com/docs/verdicts[0m
+"
+`;
+
+exports[`terminal report snapshot > renders byte-identically: show-manual 1`] = `
+"
+[1m  ◆ EQUALL — Accessibility Score[0m
+
+  [1mSummary[0m
+  24 files scanned  ·  [1m16[0m WCAG violations  ·  [90m5 best-practice recommendations[0m  ·  [90m3 AAA advisory[0m  ·  [90m6 page-level (needs rendered page)[0m
+  [31m[1m■[0m [31m13 critical[0m   [33m[1m▲[0m [33m2 serious[0m   [36m●[0m [36m5 moderate[0m   [90m○[0m [90m1 minor[0m
+  [90mcritical/serious = fix before shipping · moderate/minor = fix in next iteration[0m
+  [90m3 routes detected · next-app 2 · html 1[0m
+  [90m1 issue suppressed via equall-ignore[0m
+
+  [1mWCAG Violations[0m [90m— automated failures at your AA target, fix these first[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 1.1.1[0m [1mNon-text Content[0m [90mLevel A[0m  [90m(5 occurrences)[0m
+    [90m↳[0m [36msrc/img-1.tsx:3:5[0m
+      Violation of 1.1.1
+      [32mHow to fix[0m [90m(Do any one of these:)[0m
+        [32m·[0m Element does not have an alt attribute
+        [32m·[0m aria-label attribute does not exist or is empty
+      [90mLearn more: https://example.test/help[0m
+    [90m↳[0m [36msrc/img-2.tsx:3:5[0m
+      Violation of 1.1.1
+      [32mHow to fix[0m [90m(Do any one of these:)[0m
+        [32m·[0m Element does not have an alt attribute
+        [32m·[0m aria-label attribute does not exist or is empty
+      [90mLearn more: https://example.test/help[0m
+    [90m↳ and 2 more occurrences of the same issue · run with --all to list them[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 1.3.1[0m [1mInfo and Relationships[0m [90mLevel A[0m  [90m(1 occurrence)[0m
+    [90m↳[0m [36msrc/1.3.1.tsx:3:5[0m
+      Violation of 1.3.1
+      [32m→ Add a label to the control[0m
+      [90mLearn more: https://example.test/help[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 2.1.1[0m [1mKeyboard[0m [90mLevel A[0m  [90m(1 occurrence)[0m
+    [90m↳[0m [36msrc/2.1.1.tsx:3:5[0m
+      Violation of 2.1.1
+      [32m→ Add a label to the control[0m
+      [90mLearn more: https://example.test/help[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 2.4.4[0m [1mLink Purpose (In Context)[0m [90mLevel A[0m  [90m(1 occurrence)[0m
+    [90m↳[0m [36msrc/2.4.4.tsx:3:5[0m
+      Violation of 2.4.4
+      [32m→ Add a label to the control[0m
+      [90mLearn more: https://example.test/help[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 3.1.1[0m [1mLanguage of Page[0m [90mLevel A[0m  [90m(1 occurrence)[0m
+    [90m↳[0m [36msrc/3.1.1.tsx:3:5[0m
+      Violation of 3.1.1
+      [32m→ Add a label to the control[0m
+      [90mLearn more: https://example.test/help[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 4.1.2[0m [1mName, Role, Value[0m [90mLevel A[0m  [90m(1 occurrence)[0m
+    [90m↳[0m [36msrc/4.1.2.tsx:3:5[0m
+      Violation of 4.1.2
+      [32m→ Add a label to the control[0m
+      [90mLearn more: https://example.test/help[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 1.2.1[0m [1mAudio-only and Video-only (Prerecorded)[0m [90mLevel A[0m  [90m(1 occurrence)[0m
+    [90m↳[0m [36msrc/1.2.1.tsx:3:5[0m
+      Violation of 1.2.1
+      [32m→ Add a label to the control[0m
+      [90mLearn more: https://example.test/help[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 2.2.1[0m [1mTiming Adjustable[0m [90mLevel A[0m  [90m(1 occurrence)[0m
+    [90m↳[0m [36msrc/2.2.1.tsx:3:5[0m
+      Violation of 2.2.1
+      [32m→ Add a label to the control[0m
+      [90mLearn more: https://example.test/help[0m
+
+  [90m↳ 3 more WCAG criteria not shown (3 occurrences, incl. 1 critical, 1 serious) · run with --all to list every criterion[0m
+
+  [1mAdvisory[0m [90m— beyond your AA target (WCAG AAA), advisory only[0m
+
+  [90m◇[0m [1mWCAG 3.1.5[0m [1mReading Level[0m [90mLevel AAA[0m  [90m(3 occurrences)[0m
+    [90m↳[0m [36mcontent/page-1.md:3[0m
+      [90mViolation of 3.1.5[0m
+      [90mLearn more: https://example.test/help[0m
+    [90m↳[0m [36mcontent/page-2.md:3[0m
+      [90mViolation of 3.1.5[0m
+      [90mLearn more: https://example.test/help[0m
+    [90m↳ and 1 more occurrence of the same issue · run with --all to list them[0m
+
+  [1mBest-Practice Recommendations[0m [90m— not WCAG failures, but improve usability[0m
+
+  [36m●[0m [1mregion[0m  [90m4 occurrences[0m
+      Landmarks help screen reader users navigate page sections
+      [90m↳[0m [36msrc/layout-1.tsx:3[0m
+      [90m↳[0m [36msrc/layout-2.tsx:3[0m
+      [90m↳ and 2 more files · run with --all to list them[0m
+
+  [90m○[0m [1mcustom-rule[0m  [90m1 occurrence[0m
+      See the rule documentation for context.
+      [90m↳[0m [36msrc/misc.tsx:3[0m
+
+  [1mNot verifiable on this scan[0m [90m— 2 page-level rules on fragment files[0m
+
+  [90m○[0m [1mregion[0m  [90m5 occurrences[0m
+      [90mLandmarks help screen reader users navigate page sections[0m
+      [90m↳[0m [36msrc/a.tsx[0m
+      [90m↳[0m [36msrc/b.tsx[0m
+      [90m↳ and 3 more files · run with --all to list them[0m
+
+  [90m○[0m [1mbypass[0m  [90m1 occurrence[0m  [90mWCAG 2.4.1 Bypass Blocks[0m
+      [90m↳[0m [36msrc/page.tsx[0m
+
+  [90mThese rules apply to the composed page, not a single component or partial.[0m
+  [90mVerify on the built output:[0m  npx equall scan <build-dir>  [90m(e.g. astro build && npx equall scan dist/)[0m
+  [90mGuide: https://equallscan.com/docs/verifying-page-level-rules[0m
+
+  [1mLow-confidence alt text[0m [90m— 2 present but suspect · a review suggestion, not a WCAG violation[0m
+
+  [90m○[0m [36msrc/gallery.tsx:12[0m  [90malt="DSC00423.jpg" — looks like a filename[0m
+  [90m○[0m [36msrc/hero.tsx[0m  [90malt="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx…" — generic placeholder[0m
+  [90mAutomation can't tell if an alt is meaningful — check these actually describe the image.[0m
+
+  [1mNeeds manual review[0m [90m— 50 criteria automation can't verify[0m
+  [90m1.2.1[0m  Audio-only and Video-only (Prerecorded) [90m— Perceivable[0m
+  [90m1.2.2[0m  Captions (Prerecorded) [90m— Perceivable[0m
+  [90m1.2.3[0m  Audio Description or Media Alternative [90m— Perceivable[0m
+  [90m1.2.4[0m  Captions (Live) [90m— Perceivable[0m
+  [90m1.2.5[0m  Audio Description (Prerecorded) [90m— Perceivable[0m
+  [90m1.3.2[0m  Meaningful Sequence [90m— Perceivable[0m
+  [90m1.3.3[0m  Sensory Characteristics [90m— Perceivable[0m
+  [90m1.3.4[0m  Orientation [90m— Perceivable[0m
+  [90m1.3.5[0m  Identify Input Purpose [90m— Perceivable[0m
+  [90m1.4.1[0m  Use of Color [90m— Perceivable[0m
+  [90m1.4.2[0m  Audio Control [90m— Perceivable[0m
+  [90m1.4.3[0m  Contrast (Minimum) [90m— Perceivable[0m
+  [90m1.4.4[0m  Resize Text [90m— Perceivable[0m
+  [90m1.4.5[0m  Images of Text [90m— Perceivable[0m
+  [90m1.4.10[0m  Reflow [90m— Perceivable[0m
+  [90m1.4.11[0m  Non-text Contrast [90m— Perceivable[0m
+  [90m1.4.12[0m  Text Spacing [90m— Perceivable[0m
+  [90m1.4.13[0m  Content on Hover or Focus [90m— Perceivable[0m
+  [90m2.1.2[0m  No Keyboard Trap [90m— Operable[0m
+  [90m2.1.4[0m  Character Key Shortcuts [90m— Operable[0m
+  [90m2.2.1[0m  Timing Adjustable [90m— Operable[0m
+  [90m2.2.2[0m  Pause, Stop, Hide [90m— Operable[0m
+  [90m2.3.1[0m  Three Flashes or Below Threshold [90m— Operable[0m
+  [90m2.4.1[0m  Bypass Blocks [90m— Operable[0m
+  [90m2.4.3[0m  Focus Order [90m— Operable[0m
+  [90m2.4.4[0m  Link Purpose (In Context) [90m— Operable[0m
+  [90m2.4.5[0m  Multiple Ways [90m— Operable[0m
+  [90m2.4.6[0m  Headings and Labels [90m— Operable[0m
+  [90m2.4.7[0m  Focus Visible [90m— Operable[0m
+  [90m2.4.11[0m  Focus Not Obscured (Minimum) [90m— Operable[0m
+  [90m2.5.1[0m  Pointer Gestures [90m— Operable[0m
+  [90m2.5.2[0m  Pointer Cancellation [90m— Operable[0m
+  [90m2.5.3[0m  Label in Name [90m— Operable[0m
+  [90m2.5.4[0m  Motion Actuation [90m— Operable[0m
+  [90m2.5.7[0m  Dragging Movements [90m— Operable[0m
+  [90m2.5.8[0m  Target Size (Minimum) [90m— Operable[0m
+  [90m3.1.1[0m  Language of Page [90m— Understandable[0m
+  [90m3.1.2[0m  Language of Parts [90m— Understandable[0m
+  [90m3.2.1[0m  On Focus [90m— Understandable[0m
+  [90m3.2.2[0m  On Input [90m— Understandable[0m
+  [90m3.2.3[0m  Consistent Navigation [90m— Understandable[0m
+  [90m3.2.4[0m  Consistent Identification [90m— Understandable[0m
+  [90m3.2.6[0m  Consistent Help [90m— Understandable[0m
+  [90m3.3.1[0m  Error Identification [90m— Understandable[0m
+  [90m3.3.2[0m  Labels or Instructions [90m— Understandable[0m
+  [90m3.3.3[0m  Error Suggestion [90m— Understandable[0m
+  [90m3.3.4[0m  Error Prevention (Legal, Financial, Data) [90m— Understandable[0m
+  [90m3.3.7[0m  Redundant Entry [90m— Understandable[0m
+  [90m3.3.8[0m  Accessible Authentication (Minimum) [90m— Understandable[0m
+  [90m4.1.3[0m  Status Messages [90m— Robust[0m
+
+  [90mCompleted in 1.2s[0m
+
+  [43m[1m[37m  57.31  [0m  [90mWCAG 2.2 · score is a trend indicator[0m
+  [31m1 A/AA failure among the 2 criteria automatically verified (3 not evaluated).[0m
+
+  [1mWCAG 2.2 Support Summary[0m [90m— AA target · automated basis only[0m
+  [32m✓ Supports (automated) 1[0m   [31m✕ Does not support 1[0m   [90m○ Not evaluated 3[0m
+  [90mAutomated verdicts only — a full statement needs manual + assistive-tech testing. Run --verbose for the per-criterion table.[0m
+  [90mWhat each verdict means → https://equallscan.com/docs/verdicts[0m
+"
+`;
+
+exports[`terminal report snapshot > renders byte-identically: verbose 1`] = `
+"
+[1m  ◆ EQUALL — Accessibility Score[0m
+
+  [1mSummary[0m
+  24 files scanned  ·  [1m16[0m WCAG violations  ·  [90m5 best-practice recommendations[0m  ·  [90m3 AAA advisory[0m  ·  [90m6 page-level (needs rendered page)[0m
+  [31m[1m■[0m [31m13 critical[0m   [33m[1m▲[0m [33m2 serious[0m   [36m●[0m [36m5 moderate[0m   [90m○[0m [90m1 minor[0m
+  [90mcritical/serious = fix before shipping · moderate/minor = fix in next iteration[0m
+  [90m3 routes detected · next-app 2 · html 1[0m
+  [90m1 issue suppressed via equall-ignore[0m
+
+  [1mWCAG Violations[0m [90m— automated failures at your AA target, fix these first[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 1.1.1[0m [1mNon-text Content[0m [90mLevel A[0m  [90m(5 occurrences)[0m
+    [90m↳[0m [36msrc/img-1.tsx:3:5[0m
+      Violation of 1.1.1
+      [32mHow to fix[0m [90m(Do any one of these:)[0m
+        [32m·[0m Element does not have an alt attribute
+        [32m·[0m aria-label attribute does not exist or is empty
+      [90mLearn more: https://example.test/help[0m
+    [90m↳[0m [36msrc/img-2.tsx:3:5[0m
+      Violation of 1.1.1
+      [32mHow to fix[0m [90m(Do any one of these:)[0m
+        [32m·[0m Element does not have an alt attribute
+        [32m·[0m aria-label attribute does not exist or is empty
+      [90mLearn more: https://example.test/help[0m
+    [90m↳ and 2 more occurrences of the same issue · run with --all to list them[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 1.3.1[0m [1mInfo and Relationships[0m [90mLevel A[0m  [90m(1 occurrence)[0m
+    [90m↳[0m [36msrc/1.3.1.tsx:3:5[0m
+      Violation of 1.3.1
+      [32m→ Add a label to the control[0m
+      [90mLearn more: https://example.test/help[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 2.1.1[0m [1mKeyboard[0m [90mLevel A[0m  [90m(1 occurrence)[0m
+    [90m↳[0m [36msrc/2.1.1.tsx:3:5[0m
+      Violation of 2.1.1
+      [32m→ Add a label to the control[0m
+      [90mLearn more: https://example.test/help[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 2.4.4[0m [1mLink Purpose (In Context)[0m [90mLevel A[0m  [90m(1 occurrence)[0m
+    [90m↳[0m [36msrc/2.4.4.tsx:3:5[0m
+      Violation of 2.4.4
+      [32m→ Add a label to the control[0m
+      [90mLearn more: https://example.test/help[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 3.1.1[0m [1mLanguage of Page[0m [90mLevel A[0m  [90m(1 occurrence)[0m
+    [90m↳[0m [36msrc/3.1.1.tsx:3:5[0m
+      Violation of 3.1.1
+      [32m→ Add a label to the control[0m
+      [90mLearn more: https://example.test/help[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 4.1.2[0m [1mName, Role, Value[0m [90mLevel A[0m  [90m(1 occurrence)[0m
+    [90m↳[0m [36msrc/4.1.2.tsx:3:5[0m
+      Violation of 4.1.2
+      [32m→ Add a label to the control[0m
+      [90mLearn more: https://example.test/help[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 1.2.1[0m [1mAudio-only and Video-only (Prerecorded)[0m [90mLevel A[0m  [90m(1 occurrence)[0m
+    [90m↳[0m [36msrc/1.2.1.tsx:3:5[0m
+      Violation of 1.2.1
+      [32m→ Add a label to the control[0m
+      [90mLearn more: https://example.test/help[0m
+
+  [31m[1m■[0m [31m[1mCRITICAL[0m  [1mWCAG 2.2.1[0m [1mTiming Adjustable[0m [90mLevel A[0m  [90m(1 occurrence)[0m
+    [90m↳[0m [36msrc/2.2.1.tsx:3:5[0m
+      Violation of 2.2.1
+      [32m→ Add a label to the control[0m
+      [90mLearn more: https://example.test/help[0m
+
+  [90m↳ 3 more WCAG criteria not shown (3 occurrences, incl. 1 critical, 1 serious) · run with --all to list every criterion[0m
+
+  [1mAdvisory[0m [90m— beyond your AA target (WCAG AAA), advisory only[0m
+
+  [90m◇[0m [1mWCAG 3.1.5[0m [1mReading Level[0m [90mLevel AAA[0m  [90m(3 occurrences)[0m
+    [90m↳[0m [36mcontent/page-1.md:3[0m
+      [90mViolation of 3.1.5[0m
+      [90mLearn more: https://example.test/help[0m
+    [90m↳[0m [36mcontent/page-2.md:3[0m
+      [90mViolation of 3.1.5[0m
+      [90mLearn more: https://example.test/help[0m
+    [90m↳ and 1 more occurrence of the same issue · run with --all to list them[0m
+
+  [1mBest-Practice Recommendations[0m [90m— not WCAG failures, but improve usability[0m
+
+  [36m●[0m [1mregion[0m  [90m4 occurrences[0m
+      Landmarks help screen reader users navigate page sections
+      [90m↳[0m [36msrc/layout-1.tsx:3[0m
+      [90m↳[0m [36msrc/layout-2.tsx:3[0m
+      [90m↳[0m [36msrc/layout-3.tsx:3[0m
+      [90m↳[0m [36msrc/layout-4.tsx:3[0m
+
+  [90m○[0m [1mcustom-rule[0m  [90m1 occurrence[0m
+      See the rule documentation for context.
+      [90m↳[0m [36msrc/misc.tsx:3[0m
+
+  [1mNot verifiable on this scan[0m [90m— 2 page-level rules on fragment files[0m
+
+  [90m○[0m [1mregion[0m  [90m5 occurrences[0m
+      [90mLandmarks help screen reader users navigate page sections[0m
+      [90m↳[0m [36msrc/a.tsx[0m
+      [90m↳[0m [36msrc/b.tsx[0m
+      [90m↳[0m [36msrc/c.tsx[0m
+      [90m↳[0m [36msrc/d.tsx[0m
+      [90m↳[0m [36msrc/e.tsx[0m
+
+  [90m○[0m [1mbypass[0m  [90m1 occurrence[0m  [90mWCAG 2.4.1 Bypass Blocks[0m
+      [90m↳[0m [36msrc/page.tsx[0m
+
+  [90mThese rules apply to the composed page, not a single component or partial.[0m
+  [90mVerify on the built output:[0m  npx equall scan <build-dir>  [90m(e.g. astro build && npx equall scan dist/)[0m
+  [90mGuide: https://equallscan.com/docs/verifying-page-level-rules[0m
+
+  [1mLow-confidence alt text[0m [90m— 2 present but suspect · a review suggestion, not a WCAG violation[0m
+
+  [90m○[0m [36msrc/gallery.tsx:12[0m  [90malt="DSC00423.jpg" — looks like a filename[0m
+  [90m○[0m [36msrc/hero.tsx[0m  [90malt="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx…" — generic placeholder[0m
+  [90mAutomation can't tell if an alt is meaningful — check these actually describe the image.[0m
+
+  [90mScanners:[0m axe-core [90mv4.10.0[0m [90m(20)[0m[90m · [0mreadability [90mv1.0.0[0m [90m(3)[0m
+  [90mNote: readability uses Flesch-Kincaid on English text only. Non-English files are skipped. Grades are indicative — disable with --no-readability.[0m
+  [90mCompleted in 1.2s[0m
+
+  [43m[1m[37m  57.31  [0m  [90mWCAG 2.2 · score is a trend indicator[0m
+  [31m1 A/AA failure among the 2 criteria automatically verified (3 not evaluated).[0m
+
+  [1mPer-criterion[0m [90m— WCAG 2.2, AA target[0m
+  [31m✕[0m [90m1.1.1[0m  Non-text Content  [31mDoes not support[0m
+  [32m✓[0m [90m1.3.1[0m  Info and Relationships  [32mSupports (automated)[0m
+  [90m○[0m [90m1.4.3[0m  Contrast (Minimum)  [90mNot evaluated — assisted[0m
+  [90m○[0m [90m2.4.1[0m  Bypass Blocks  [90mNot evaluated — rendered check[0m
+  [90m○[0m [90m2.1.2[0m  No Keyboard Trap  [90mNot evaluated — manual[0m
+
+  [1mWCAG 2.2 Support Summary[0m [90m— AA target · automated basis only[0m
+  [32m✓ Supports (automated) 1[0m   [31m✕ Does not support 1[0m   [90m○ Not evaluated 3[0m
+  [90mWhat each verdict means → https://equallscan.com/docs/verdicts[0m
+"
+`;
