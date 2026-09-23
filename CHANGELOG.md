@@ -7,7 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Findings static analysis cannot confirm are reported for review, not counted.** On
+  JSX/TSX, Vue, Svelte and Astro files, axe only sees markup reconstructed from the source
+  code, not a rendered page. When its finding sits on an element whose content or name
+  depends on props, runtime expressions or a component (`<Button>`, `{...props}`,
+  `aria-checked={state}`), or comes from a rule that needs the rendered page, the issue is
+  now flagged `review_only` with a `review_reason`. It keeps its fingerprint and stays in the
+  JSON output and in a "To review" section of the terminal report, but no longer counts in
+  the score, the violation counts or the conformance verdicts. Plain `.html` is never
+  affected. Measured on a labelled corpus, the share of counted findings that are real rose
+  from about half to more than three quarters, with no real defect dropped and no
+  fingerprint changed. Scores on component code can rise as a result.
+
 ### Fixed
+
+- **`<label htmlFor>` is recognized on JSX.** The JSX spelling `htmlFor` (and `httpEquiv`,
+  `acceptCharset`, `xlinkHref`) is translated to its HTML name before axe runs, so a
+  correctly labelled input is no longer reported as unlabelled.
+- **The terminal summary counts what the report lists.** Ignored issues were included in the
+  "N WCAG violations" and severity counts while the list below excluded them; the summary
+  now counts only the issues that affect the score, and states ignored and review-only
+  findings on their own lines.
 
 - **No criterion is reported as automatically tested unless a check can conclude on it.**
   Seven criteria were credited as "Supports (automated)" without a real test: 1.2.1,
