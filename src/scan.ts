@@ -310,12 +310,14 @@ export function deduplicateIssues(issues: EquallIssue[]): EquallIssue[] {
     // Sort criteria so ["4.1.2", "2.4.4"] and ["2.4.4", "4.1.2"] produce the same key
     const sortedCriteria = [...issue.wcag_criteria].sort().join(',')
 
-    // Location: prefer line+column (ESLint), fall back to scanner_rule_id (axe-core has no lines)
+    // MEASUREMENT H1: location = line+column (ESLint), else axe's node selector, else the
+    // full snippet; the rule id is part of the key.
+    const node = (issue as EquallIssue & { _node?: string })._node
     const location = issue.line != null
       ? `L${issue.line}:${issue.column ?? 0}`
-      : issue.html_snippet?.slice(0, 80) ?? 'no-loc'
+      : node ? `N${node}` : issue.html_snippet ?? 'no-loc'
 
-    const key = `${issue.file_path}|${sortedCriteria}|${location}`
+    const key = `${issue.file_path}|${issue.scanner_rule_id}|${sortedCriteria}|${location}`
 
     if (!seen.has(key)) {
       seen.add(key)

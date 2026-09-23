@@ -198,7 +198,7 @@ export class AxeScanner implements ScannerAdapter {
         const derivedPour = pour ?? (criteria[0] ? pourFromCriterion(criteria[0]) : null)
 
         for (const node of violation.nodes) {
-          issues.push({
+          const issue: EquallIssue = {
             scanner: 'axe-core',
             scanner_rule_id: violation.id,
             wcag_criteria: criteria,
@@ -212,7 +212,11 @@ export class AxeScanner implements ScannerAdapter {
             message: `${violation.help} (${violation.id})`,
             help_url: violation.helpUrl ?? null,
             suggestion: node.failureSummary ?? null,
-          })
+          }
+          // MEASUREMENT H1: carry axe's node selector (non-enumerable, never serialized) so
+          // dedup can tell distinct DOM nodes apart.
+          Object.defineProperty(issue, '_node', { value: (node.target ?? []).join(' >> '), enumerable: false })
+          issues.push(issue)
         }
       }
 
