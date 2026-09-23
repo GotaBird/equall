@@ -177,34 +177,76 @@ export interface PrintOptions {
   standard?: WcagStandard
 }
 
+// Issues partitioned once for the whole report. `target` decides what is an in-scope
+// violation vs. a beyond-target advisory (e.g. AAA reading-level under an AA target):
+// advisory issues never count against conformance or the score.
+interface ReportIssues {
+  // Visible (non-ignored) issues, by section
+  wcag: EquallIssue[]
+  advisory: EquallIssue[]
+  bestPractice: EquallIssue[]
+  ignored: EquallIssue[]
+}
+
+function partitionIssues(result: ScanResult, target: WcagLevel): ReportIssues {
+  const parts: ReportIssues = { wcag: [], advisory: [], bestPractice: [], ignored: [] }
+  for (const issue of result.issues) {
+    if (issue.ignored) parts.ignored.push(issue)
+    else if (issue.wcag_criteria.length === 0) parts.bestPractice.push(issue)
+    else if (isBeyondTarget(issue, target)) parts.advisory.push(issue)
+    else parts.wcag.push(issue)
+  }
+  return parts
+}
+
 export function printResult(result: ScanResult, options: PrintOptions = {}): void {
-  const { score, summary, scanners_used, duration_ms } = result
+  const target = options.targetLevel ?? 'AA'
+  const standard = options.standard ?? 'wcag22'
+  const parts = partitionIssues(result, target)
 
   console.log()
   console.log(`${BOLD}  ◆ EQUALL — Accessibility Score${RESET}`)
   console.log()
 
-  // Target drives what counts as an in-scope violation vs. beyond-target advisory.
-  const target = options.targetLevel ?? 'AA'
+  printSummary(result, target)
+  printViolations(parts.wcag, target, options)
+  printAdvisory(parts.advisory, target, options)
+  printBestPractices(parts.bestPractice, options)
+  printNotVerifiable(result, options)
+  printConfidenceFlags(result)
+  if (options.showIgnored) printIgnored(parts.ignored)
+  if (options.showManual) printManualReview(result, standard, target)
+  if (options.verbose) printScanners(result)
 
-  // Standard view — drives the "WCAG 2.1/2.2" labels (derived from the catalog).
-  const standard = options.standard ?? 'wcag22'
+  console.log(`  ${GRAY}Completed in ${(result.duration_ms / 1000).toFixed(1)}s${RESET}`)
+  console.log()
 
-  // Beyond-target criteria (e.g. AAA reading-level under an AA target) are advisory:
-  // they don't penalize the score and aren't counted among conformance violations.
+  // Headline at the END (moved 2026-07-08): in a terminal the bottom of the output is what
+  // stays on screen when the scan finishes, so the report's takeaway is printed last — read
+  // first without scrolling. The score (a trend indicator) sits just above the
+  // Support Summary, whose bucket line is the final content line.
+  const verdict = formatVerifiedSubset(result, target)
+  console.log(`  ${scoreBg(result.score)}${BOLD}${WHITE}  ${result.score}  ${RESET}  ${GRAY}${standardLabel(standard)} · score is a trend indicator${RESET}`)
+  console.log(`  ${verdict.failing > 0 ? RED : GRAY}${verdict.line}${RESET}`)
+  console.log()
+  printSupportSummary(result, target, options)
+}
+
+function printSummary(result: ScanResult, target: WcagLevel): void {
+  const { summary } = result
+  // Beyond-target criteria are advisory: they don't penalize the score and aren't
+  // counted among conformance violations.
   const isAdvisory = (i: EquallIssue) => i.wcag_criteria.length > 0 && isBeyondTarget(i, target)
   const advisoryCount = result.issues.filter(isAdvisory).length
 
-  // Summary stats
   console.log(`  ${BOLD}Summary${RESET}`)
   const wcagIssuesCount = result.issues.filter(i => i.wcag_criteria.length > 0 && !isAdvisory(i)).length
   const bpIssuesCount = result.issues.filter(i => i.wcag_criteria.length === 0).length
   const advisorySuffix = advisoryCount > 0 ? `  ·  ${GRAY}${advisoryCount} AAA advisory${RESET}` : ''
   // Page-level rules reclassified on fragment scans — surfaced even in a skim.
-  const reclassified = result.coverage?.reclassified ?? []
-  const reclassifiedCount = reclassified.reduce((n, r) => n + r.count, 0)
+  const reclassifiedCount = (result.coverage?.reclassified ?? []).reduce((n, r) => n + r.count, 0)
   const reclassifiedSuffix = reclassifiedCount > 0 ? `  ·  ${GRAY}${reclassifiedCount} page-level (needs rendered page)${RESET}` : ''
-  console.log(`  ${summary.files_scanned} file${summary.files_scanned === 1 ? '' : 's'} scanned  ·  ${BOLD}${wcagIssuesCount}${RESET} WCAG violation${wcagIssuesCount === 1 ? '' : 's'}  ·  ${GRAY}${bpIssuesCount} best-practice recommendation${bpIssuesCount === 1 ? '' : 's'}${RESET}${advisorySuffix}${reclassifiedSuffix}`)
+  console.log(`  ${summary.files_scanned} ${plural(summary.files_scanned, 'file')} scanned  ·  ${BOLD}${wcagIssuesCount}${RESET} WCAG ${plural(wcagIssuesCount, 'violation')}  ·  ${GRAY}${bpIssuesCount} best-practice ${plural(bpIssuesCount, 'recommendation')}${RESET}${advisorySuffix}${reclassifiedSuffix}`)
 
   // Severity breakdown over conformance-scope issues only (advisory AAA excluded),
   // with a one-line legend so "critical/serious/moderate/minor" isn't just a color soup
@@ -227,269 +269,203 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
     const byFramework = new Map<string, number>()
     for (const route of routes) byFramework.set(route.framework, (byFramework.get(route.framework) ?? 0) + 1)
     const breakdown = [...byFramework.entries()].map(([framework, count]) => `${framework} ${count}`).join(' · ')
-    console.log(`  ${GRAY}${routes.length} route${routes.length === 1 ? '' : 's'} detected · ${breakdown}${RESET}`)
+    console.log(`  ${GRAY}${routes.length} ${plural(routes.length, 'route')} detected · ${breakdown}${RESET}`)
   }
   if (summary.ignored_count > 0) {
-    console.log(`  ${GRAY}${summary.ignored_count} issue${summary.ignored_count > 1 ? 's' : ''} suppressed via equall-ignore${RESET}`)
+    console.log(`  ${GRAY}${summary.ignored_count} ${plural(summary.ignored_count, 'issue')} suppressed via equall-ignore${RESET}`)
   }
 
   console.log()
+}
 
-  // Only display non-ignored issues in terminal output
-  const visibleIssues = result.issues.filter(i => !i.ignored)
-  // WCAG issues at or below the target level are conformance failures; those
-  // above it (e.g. AAA reading-level under an AA target) are advisory only.
-  const wcagIssues = visibleIssues.filter(i => i.wcag_criteria.length > 0 && !isBeyondTarget(i, target))
-  const advisoryIssues = visibleIssues.filter(i => i.wcag_criteria.length > 0 && isBeyondTarget(i, target))
-  const bpIssues = visibleIssues.filter(i => i.wcag_criteria.length === 0)
+// WCAG Violations — automated failures at the target level; these count against conformance.
+function printViolations(issues: EquallIssue[], target: WcagLevel, options: PrintOptions): void {
+  if (issues.length === 0) return
+  console.log(`  ${BOLD}WCAG Violations${RESET} ${GRAY}— automated failures at your ${target} target, fix these first${RESET}`)
+  console.log()
 
-  // Top issues (WCAG Violations) — these count against conformance
-  if (wcagIssues.length > 0) {
-    console.log(`  ${BOLD}WCAG Violations${RESET} ${GRAY}— automated failures at your ${target} target, fix these first${RESET}`)
-    console.log()
+  const sorted = sortedGroups(issues)
+  // Top MAX_CRITERIA by default; the remainder is announced below, never dropped silently.
+  const shown = options.all ? sorted : sorted.slice(0, MAX_CRITERIA)
+  const hidden = sorted.slice(shown.length)
 
-    const grouped = groupByCriterion(wcagIssues)
-    const sorted = [...grouped.entries()]
-      .sort((a, b) => b[1].weight - a[1].weight)
-    // Top MAX_CRITERIA by default; the remainder is announced below, never dropped silently.
-    const shown = options.all ? sorted : sorted.slice(0, MAX_CRITERIA)
-    const hidden = sorted.slice(shown.length)
-
-    for (const [criterion, group] of shown) {
-      const topSeverity = group.issues[0].severity
-      const name = criterionName(criterion)
-      const levelSuffix = group.issues[0].wcag_level ? ` ${GRAY}Level ${group.issues[0].wcag_level}${RESET}` : ''
-      const nameSuffix = name ? ` ${BOLD}${name}${RESET}` : ''
-      const count = group.issues.length
-      // Header: severity icon · criterion ID · plain-language name · level · issue count
-      console.log(
-        `  ${severityIcon(topSeverity)} ${severityLabel(topSeverity)}  ` +
-        `${BOLD}WCAG ${criterion}${RESET}${nameSuffix}${levelSuffix}  ` +
-        `${GRAY}(${count} occurrence${count > 1 ? 's' : ''})${RESET}`
-      )
-
-      // Collapse duplicate file+line entries so the same issue isn't repeated.
-      // Show the first MAX_OCCURRENCES unique occurrences (all with --all).
-      const uniqueIssues = uniqueOccurrences(group.issues)
-      const occurrences = options.all ? uniqueIssues : uniqueIssues.slice(0, MAX_OCCURRENCES)
-
-      for (const issue of occurrences) {
-        const location = issue.line ? `:${issue.line}` : ''
-        const col = issue.column ? `:${issue.column}` : ''
-        console.log(`    ${GRAY}↳${RESET} ${CYAN}${issue.file_path}${location}${col}${RESET}`)
-        console.log(`      ${cleanMessage(issue.message)}`)
-        if (issue.suggestion) {
-          for (const line of formatSuggestion(issue.suggestion, '      ')) {
-            console.log(line)
-          }
-        }
-        if (issue.help_url) {
-          console.log(`      ${GRAY}Learn more: ${issue.help_url}${RESET}`)
+  for (const [criterion, group] of shown) {
+    const topSeverity = group.issues[0].severity
+    // Header: severity icon · criterion ID · plain-language name · level · issue count
+    console.log(
+      `  ${severityIcon(topSeverity)} ${severityLabel(topSeverity)}  ` +
+      `${BOLD}WCAG ${criterion}${RESET}${criterionSuffix(criterion, group)}  ` +
+      `${GRAY}(${group.issues.length} ${plural(group.issues.length, 'occurrence')})${RESET}`
+    )
+    printOccurrences(group.issues, options, (issue) => {
+      const location = issue.line ? `:${issue.line}` : ''
+      const col = issue.column ? `:${issue.column}` : ''
+      console.log(`    ${GRAY}↳${RESET} ${CYAN}${issue.file_path}${location}${col}${RESET}`)
+      console.log(`      ${cleanMessage(issue.message)}`)
+      if (issue.suggestion) {
+        for (const line of formatSuggestion(issue.suggestion, '      ')) {
+          console.log(line)
         }
       }
-      printOccurrenceCut(uniqueIssues.length - occurrences.length)
-      console.log()
-    }
-
-    // Criteria beyond the top MAX_CRITERIA: name what was cut (with its critical/serious
-    // counts) so a serious criterion ranked lower is never hidden without a trace.
-    if (hidden.length > 0) {
-      const hiddenIssues = hidden.flatMap(([, group]) => group.issues)
-      const critical = hiddenIssues.filter(i => i.severity === 'critical').length
-      const serious = hiddenIssues.filter(i => i.severity === 'serious').length
-      const severe = [
-        critical > 0 ? `${critical} critical` : '',
-        serious > 0 ? `${serious} serious` : '',
-      ].filter(Boolean).join(', ')
-      console.log(
-        `  ${GRAY}↳ ${hidden.length} more WCAG criteri${hidden.length === 1 ? 'on' : 'a'} not shown ` +
-        `(${hiddenIssues.length} occurrence${hiddenIssues.length === 1 ? '' : 's'}${severe ? `, incl. ${severe}` : ''}) · run with --all to list every criterion${RESET}`
-      )
-      console.log()
-    }
-  }
-
-  // Advisory — WCAG criteria beyond the conformance target (e.g. AAA reading-level
-  // under an AA target). Shown for awareness; they do NOT count against conformance
-  // or the score, and are never framed as "must fix".
-  if (advisoryIssues.length > 0) {
-    console.log(`  ${BOLD}Advisory${RESET} ${GRAY}— beyond your ${target} target (WCAG AAA), advisory only${RESET}`)
-    console.log()
-
-    const grouped = groupByCriterion(advisoryIssues)
-    const sorted = [...grouped.entries()].sort((a, b) => b[1].weight - a[1].weight)
-
-    for (const [criterion, group] of sorted) {
-      const name = criterionName(criterion)
-      const levelSuffix = group.issues[0].wcag_level ? ` ${GRAY}Level ${group.issues[0].wcag_level}${RESET}` : ''
-      const nameSuffix = name ? ` ${BOLD}${name}${RESET}` : ''
-      const count = group.issues.length
-      console.log(
-        `  ${GRAY}◇${RESET} ${BOLD}WCAG ${criterion}${RESET}${nameSuffix}${levelSuffix}  ` +
-        `${GRAY}(${count} occurrence${count > 1 ? 's' : ''})${RESET}`
-      )
-
-      const uniqueIssues = uniqueOccurrences(group.issues)
-      const occurrences = options.all ? uniqueIssues : uniqueIssues.slice(0, MAX_OCCURRENCES)
-      for (const issue of occurrences) {
-        const location = issue.line ? `:${issue.line}` : ''
-        console.log(`    ${GRAY}↳${RESET} ${CYAN}${issue.file_path}${location}${RESET}`)
-        console.log(`      ${GRAY}${cleanMessage(issue.message)}${RESET}`)
-        if (issue.help_url) {
-          console.log(`      ${GRAY}Learn more: ${issue.help_url}${RESET}`)
-        }
+      if (issue.help_url) {
+        console.log(`      ${GRAY}Learn more: ${issue.help_url}${RESET}`)
       }
-      printOccurrenceCut(uniqueIssues.length - occurrences.length)
-      console.log()
-    }
-  }
-
-  // Best Practices — recommendations, NOT WCAG violations. Kept visually quieter.
-  if (bpIssues.length > 0) {
-    console.log(`  ${BOLD}Best-Practice Recommendations${RESET} ${GRAY}— not WCAG failures, but improve usability${RESET}`)
-    console.log()
-
-    const grouped = groupByCriterion(bpIssues)
-    const sorted = [...grouped.entries()]
-      .sort((a, b) => b[1].weight - a[1].weight)
-
-    for (const [criterion, group] of sorted) {
-      const topSeverity = group.issues[0].severity
-      const hint = BP_HINTS[criterion] ?? 'See the rule documentation for context.'
-      const count = group.issues.length
-      console.log(
-        `  ${severityIcon(topSeverity)} ${BOLD}${criterion}${RESET}  ` +
-        `${GRAY}${count} occurrence${count > 1 ? 's' : ''}${RESET}`
-      )
-      console.log(`      ${hint}`)
-
-      // Show affected files: all with --all (or --verbose), first MAX_OCCURRENCES otherwise
-      const listAll = options.all || options.verbose
-      const seen = new Set<string>()
-      const uniqueIssues: EquallIssue[] = []
-      for (const issue of group.issues) {
-        if (!seen.has(issue.file_path)) {
-          seen.add(issue.file_path)
-          uniqueIssues.push(issue)
-        }
-      }
-
-      const files = listAll ? uniqueIssues : uniqueIssues.slice(0, MAX_OCCURRENCES)
-      for (const issue of files) {
-        const location = issue.line ? `:${issue.line}` : ''
-        console.log(`      ${GRAY}↳${RESET} ${CYAN}${issue.file_path}${location}${RESET}`)
-      }
-      printFileCut(uniqueIssues.length - files.length)
-      console.log()
-    }
-  }
-
-  // Page-level rules reclassified on fragment scans. Rendered UNCONDITIONALLY
-  // (never behind --show-manual): honest coverage means the removed findings stay named.
-  if (reclassified.length > 0) {
-    console.log(`  ${BOLD}Not verifiable on this scan${RESET} ${GRAY}— ${reclassified.length} page-level rule${reclassified.length > 1 ? 's' : ''} on fragment files${RESET}`)
-    console.log()
-
-    for (const entry of reclassified) {
-      // WCAG-mapped page-level rules (e.g. bypass 2.4.1) show their criterion; the
-      // best-practice ones reuse the BP_HINTS explanation.
-      const wcagSuffix = entry.wcag_criteria.length > 0
-        ? `  ${GRAY}WCAG ${entry.wcag_criteria.map((c) => {
-            const name = criterionName(c)
-            return name ? `${c} ${name}` : c
-          }).join(', ')}${RESET}`
-        : ''
-      console.log(
-        `  ${GRAY}○${RESET} ${BOLD}${entry.rule_id}${RESET}  ` +
-        `${GRAY}${entry.count} occurrence${entry.count > 1 ? 's' : ''}${RESET}${wcagSuffix}`
-      )
-      const hint = BP_HINTS[entry.rule_id]
-      if (hint) console.log(`      ${GRAY}${hint}${RESET}`)
-
-      const files = options.all || options.verbose ? entry.files : entry.files.slice(0, MAX_OCCURRENCES)
-      for (const file of files) {
-        console.log(`      ${GRAY}↳${RESET} ${CYAN}${file}${RESET}`)
-      }
-      printFileCut(entry.files.length - files.length)
-      console.log()
-    }
-
-    console.log(`  ${GRAY}These rules apply to the composed page, not a single component or partial.${RESET}`)
-    console.log(`  ${GRAY}Verify on the built output:${RESET}  npx equall scan <build-dir>  ${GRAY}(e.g. astro build && npx equall scan dist/)${RESET}`)
-    console.log(`  ${GRAY}Guide: ${POST_BUILD_DOCS_URL}${RESET}`)
+    })
     console.log()
   }
 
-  // Alt-quality confidence flags — an ADVISORY, never a WCAG failure. Rendered
-  // unconditionally like "Not verifiable": a present-but-useless alt passes the automated check
-  // but is likely junk to a screen-reader user, so it's surfaced for human review. GRAY, never RED.
+  // Criteria beyond the top MAX_CRITERIA: name what was cut (with its critical/serious
+  // counts) so a serious criterion ranked lower is never hidden without a trace.
+  if (hidden.length > 0) {
+    const hiddenIssues = hidden.flatMap(([, group]) => group.issues)
+    const critical = hiddenIssues.filter(i => i.severity === 'critical').length
+    const serious = hiddenIssues.filter(i => i.severity === 'serious').length
+    const severe = [
+      critical > 0 ? `${critical} critical` : '',
+      serious > 0 ? `${serious} serious` : '',
+    ].filter(Boolean).join(', ')
+    console.log(
+      `  ${GRAY}↳ ${hidden.length} more WCAG ${plural(hidden.length, 'criterion', 'criteria')} not shown ` +
+      `(${hiddenIssues.length} ${plural(hiddenIssues.length, 'occurrence')}${severe ? `, incl. ${severe}` : ''}) · run with --all to list every criterion${RESET}`
+    )
+    console.log()
+  }
+}
+
+// Advisory — WCAG criteria beyond the conformance target (e.g. AAA reading-level
+// under an AA target). Shown for awareness; they do NOT count against conformance
+// or the score, and are never framed as "must fix".
+function printAdvisory(issues: EquallIssue[], target: WcagLevel, options: PrintOptions): void {
+  if (issues.length === 0) return
+  console.log(`  ${BOLD}Advisory${RESET} ${GRAY}— beyond your ${target} target (WCAG AAA), advisory only${RESET}`)
+  console.log()
+
+  for (const [criterion, group] of sortedGroups(issues)) {
+    console.log(
+      `  ${GRAY}◇${RESET} ${BOLD}WCAG ${criterion}${RESET}${criterionSuffix(criterion, group)}  ` +
+      `${GRAY}(${group.issues.length} ${plural(group.issues.length, 'occurrence')})${RESET}`
+    )
+    printOccurrences(group.issues, options, (issue) => {
+      const location = issue.line ? `:${issue.line}` : ''
+      console.log(`    ${GRAY}↳${RESET} ${CYAN}${issue.file_path}${location}${RESET}`)
+      console.log(`      ${GRAY}${cleanMessage(issue.message)}${RESET}`)
+      if (issue.help_url) {
+        console.log(`      ${GRAY}Learn more: ${issue.help_url}${RESET}`)
+      }
+    })
+    console.log()
+  }
+}
+
+// Best Practices — recommendations, NOT WCAG violations. Kept visually quieter.
+function printBestPractices(issues: EquallIssue[], options: PrintOptions): void {
+  if (issues.length === 0) return
+  console.log(`  ${BOLD}Best-Practice Recommendations${RESET} ${GRAY}— not WCAG failures, but improve usability${RESET}`)
+  console.log()
+
+  for (const [ruleId, group] of sortedGroups(issues)) {
+    const topSeverity = group.issues[0].severity
+    const hint = BP_HINTS[ruleId] ?? 'See the rule documentation for context.'
+    console.log(
+      `  ${severityIcon(topSeverity)} ${BOLD}${ruleId}${RESET}  ` +
+      `${GRAY}${group.issues.length} ${plural(group.issues.length, 'occurrence')}${RESET}`
+    )
+    console.log(`      ${hint}`)
+
+    // Affected files, one line per file (deduped by path)
+    const seen = new Set<string>()
+    const byFile = group.issues.filter(issue => !seen.has(issue.file_path) && seen.add(issue.file_path))
+    printFileList(byFile.map(issue => `${issue.file_path}${issue.line ? `:${issue.line}` : ''}`), options)
+    console.log()
+  }
+}
+
+// Page-level rules reclassified on fragment scans. Rendered UNCONDITIONALLY
+// (never behind --show-manual): honest coverage means the removed findings stay named.
+function printNotVerifiable(result: ScanResult, options: PrintOptions): void {
+  const reclassified = result.coverage?.reclassified ?? []
+  if (reclassified.length === 0) return
+  console.log(`  ${BOLD}Not verifiable on this scan${RESET} ${GRAY}— ${reclassified.length} page-level ${plural(reclassified.length, 'rule')} on fragment files${RESET}`)
+  console.log()
+
+  for (const entry of reclassified) {
+    // WCAG-mapped page-level rules (e.g. bypass 2.4.1) show their criterion; the
+    // best-practice ones reuse the BP_HINTS explanation.
+    const wcagSuffix = entry.wcag_criteria.length > 0
+      ? `  ${GRAY}WCAG ${entry.wcag_criteria.map((c) => {
+          const name = criterionName(c)
+          return name ? `${c} ${name}` : c
+        }).join(', ')}${RESET}`
+      : ''
+    console.log(
+      `  ${GRAY}○${RESET} ${BOLD}${entry.rule_id}${RESET}  ` +
+      `${GRAY}${entry.count} ${plural(entry.count, 'occurrence')}${RESET}${wcagSuffix}`
+    )
+    const hint = BP_HINTS[entry.rule_id]
+    if (hint) console.log(`      ${GRAY}${hint}${RESET}`)
+    printFileList(entry.files, options)
+    console.log()
+  }
+
+  console.log(`  ${GRAY}These rules apply to the composed page, not a single component or partial.${RESET}`)
+  console.log(`  ${GRAY}Verify on the built output:${RESET}  npx equall scan <build-dir>  ${GRAY}(e.g. astro build && npx equall scan dist/)${RESET}`)
+  console.log(`  ${GRAY}Guide: ${POST_BUILD_DOCS_URL}${RESET}`)
+  console.log()
+}
+
+// Alt-quality confidence flags — an ADVISORY, never a WCAG failure. Rendered
+// unconditionally like "Not verifiable": a present-but-useless alt passes the automated check
+// but is likely junk to a screen-reader user, so it's surfaced for human review. GRAY, never RED.
+function printConfidenceFlags(result: ScanResult): void {
   const confidenceFlags = result.confidence_flags ?? []
-  if (confidenceFlags.length > 0) {
-    console.log(`  ${BOLD}Low-confidence alt text${RESET} ${GRAY}— ${confidenceFlags.length} present but suspect · a review suggestion, not a WCAG violation${RESET}`)
-    console.log()
-    for (const flag of confidenceFlags) {
-      const loc = flag.line != null ? `:${flag.line}` : ''
-      const shown = flag.value.length > 80 ? `${flag.value.slice(0, 77)}…` : flag.value
-      console.log(`  ${GRAY}○${RESET} ${CYAN}${flag.file_path}${loc}${RESET}  ${GRAY}alt="${shown}" — ${flag.reason}${RESET}`)
-    }
-    console.log(`  ${GRAY}Automation can't tell if an alt is meaningful — check these actually describe the image.${RESET}`)
-    console.log()
-  }
-
-  // Ignored issues (verbose only)
-  if (options.showIgnored) {
-    const ignoredIssues = result.issues.filter(i => i.ignored)
-    if (ignoredIssues.length > 0) {
-      console.log(`  ${BOLD}Ignored${RESET}`)
-      for (const issue of ignoredIssues) {
-        const location = issue.line ? `:${issue.line}` : ''
-        console.log(`  ${GRAY}⊘${RESET} ${GRAY}${issue.file_path}${location}${RESET}  ${issue.scanner_rule_id}`)
-      }
-      console.log()
-    }
-  }
-
-  // Manual review criteria
-  if (options.showManual) {
-    const level = options.targetLevel ?? 'AA'
-    const allForLevel = getCriteriaForStandardLevel(standard, level)
-    const coveredSet = new Set(result.coverage?.auto_criteria ?? result.criteria_covered)
-    const untested = allForLevel.filter(c => !coveredSet.has(c.id))
-
-    if (untested.length > 0) {
-      console.log(`  ${BOLD}Needs manual review${RESET} ${GRAY}— ${untested.length} criteria automation can't verify${RESET}`)
-      for (const c of untested) {
-        const principle = c.pour.charAt(0).toUpperCase() + c.pour.slice(1)
-        console.log(`  ${GRAY}${c.id}${RESET}  ${c.name} ${GRAY}— ${principle}${RESET}`)
-      }
-      console.log()
-    }
-  }
-
-  // Scanners used — transparency about what ran. Verbose-only, to keep the default output tight.
-  if (options.verbose) {
-    const scannerLine = scanners_used
-      .map((s) => `${s.name} ${GRAY}v${s.version}${RESET} ${GRAY}(${s.issues_found})${RESET}`)
-      .join(`${GRAY} · ${RESET}`)
-    console.log(`  ${GRAY}Scanners:${RESET} ${scannerLine}`)
-    // Readability disclaimer — English-calibrated Flesch-Kincaid; non-English docs are skipped.
-    if (scanners_used.some(s => s.name === 'readability')) {
-      console.log(`  ${GRAY}Note: readability uses Flesch-Kincaid on English text only. Non-English files are skipped. Grades are indicative — disable with --no-readability.${RESET}`)
-    }
-  }
-
-  console.log(`  ${GRAY}Completed in ${(duration_ms / 1000).toFixed(1)}s${RESET}`)
+  if (confidenceFlags.length === 0) return
+  console.log(`  ${BOLD}Low-confidence alt text${RESET} ${GRAY}— ${confidenceFlags.length} present but suspect · a review suggestion, not a WCAG violation${RESET}`)
   console.log()
-
-  // Headline at the END (moved 2026-07-08): in a terminal the bottom of the output is what
-  // stays on screen when the scan finishes, so the report's takeaway is printed last — read
-  // first without scrolling. The score (a trend indicator) sits just above the
-  // Support Summary, whose bucket line is the final content line.
-  const verdict = formatVerifiedSubset(result, target)
-  console.log(`  ${scoreBg(score)}${BOLD}${WHITE}  ${score}  ${RESET}  ${GRAY}${standardLabel(standard)} · score is a trend indicator${RESET}`)
-  console.log(`  ${verdict.failing > 0 ? RED : GRAY}${verdict.line}${RESET}`)
+  for (const flag of confidenceFlags) {
+    const loc = flag.line != null ? `:${flag.line}` : ''
+    const shown = flag.value.length > 80 ? `${flag.value.slice(0, 77)}…` : flag.value
+    console.log(`  ${GRAY}○${RESET} ${CYAN}${flag.file_path}${loc}${RESET}  ${GRAY}alt="${shown}" — ${flag.reason}${RESET}`)
+  }
+  console.log(`  ${GRAY}Automation can't tell if an alt is meaningful — check these actually describe the image.${RESET}`)
   console.log()
-  printSupportSummary(result, target, options)
+}
+
+// Ignored issues (--show-ignored)
+function printIgnored(ignored: EquallIssue[]): void {
+  if (ignored.length === 0) return
+  console.log(`  ${BOLD}Ignored${RESET}`)
+  for (const issue of ignored) {
+    const location = issue.line ? `:${issue.line}` : ''
+    console.log(`  ${GRAY}⊘${RESET} ${GRAY}${issue.file_path}${location}${RESET}  ${issue.scanner_rule_id}`)
+  }
+  console.log()
+}
+
+// Manual review criteria (--show-manual)
+function printManualReview(result: ScanResult, standard: WcagStandard, target: WcagLevel): void {
+  const allForLevel = getCriteriaForStandardLevel(standard, target)
+  const coveredSet = new Set(result.coverage?.auto_criteria ?? result.criteria_covered)
+  const untested = allForLevel.filter(c => !coveredSet.has(c.id))
+  if (untested.length === 0) return
+
+  console.log(`  ${BOLD}Needs manual review${RESET} ${GRAY}— ${untested.length} criteria automation can't verify${RESET}`)
+  for (const c of untested) {
+    const principle = c.pour.charAt(0).toUpperCase() + c.pour.slice(1)
+    console.log(`  ${GRAY}${c.id}${RESET}  ${c.name} ${GRAY}— ${principle}${RESET}`)
+  }
+  console.log()
+}
+
+// Scanners used — transparency about what ran. Verbose-only, to keep the default output tight.
+function printScanners(result: ScanResult): void {
+  const scannerLine = result.scanners_used
+    .map((s) => `${s.name} ${GRAY}v${s.version}${RESET} ${GRAY}(${s.issues_found})${RESET}`)
+    .join(`${GRAY} · ${RESET}`)
+  console.log(`  ${GRAY}Scanners:${RESET} ${scannerLine}`)
+  // Readability disclaimer — English-calibrated Flesch-Kincaid; non-English docs are skipped.
+  if (result.scanners_used.some(s => s.name === 'readability')) {
+    console.log(`  ${GRAY}Note: readability uses Flesch-Kincaid on English text only. Non-English files are skipped. Grades are indicative — disable with --no-readability.${RESET}`)
+  }
 }
 
 // Report headline. Printed at the END of the output (moved 2026-07-08): in a
@@ -553,6 +529,23 @@ function printSupportSummary(result: ScanResult, target: WcagLevel, options: Pri
   console.log()
 }
 
+// `${n} ${plural(n, 'file')}` → "1 file" / "3 files" (and "0 files").
+function plural(n: number, singular: string, pluralForm = `${singular}s`): string {
+  return n === 1 ? singular : pluralForm
+}
+
+// Groups sorted by severity weight, heaviest first.
+function sortedGroups(issues: EquallIssue[]): [string, CriterionGroup][] {
+  return [...groupByCriterion(issues).entries()].sort((a, b) => b[1].weight - a[1].weight)
+}
+
+// " <name> Level <X>" after a criterion ID, each part only when known.
+function criterionSuffix(criterion: string, group: CriterionGroup): string {
+  const name = criterionName(criterion)
+  const level = group.issues[0].wcag_level
+  return `${name ? ` ${BOLD}${name}${RESET}` : ''}${level ? ` ${GRAY}Level ${level}${RESET}` : ''}`
+}
+
 // Collapse issues sharing file + line + message — the same occurrence reported twice.
 function uniqueOccurrences(issues: EquallIssue[]): EquallIssue[] {
   const seen = new Set<string>()
@@ -567,16 +560,29 @@ function uniqueOccurrences(issues: EquallIssue[]): EquallIssue[] {
   return unique
 }
 
-// Notice for occurrences cut from a criterion — printed only when something was cut.
-function printOccurrenceCut(hidden: number): void {
-  if (hidden <= 0) return
-  console.log(`    ${GRAY}↳ and ${hidden} more occurrence${hidden > 1 ? 's' : ''} of the same issue · run with --all to list them${RESET}`)
+// A criterion's unique occurrences: the first MAX_OCCURRENCES (all with --all), then a
+// notice naming --all whenever some were cut.
+function printOccurrences(issues: EquallIssue[], options: PrintOptions, render: (issue: EquallIssue) => void): void {
+  const unique = uniqueOccurrences(issues)
+  const shown = options.all ? unique : unique.slice(0, MAX_OCCURRENCES)
+  shown.forEach(render)
+  const hidden = unique.length - shown.length
+  if (hidden > 0) {
+    console.log(`    ${GRAY}↳ and ${hidden} more ${plural(hidden, 'occurrence')} of the same issue · run with --all to list them${RESET}`)
+  }
 }
 
-// Notice for affected files cut from a best-practice / page-level rule — only when something was cut.
-function printFileCut(hidden: number): void {
-  if (hidden <= 0) return
-  console.log(`      ${GRAY}↳ and ${hidden} more file${hidden > 1 ? 's' : ''} · run with --all to list them${RESET}`)
+// Affected files of a best-practice / page-level rule: the first MAX_OCCURRENCES (all with
+// --all or --verbose), then a notice naming --all whenever some were cut.
+function printFileList(files: string[], options: PrintOptions): void {
+  const shown = options.all || options.verbose ? files : files.slice(0, MAX_OCCURRENCES)
+  for (const file of shown) {
+    console.log(`      ${GRAY}↳${RESET} ${CYAN}${file}${RESET}`)
+  }
+  const hidden = files.length - shown.length
+  if (hidden > 0) {
+    console.log(`      ${GRAY}↳ and ${hidden} more ${plural(hidden, 'file')} · run with --all to list them${RESET}`)
+  }
 }
 
 interface CriterionGroup {
