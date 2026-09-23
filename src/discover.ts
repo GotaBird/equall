@@ -88,7 +88,9 @@ export async function discoverFiles(
 
   const files: FileEntry[] = []
 
-  for (const relativePath of paths) {
+  // globby returns files in filesystem-walk order, which varies between runs and machines.
+  // Sort so every scan of the same tree sees the same files in the same order.
+  for (const relativePath of [...paths].sort()) {
     const absolutePath = resolve(rootPath, relativePath)
     try {
       const content = await readFile(absolutePath, 'utf-8')

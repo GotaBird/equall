@@ -201,8 +201,11 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
     list.map((issue) => ({ ...issue, fingerprint: fingerprint(issue) }))
 
   // Include ignored issues in output for transparency, update count
-  const activeFingerprinted = withFingerprint(counted)
-  result.issues = [...activeFingerprinted, ...withFingerprint(reviewOnly), ...withFingerprint(ignored)]
+  // Each group in a stable order (file, position, rule, identity), so the same code always
+  // produces the same JSON, whatever order the scanners finished in.
+  const inStableOrder = (list: EquallIssue[]) => withFingerprint(list).sort(compareIssues)
+  const activeFingerprinted = inStableOrder(counted)
+  result.issues = [...activeFingerprinted, ...inStableOrder(reviewOnly), ...inStableOrder(ignored)]
   result.summary.ignored_count = ignored.length
 
   // 10. Attach the honest coverage report computed above.
@@ -225,7 +228,8 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
   result.confidence_flags = computeConfidenceFlags(files)
 
   // 14. Non-fatal scan warnings — returned on the result, never written to the host's stderr.
-  result.diagnostics = diagnostics
+  // Scanners run in parallel and push as they go: sort for a stable output.
+  result.diagnostics = [...diagnostics].sort()
 
   // 15. File-based routes — the additive inventory detected in step 1b. Tri-state (see
   // ScanResult.routes): absent when detection was not attempted (in-memory input), []
@@ -234,6 +238,15 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
   if (detection) result.routes = detection.routes
 
   return result
+}
+
+// Stable order for issues: file, line, column, rule, then fingerprint as the final tiebreak.
+function compareIssues(a: EquallIssue, b: EquallIssue): number {
+  return a.file_path.localeCompare(b.file_path)
+    || (a.line ?? -1) - (b.line ?? -1)
+    || (a.column ?? -1) - (b.column ?? -1)
+    || a.scanner_rule_id.localeCompare(b.scanner_rule_id)
+    || (a.fingerprint ?? '').localeCompare(b.fingerprint ?? '')
 }
 
 // Scan a single in-memory file (T1.1). Thin wrapper over runScan's buffer path —

@@ -102,5 +102,7 @@ export function summarizeReclassified(reclassified: EquallIssue[]): Reclassified
     entry.count++
     if (!entry.files.includes(issue.file_path)) entry.files.push(issue.file_path)
   }
-  return [...byRule.values()].sort((a, b) => b.count - a.count)
+  // Deterministic output: files sorted, ties on count broken by rule id.
+  for (const entry of byRule.values()) entry.files.sort()
+  return [...byRule.values()].sort((a, b) => b.count - a.count || a.rule_id.localeCompare(b.rule_id))
 }
