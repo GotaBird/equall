@@ -163,6 +163,13 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
   // 6. Apply equall-ignore comments
   const { active, ignored } = applyIgnoreComments(kept, files)
 
+  // 6b. Review-only findings (static analysis cannot confirm them — see axe-scanner) are
+  // reported but never counted: they stay out of the score, the summary counts and the
+  // conformance failures. Split AFTER dedup and ignores, so which issue survives and what it
+  // is called (its fingerprint) is exactly what it would have been without the flag.
+  const counted = active.filter((i) => !i.review_only)
+  const reviewOnly = active.filter((i) => i.review_only)
+
   // 7. Merge coverage from all active scanners.
   // criteria_covered is the CAPABLE union — it still feeds POUR scoring in score.ts and
   // is stored as-is; never route honest coverage into the score.
@@ -180,10 +187,10 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
   coverage.reclassified = summarizeReclassified(reclassified)
   const exercised = honestTestedCriteria(coverage, coverage.reclassified)
 
-  // 8. Compute score (only active issues affect scoring). `exercised` drives the honest
+  // 8. Compute score (only counted issues affect scoring: not ignored, not review-only). `exercised` drives the honest
   // criteria_tested and the POUR n/a gating; `criteriaCovered` stays the stored capable union.
   const durationMs = Date.now() - startTime
-  const result = computeScanResult(active, files.length, scannersUsed, durationMs, scanOptions.wcag_level, criteriaCovered, criteriaTotal, exercised)
+  const result = computeScanResult(counted, files.length, scannersUsed, durationMs, scanOptions.wcag_level, criteriaCovered, criteriaTotal, exercised)
 
   // 9. Attach stable fingerprints — identity for diff-aware scanning.
   // Metadata only: does not affect scoring (computed above from `active`).
@@ -191,8 +198,8 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
     list.map((issue) => ({ ...issue, fingerprint: fingerprint(issue) }))
 
   // Include ignored issues in output for transparency, update count
-  const activeFingerprinted = withFingerprint(active)
-  result.issues = [...activeFingerprinted, ...withFingerprint(ignored)]
+  const activeFingerprinted = withFingerprint(counted)
+  result.issues = [...activeFingerprinted, ...withFingerprint(reviewOnly), ...withFingerprint(ignored)]
   result.summary.ignored_count = ignored.length
 
   // 10. Attach the honest coverage report computed above.

@@ -9,9 +9,53 @@ import type {
   WcagLevel,
   FileType,
 } from '../types.js'
-import { extractHtml, wrapFragment } from '../utils/html-extract.js'
+import { extractHtml, wrapFragment, DYNAMIC_MARKER_PREFIX, COMPONENT_MARKER } from '../utils/html-extract.js'
 
 const axe = (axeModule as any).default ?? axeModule
+
+// --- Review-only findings on component source -------------------------------------------
+// On jsx/tsx/vue/svelte/astro, axe runs on markup RECONSTRUCTED from source, not on a
+// rendered DOM. Measured on a labelled corpus and on real repositories, most of its findings
+// there are false positives: props spread into an element, children produced by .map(),
+// dynamic attributes the extractor has to drop, components read as native tags. Removing
+// those findings would also lose a few real defects that only axe sees, so instead they stay
+// in the output with their fingerprint unchanged, flagged `review_only` (never counted).
+// A finding stays COUNTED on component source only when both hold:
+//   - its rule is an element-level naming rule that the static markup can decide, and
+//   - the element carries nothing the static markup cannot see (see isUnverifiableElement).
+// Plain .html is never affected: it is real markup.
+const COMPONENT_COUNTED_RULES = new Set([
+  'image-alt', 'input-image-alt', 'area-alt', 'object-alt', 'svg-img-alt', 'role-img-alt',
+  'button-name', 'input-button-name', 'link-name', 'label', 'select-name', 'frame-title',
+  // Counted only when the <li> sits under a literal, non-component parent (checked below).
+  'listitem',
+])
+
+const REVIEW_REASON_RULE = 'This rule needs the rendered page; on component source axe only sees a reconstruction of the markup.'
+const REVIEW_REASON_ELEMENT = 'The element depends on props, runtime expressions or a component, which static analysis cannot see.'
+
+// Bindings that cannot change an element's accessible name, role or label association:
+// an element carrying only these is still fully decidable for the naming rules.
+const NAME_NEUTRAL_BINDING = /^(on[a-z].*|class|classname|style|key|ref|src|href|value|checked|disabled|v-model.*|v-for|v-if|v-else-if|v-else|v-show|v-on:.*|@.*|:class|:style|:key|:src|:href|:value|v-bind:class|v-bind:style|v-bind:key)$/
+
+// Does this element carry something the static markup cannot see? A component tag, a
+// neutralized dynamic attribute that could affect the name, a spread, a Vue binding, or the
+// residue of an expression the extractor could not neutralize.
+function isUnverifiableElement(el: Element): boolean {
+  for (const a of Array.from(el.attributes)) {
+    const n = a.name
+    if (n === COMPONENT_MARKER) return true
+    if (n.startsWith(DYNAMIC_MARKER_PREFIX)) {
+      if (!NAME_NEUTRAL_BINDING.test(n.slice(DYNAMIC_MARKER_PREFIX.length))) return true
+      continue
+    }
+    if (n.startsWith('{')) return true // spread {...props}
+    if (a.value.includes('{') || /[<>()'"`]/.test(n)) return true // unneutralized residue
+    if (NAME_NEUTRAL_BINDING.test(n)) continue
+    if (n.includes('{') || n.startsWith(':') || n.startsWith('v-bind')) return true
+  }
+  return false
+}
 
 // axe-core WCAG tag format: "wcag111" → "1.1.1", "wcag2a" → level A, etc.
 // WCAG criterion numbers follow the pattern: Principle(1-4).Guideline(single digit).SC(1+ digits)
@@ -150,10 +194,11 @@ export class AxeScanner implements ScannerAdapter {
 
     for (const file of scannableFiles) {
       try {
-        const html = extractHtml(file.content, file.type)
+        const componentSource = file.type !== 'html'
+        const html = extractHtml(file.content, file.type, { markUnverifiable: componentSource })
         if (!html.trim()) continue
 
-        const issues = await this.scanHtml(html, file.path, runTags)
+        const issues = await this.scanHtml(html, file.path, runTags, componentSource)
         allIssues.push(...issues)
       } catch (error) {
         // Skip files that fail to parse — don't crash the whole scan
@@ -168,7 +213,8 @@ export class AxeScanner implements ScannerAdapter {
   private async scanHtml(
     html: string,
     filePath: string,
-    runTags: string[]
+    runTags: string[],
+    componentSource = false
   ): Promise<EquallIssue[]> {
     // Wrap fragment in a basic HTML document if needed
     const fullHtml = wrapFragment(html)
@@ -190,6 +236,20 @@ export class AxeScanner implements ScannerAdapter {
     try {
       const document = dom.window.document
 
+      // Component source: note the elements the static markup cannot fully see, then remove
+      // every marker so the DOM axe inspects (and so every snippet and fingerprint) is exactly
+      // the unmarked extraction.
+      const unverifiable = new Set<Element>()
+      if (componentSource) {
+        for (const el of Array.from(document.querySelectorAll('*'))) {
+          // <slot>: the content (and so the accessible name) is supplied by the caller.
+          if (isUnverifiableElement(el) || el.querySelector('slot')) unverifiable.add(el)
+          for (const a of Array.from(el.attributes)) {
+            if (a.name === COMPONENT_MARKER || a.name.startsWith(DYNAMIC_MARKER_PREFIX)) el.removeAttribute(a.name)
+          }
+        }
+      }
+
       const results = await axe.run(document.documentElement, {
         runOnly: {
           type: 'tag',
@@ -205,6 +265,9 @@ export class AxeScanner implements ScannerAdapter {
         const derivedPour = pour ?? (criteria[0] ? pourFromCriterion(criteria[0]) : null)
 
         for (const node of violation.nodes) {
+          const reviewReason = componentSource
+            ? componentReviewReason(violation.id, node, document, unverifiable)
+            : null
           issues.push({
             scanner: 'axe-core',
             scanner_rule_id: violation.id,
@@ -219,6 +282,7 @@ export class AxeScanner implements ScannerAdapter {
             message: `${violation.help} (${violation.id})`,
             help_url: violation.helpUrl ?? null,
             suggestion: node.failureSummary ?? null,
+            ...(reviewReason ? { review_only: true, review_reason: reviewReason } : {}),
           })
         }
       }
@@ -229,6 +293,24 @@ export class AxeScanner implements ScannerAdapter {
       console.error = originalConsoleError
     }
   }
+}
+
+// Why a finding on component source cannot be confirmed statically, or null when it can.
+function componentReviewReason(
+  ruleId: string,
+  node: { target?: unknown[] },
+  document: Document,
+  unverifiable: Set<Element>,
+): string | null {
+  if (!COMPONENT_COUNTED_RULES.has(ruleId)) return REVIEW_REASON_RULE
+  const selector = node.target?.[0]
+  const el = typeof selector === 'string' ? document.querySelector(selector) : null
+  if (el && unverifiable.has(el)) return REVIEW_REASON_ELEMENT
+  if (ruleId === 'listitem') {
+    const parent = el?.parentElement
+    if (!parent || parent.tagName === 'BODY' || unverifiable.has(parent)) return REVIEW_REASON_ELEMENT
+  }
+  return null
 }
 
 // Build the tag filter for axe.run based on target WCAG level

@@ -26,6 +26,14 @@ export interface EquallIssue {
   // Suppression
   ignored?: boolean                  // true if suppressed by equall-ignore comment
 
+  // Review-only: a finding static analysis cannot confirm (e.g. axe on markup reconstructed
+  // from component source, on an element whose name or content depends on props, runtime
+  // expressions or a component). Reported with its fingerprint unchanged for a human or agent
+  // to check, but never counted as a failure: excluded from the score, the conformance
+  // verdicts and the violation counts. Absent = a counted finding.
+  review_only?: boolean
+  review_reason?: string             // why it could not be confirmed (plain language)
+
   // Stable identity — survives reformatting; see utils/fingerprint.ts.
   // Populated by runScan() after dedup; absent on raw scanner output.
   // Hash of file_path + scanner_rule_id + sorted criteria + normalized html_snippet.
