@@ -1,0 +1,9 @@
+---
+const tabs = ['Overview', 'Specs']
+const active = 0
+---
+<div role="tablist" aria-label="Product">
+  {tabs.map((tab, i) => (
+    <button role="tab" aria-selected={i === active ? 'true' : 'false'} id={`tab-${i}`}>{tab}</button>
+  ))}
+</div>

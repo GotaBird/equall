@@ -1,0 +1,19 @@
+export function PlansTable() {
+  return (
+    <table>
+      <caption>Plans</caption>
+      <thead>
+        <tr>
+          <th scope="col">Plan</th>
+          <th scope="col">Price</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th scope="row">Basic</th>
+          <td>5 EUR</td>
+        </tr>
+      </tbody>
+    </table>
+  )
+}

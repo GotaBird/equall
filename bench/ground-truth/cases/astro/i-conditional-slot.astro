@@ -1,0 +1,7 @@
+---
+const { showBanner } = Astro.props
+---
+<div>
+  {showBanner && <p class="banner">Free shipping this week.</p>}
+  <slot name="actions" />
+</div>

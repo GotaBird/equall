@@ -1,0 +1,4812 @@
+{
+  "summary": {
+    "generated_at": "2026-09-23T20:30:58.697Z",
+    "engine_version": "0.2.3",
+    "target": "src",
+    "scan_level": "AA",
+    "runtime_seconds": 3.2,
+    "cases": {
+      "total": 129,
+      "violation": 48,
+      "clean": 36,
+      "indeterminate": 45
+    },
+    "findings": {
+      "total": 90,
+      "tp": 44,
+      "fp": 41,
+      "fp_wcag": 41,
+      "fp_best_practice": 0,
+      "duplicate": 3,
+      "acceptable": 2
+    },
+    "expected_defects": 49,
+    "false_negatives": 5,
+    "precision_all": 0.5176470588235295,
+    "precision_wcag_only": 0.5176470588235295,
+    "recall": 0.8979591836734694,
+    "cases_with_fp": {
+      "clean": 5,
+      "indeterminate": 29,
+      "violation": 3
+    },
+    "cases_fully_correct": 87
+  },
+  "cases": [
+    {
+      "file": "astro/c-astro-image.astro",
+      "type": "astro",
+      "kind": "clean",
+      "cause": "custom-component",
+      "note": "astro:assets <Image> with alt.",
+      "issues": [],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<section>\n  <Image alt=\"A lighthouse at dusk\" />\n  <p>Welcome aboard.</p>\n</section>"
+    },
+    {
+      "file": "astro/c-blog-prose.astro",
+      "type": "astro",
+      "kind": "clean",
+      "note": "Plain short-sentence prose (readability control).",
+      "issues": [],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<article>\n  <h1>How we rebuilt our search</h1>\n  <p>Last spring our search page was slow. People typed a word and waited. Some gave up. We knew we had to fix it, so we sat down and looked at every step between the key press and the result list.</p>\n  <p>The first thing we found was simple. We sent a request on every key press. We now wait a short moment before we send it. That one change cut the load on our servers in half.</p>\n</article>"
+    },
+    {
+      "file": "astro/c-card-props.astro",
+      "type": "astro",
+      "kind": "clean",
+      "note": "Card with text-node expressions.",
+      "issues": [],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<article class=\"card\">\n  <h2>{title}</h2>\n  <p>{body}</p>\n  <a href=\"/blog\">Read more articles</a>\n</article>"
+    },
+    {
+      "file": "astro/c-label-for-literal.astro",
+      "type": "astro",
+      "kind": "clean",
+      "cause": "jsx-attr-name",
+      "note": "Literal for/id. jsx-a11y rules look for the React prop htmlFor; Astro templates use the HTML attribute for.",
+      "issues": [
+        {
+          "verdict": "FP",
+          "rule": "jsx-a11y/label-has-associated-control",
+          "scanner": "eslint-jsx-a11y",
+          "wcag": [
+            "1.3.1"
+          ],
+          "best_practice": false,
+          "severity": "serious",
+          "line": 4,
+          "snippet": "<label for=\"newsletter-email\">",
+          "message": "A form label must be associated with a control. (jsx-a11y/label-has-associated-control)",
+          "cause": "jsx-attr-name"
+        },
+        {
+          "verdict": "FP",
+          "rule": "jsx-a11y/label-has-associated-control",
+          "scanner": "eslint-jsx-a11y",
+          "wcag": [
+            "3.3.2"
+          ],
+          "best_practice": false,
+          "severity": "serious",
+          "line": 4,
+          "snippet": "<label for=\"newsletter-email\">",
+          "message": "A form label must be associated with a control. (jsx-a11y/label-has-associated-control)",
+          "cause": "jsx-attr-name"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "region",
+          "count": 2
+        },
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<form>\n  <label for=\"newsletter-email\">Email</label>\n  <input id=\"newsletter-email\" type=\"email\" name=\"email\">\n  <button type=\"submit\">Subscribe</button>\n</form>"
+    },
+    {
+      "file": "astro/c-layout-lang.astro",
+      "type": "astro",
+      "kind": "clean",
+      "note": "Complete layout with lang, title (expression), main, slot.",
+      "issues": [],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [],
+      "warnings": [],
+      "extracted_html_for_axe": "<html lang=\"en\">\n  <head>\n    <meta charset=\"utf-8\" />\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n    <title>{title}</title>\n  </head>\n  <body>\n    <main>\n      <slot />\n    </main>\n  </body>\n</html>"
+    },
+    {
+      "file": "astro/i-conditional-slot.astro",
+      "type": "astro",
+      "kind": "indeterminate",
+      "cause": "conditional",
+      "note": "Conditional paragraph and named slot.",
+      "issues": [],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<div>\n  {showBanner && <p class=\"banner\">Free shipping this week.</p>}\n  <slot name=\"actions\" />\n</div>"
+    },
+    {
+      "file": "astro/i-custom-components.astro",
+      "type": "astro",
+      "kind": "indeterminate",
+      "cause": "custom-component",
+      "note": "Page composed only of components.",
+      "issues": [],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<Layout title=\"Home\">\n  <Hero heading=\"Welcome\" />\n  <Card title=\"Docs\" href=\"/docs\" />\n  <Card title=\"Blog\" href=\"/blog\" />\n</Layout>"
+    },
+    {
+      "file": "astro/i-dynamic-img-alt.astro",
+      "type": "astro",
+      "kind": "indeterminate",
+      "cause": "dynamic-attr",
+      "note": "img alt={alt}.",
+      "issues": [],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<figure>\n  <img alt=\"…\" loading=\"lazy\" />\n</figure>"
+    },
+    {
+      "file": "astro/i-input-spread-props.astro",
+      "type": "astro",
+      "kind": "indeterminate",
+      "cause": "props-spread",
+      "note": "Input with {...rest}.",
+      "issues": [
+        {
+          "verdict": "FP",
+          "rule": "label",
+          "scanner": "axe-core",
+          "wcag": [
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "critical",
+          "line": null,
+          "snippet": "<input {...rest}=\"\">",
+          "message": "Form elements must have labels (label)",
+          "cause": "props-spread"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<input {...rest} />"
+    },
+    {
+      "file": "astro/i-label-dynamic-for.astro",
+      "type": "astro",
+      "kind": "indeterminate",
+      "cause": "dynamic-attr",
+      "note": "label for={id} + input id={id}.",
+      "issues": [
+        {
+          "verdict": "FP",
+          "rule": "label",
+          "scanner": "axe-core",
+          "wcag": [
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "critical",
+          "line": null,
+          "snippet": "<input type=\"text\">",
+          "message": "Form elements must have labels (label)",
+          "cause": "dynamic-attr"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<div class=\"field\">\n  <label>{label}</label>\n  <input type=\"text\">\n</div>"
+    },
+    {
+      "file": "astro/i-link-dynamic-href-aria-label.astro",
+      "type": "astro",
+      "kind": "indeterminate",
+      "cause": "dynamic-attr",
+      "note": "<a href={repoUrl} aria-label> with icon component.",
+      "issues": [
+        {
+          "verdict": "FP",
+          "rule": "aria-prohibited-attr",
+          "scanner": "axe-core",
+          "wcag": [
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "serious",
+          "line": null,
+          "snippet": "<a aria-label=\"GitHub repository\" class=\"social\">\n  <githubicon>\n</githubicon></a>",
+          "message": "Elements must only use permitted ARIA attributes (aria-prohibited-attr)",
+          "cause": "dynamic-attr"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<a aria-label=\"GitHub repository\" class=\"social\">\n  <GithubIcon />\n</a>"
+    },
+    {
+      "file": "astro/i-nav-map.astro",
+      "type": "astro",
+      "kind": "indeterminate",
+      "cause": "map-children",
+      "note": "Nav list from .map(), dynamic href/aria-current.",
+      "issues": [
+        {
+          "verdict": "FP",
+          "rule": "list",
+          "scanner": "axe-core",
+          "wcag": [
+            "1.3.1"
+          ],
+          "best_practice": false,
+          "severity": "serious",
+          "line": null,
+          "snippet": "<ul>\n    {links.map((link) =&gt; (\n      <li>\n        <a>{link.label}</a>\n      </li>\n    ))}\n  </ul>",
+          "message": "<ul> and <ol> must only directly contain <li>, <script> or <template> elements (list)",
+          "cause": "map-children"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<nav aria-label=\"Main\">\n  <ul>\n    {links.map((link) => (\n      <li>\n        <a>{link.label}</a>\n      </li>\n    ))}\n  </ul>\n</nav>"
+    },
+    {
+      "file": "astro/i-set-html.astro",
+      "type": "astro",
+      "kind": "indeterminate",
+      "cause": "custom-component",
+      "note": "Fragment set:html - content unknown.",
+      "issues": [],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<div class=\"prose\">\n  <Fragment />\n</div>"
+    },
+    {
+      "file": "astro/i-tabs-dynamic-selected.astro",
+      "type": "astro",
+      "kind": "indeterminate",
+      "cause": "dynamic-attr",
+      "note": "tablist from .map() with dynamic aria-selected.",
+      "issues": [],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<div role=\"tablist\" aria-label=\"Product\">\n  {tabs.map((tab, i) => (\n    <button role=\"tab\">{tab}</button>\n  ))}\n</div>"
+    },
+    {
+      "file": "astro/v-empty-link.astro",
+      "type": "astro",
+      "kind": "violation",
+      "note": "Link containing only an unlabelled svg.",
+      "issues": [
+        {
+          "verdict": "TP",
+          "rule": "link-name",
+          "scanner": "axe-core",
+          "wcag": [
+            "2.4.4",
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "serious",
+          "line": null,
+          "snippet": "<a href=\"https://github.com/example\"><svg width=\"20\" height=\"20\"><circle cx=\"10\" cy=\"10\" r=\"8\"></circle></svg></a>",
+          "message": "Links must have discernible text (link-name)",
+          "defect": "link-name"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {
+        "axe-core": {
+          "expected": 1,
+          "detected": 1
+        },
+        "eslint-jsx-a11y": {
+          "expected": 1,
+          "detected": 0
+        }
+      },
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<footer>\n  <a href=\"https://github.com/example\"><svg width=\"20\" height=\"20\"><circle cx=\"10\" cy=\"10\" r=\"8\" /></svg></a>\n</footer>"
+    },
+    {
+      "file": "astro/v-icon-button-no-name.astro",
+      "type": "astro",
+      "kind": "violation",
+      "note": "Icon-only button.",
+      "issues": [
+        {
+          "verdict": "TP",
+          "rule": "button-name",
+          "scanner": "axe-core",
+          "wcag": [
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "critical",
+          "line": null,
+          "snippet": "<button type=\"button\" class=\"menu-toggle\">\n  <svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\"><path d=\"M1 3h14M1 8h14M1 13h14\"></path></svg>\n</button>",
+          "message": "Buttons must have discernible text (button-name)",
+          "defect": "button-name"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {
+        "axe-core": {
+          "expected": 1,
+          "detected": 1
+        }
+      },
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<button type=\"button\" class=\"menu-toggle\">\n  <svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\"><path d=\"M1 3h14M1 8h14M1 13h14\" /></svg>\n</button>"
+    },
+    {
+      "file": "astro/v-img-no-alt.astro",
+      "type": "astro",
+      "kind": "violation",
+      "note": "Literal img without alt.",
+      "issues": [
+        {
+          "verdict": "TP",
+          "rule": "jsx-a11y/alt-text",
+          "scanner": "eslint-jsx-a11y",
+          "scanners": [
+            "eslint-jsx-a11y",
+            "axe-core"
+          ],
+          "wcag": [
+            "1.1.1"
+          ],
+          "best_practice": false,
+          "severity": "serious",
+          "line": 6,
+          "snippet": "<img src=\"/team.jpg\" width=\"640\" height=\"320\">",
+          "message": "img elements must have an alt prop, either with meaningful text, or an empty string for decorative images. (jsx-a11y/alt-text)",
+          "defect": "img-alt"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {
+        "axe-core": {
+          "expected": 1,
+          "detected": 1
+        },
+        "eslint-jsx-a11y": {
+          "expected": 1,
+          "detected": 1
+        }
+      },
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<section>\n  <h2>{title}</h2>\n  <img src=\"/team.jpg\" width=\"640\" height=\"320\">\n</section>"
+    },
+    {
+      "file": "astro/v-input-no-label.astro",
+      "type": "astro",
+      "kind": "violation",
+      "note": "Search input without label.",
+      "issues": [
+        {
+          "verdict": "TP",
+          "rule": "label",
+          "scanner": "axe-core",
+          "wcag": [
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "critical",
+          "line": null,
+          "snippet": "<input type=\"search\" name=\"q\">",
+          "message": "Form elements must have labels (label)",
+          "defect": "control-label"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {
+        "axe-core": {
+          "expected": 1,
+          "detected": 1
+        },
+        "eslint-jsx-a11y": {
+          "expected": 1,
+          "detected": 0
+        }
+      },
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<form action=\"/search\" method=\"get\">\n  <input type=\"search\" name=\"q\">\n  <button type=\"submit\">Search</button>\n</form>"
+    },
+    {
+      "file": "astro/v-layout-no-lang.astro",
+      "type": "astro",
+      "kind": "violation",
+      "note": "Layout with <html> and no lang. <title>{title}</title> is present.",
+      "issues": [
+        {
+          "verdict": "TP",
+          "rule": "jsx-a11y/html-has-lang",
+          "scanner": "eslint-jsx-a11y",
+          "scanners": [
+            "eslint-jsx-a11y",
+            "axe-core"
+          ],
+          "wcag": [
+            "3.1.1"
+          ],
+          "best_practice": false,
+          "severity": "serious",
+          "line": 4,
+          "snippet": "<html>",
+          "message": "<html> elements must have the lang prop. (jsx-a11y/html-has-lang)",
+          "defect": "html-lang"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {
+        "axe-core": {
+          "expected": 1,
+          "detected": 1
+        },
+        "eslint-jsx-a11y": {
+          "expected": 1,
+          "detected": 1
+        }
+      },
+      "reclassified": [],
+      "warnings": [],
+      "extracted_html_for_axe": "<html>\n  <head>\n    <meta charset=\"utf-8\" />\n    <title>{title}</title>\n  </head>\n  <body>\n    <slot />\n  </body>\n</html>"
+    },
+    {
+      "file": "html/c-data-table.html",
+      "type": "html",
+      "kind": "clean",
+      "note": "Table with caption and scoped headers.",
+      "issues": [],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<table>\n  <caption>Plans</caption>\n  <thead>\n    <tr><th scope=\"col\">Plan</th><th scope=\"col\">Price</th></tr>\n  </thead>\n  <tbody>\n    <tr><th scope=\"row\">Basic</th><td>5 EUR</td></tr>\n    <tr><th scope=\"row\">Pro</th><td>15 EUR</td></tr>\n  </tbody>\n</table>\n"
+    },
+    {
+      "file": "html/c-decorative-img.html",
+      "type": "html",
+      "kind": "clean",
+      "note": "alt=\"\" on a decorative image is correct.",
+      "issues": [],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<div class=\"card\">\n  <img src=\"/divider.svg\" alt=\"\">\n  <h3>Fast shipping</h3>\n  <p>Orders leave the warehouse within 24 hours.</p>\n</div>\n"
+    },
+    {
+      "file": "html/c-dialog.html",
+      "type": "html",
+      "kind": "clean",
+      "note": "Named modal dialog.",
+      "issues": [],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<div role=\"dialog\" aria-modal=\"true\" aria-labelledby=\"dlg-title\">\n  <h2 id=\"dlg-title\">Delete file?</h2>\n  <p>This cannot be undone.</p>\n  <button type=\"button\">Cancel</button>\n  <button type=\"button\">Delete</button>\n</div>\n"
+    },
+    {
+      "file": "html/c-full-page.html",
+      "type": "html",
+      "kind": "clean",
+      "note": "Correct complete document.",
+      "issues": [],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [],
+      "warnings": [],
+      "extracted_html_for_axe": "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"utf-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n    <title>Acme - Home</title>\n  </head>\n  <body>\n    <header>\n      <nav aria-label=\"Primary\">\n        <ul>\n          <li><a href=\"/\">Home</a></li>\n          <li><a href=\"/about\">About</a></li>\n        </ul>\n      </nav>\n    </header>\n    <main>\n      <h1>Welcome to Acme</h1>\n      <img src=\"/hero.jpg\" alt=\"Two people assembling a bookshelf\">\n      <form action=\"/subscribe\">\n        <label for=\"email\">Email</label>\n        <input id=\"email\" type=\"email\" name=\"email\" autocomplete=\"email\">\n        <button type=\"submit\">Subscribe</button>\n      </form>\n    </main>\n    <footer><p>Acme Inc.</p></footer>\n  </body>\n</html>\n"
+    },
+    {
+      "file": "html/c-icon-button-aria-label.html",
+      "type": "html",
+      "kind": "clean",
+      "note": "Icon button named by aria-label, svg aria-hidden.",
+      "issues": [],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<button type=\"button\" aria-label=\"Close dialog\">\n  <svg aria-hidden=\"true\" width=\"16\" height=\"16\" viewBox=\"0 0 16 16\"><path d=\"M2 2l12 12\"/></svg>\n</button>\n"
+    },
+    {
+      "file": "html/c-label-for-id.html",
+      "type": "html",
+      "kind": "clean",
+      "note": "label for/id association.",
+      "issues": [],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "region",
+          "count": 2
+        },
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<form>\n  <label for=\"name\">Full name</label>\n  <input id=\"name\" type=\"text\" name=\"name\">\n  <button type=\"submit\">Send</button>\n</form>\n"
+    },
+    {
+      "file": "html/c-labelledby-details.html",
+      "type": "html",
+      "kind": "clean",
+      "note": "aria-labelledby points to an existing id.",
+      "issues": [],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<section aria-labelledby=\"faq-title\">\n  <h2 id=\"faq-title\">FAQ</h2>\n  <details>\n    <summary>How do refunds work?</summary>\n    <p>Refunds are issued within five days.</p>\n  </details>\n</section>\n"
+    },
+    {
+      "file": "html/c-marketing-prose.html",
+      "type": "html",
+      "kind": "clean",
+      "cause": "aaa-at-aa",
+      "note": "Dense but ordinary marketing prose. 3.1.5 Reading Level is AAA; the scan targets AA, so any 3.1.5 report is out of scope for this target.",
+      "issues": [
+        {
+          "verdict": "acceptable",
+          "rule": "reading-level-high",
+          "scanner": "readability",
+          "wcag": [
+            "3.1.5"
+          ],
+          "best_practice": false,
+          "severity": "critical",
+          "line": null,
+          "snippet": null,
+          "message": "Reading level is too advanced (Median Grade 34.2). Text should ideally be readable by people with lower secondary education.",
+          "cause": "aaa-advisory"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<section>\n  <h2>Why teams choose us</h2>\n  <p>Our platform consolidates heterogeneous infrastructure telemetry into a unified observability layer, enabling organizations to operationalize reliability engineering practices, accelerate incident remediation, and substantially reduce the administrative overhead traditionally associated with distributed monitoring configurations across multiple environments.</p>\n  <p>Comprehensive integrations with containerization orchestrators and continuous deployment pipelines facilitate sophisticated correlation between deployment events and performance regressions.</p>\n</section>\n"
+    },
+    {
+      "file": "html/c-nav-landmarks-fragment.html",
+      "type": "html",
+      "kind": "clean",
+      "note": "Header fragment: named logo link (aria-label, decorative img alt=\"\"), named nav.",
+      "issues": [],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<header>\n  <a href=\"/\" aria-label=\"Acme home\"><img src=\"/logo.svg\" alt=\"\"></a>\n  <nav aria-label=\"Main\">\n    <ul>\n      <li><a href=\"/docs\">Docs</a></li>\n      <li><a href=\"/pricing\" aria-current=\"page\">Pricing</a></li>\n    </ul>\n  </nav>\n</header>\n"
+    },
+    {
+      "file": "html/c-two-similar-buttons.html",
+      "type": "html",
+      "kind": "clean",
+      "note": "Two named buttons with identical class prefixes (control for the dedup case).",
+      "issues": [],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<div class=\"pager\">\n  <button type=\"button\" class=\"btn btn-secondary btn-small pager-control pager-control-previous\">Previous page</button>\n  <button type=\"button\" class=\"btn btn-secondary btn-small pager-control pager-control-previous\">Next page</button>\n</div>\n"
+    },
+    {
+      "file": "html/c-wrapped-label.html",
+      "type": "html",
+      "kind": "clean",
+      "note": "Implicit label by wrapping.",
+      "issues": [],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<form>\n  <label>Phone <input type=\"tel\" name=\"phone\"></label>\n  <label><input type=\"checkbox\" name=\"terms\"> I accept the terms</label>\n</form>\n"
+    },
+    {
+      "file": "html/i-error-text-adjacent.html",
+      "type": "html",
+      "kind": "indeterminate",
+      "cause": "other",
+      "note": "aria-invalid=true with a visible text error right after the field. SC 3.3.1 requires the error to be identified and described in TEXT; programmatic association (aria-describedby) is not required by 3.3.1. Whether the visible text is shown for this field is a render-time fact.",
+      "issues": [
+        {
+          "verdict": "FP",
+          "rule": "aria-invalid-no-message",
+          "scanner": "error-identification",
+          "wcag": [
+            "3.3.1"
+          ],
+          "best_practice": false,
+          "severity": "moderate",
+          "line": null,
+          "snippet": "<input id=\"email2\" type=\"email\" aria-invalid=\"true\">",
+          "message": "Element with aria-invalid=\"true\" has no aria-errormessage or aria-describedby to describe the error",
+          "cause": "other"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<form>\n  <label for=\"email2\">Email</label>\n  <input id=\"email2\" type=\"email\" aria-invalid=\"true\">\n  <p class=\"error\">Error: enter an email address such as name@example.com.</p>\n</form>\n"
+    },
+    {
+      "file": "html/v-aria-attr-typo.html",
+      "type": "html",
+      "kind": "violation",
+      "note": "aria-lable is not an ARIA attribute (literal typo).",
+      "issues": [
+        {
+          "verdict": "TP",
+          "rule": "aria-valid-attr",
+          "scanner": "axe-core",
+          "wcag": [
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "critical",
+          "line": null,
+          "snippet": "<nav aria-lable=\"Primary\">\n  <ul>\n    <li><a href=\"/\">Home</a></li>\n    <li><a href=\"/blog\">Blog</a></li>\n  </ul>\n</nav>",
+          "message": "ARIA attributes must conform to valid names (aria-valid-attr)",
+          "defect": "aria-attr-name"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {
+        "axe-core": {
+          "expected": 1,
+          "detected": 1
+        }
+      },
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<nav aria-lable=\"Primary\">\n  <ul>\n    <li><a href=\"/\">Home</a></li>\n    <li><a href=\"/blog\">Blog</a></li>\n  </ul>\n</nav>\n"
+    },
+    {
+      "file": "html/v-aria-expanded-bad-value.html",
+      "type": "html",
+      "kind": "violation",
+      "note": "aria-expanded=yes is not a valid token.",
+      "issues": [
+        {
+          "verdict": "TP",
+          "rule": "aria-valid-attr-value",
+          "scanner": "axe-core",
+          "wcag": [
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "critical",
+          "line": null,
+          "snippet": "<button type=\"button\" aria-expanded=\"yes\" aria-controls=\"menu\">Menu</button>",
+          "message": "ARIA attributes must conform to valid values (aria-valid-attr-value)",
+          "defect": "aria-attr-value"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {
+        "axe-core": {
+          "expected": 1,
+          "detected": 1
+        }
+      },
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<button type=\"button\" aria-expanded=\"yes\" aria-controls=\"menu\">Menu</button>\n<ul id=\"menu\"><li><a href=\"/a\">A</a></li></ul>\n"
+    },
+    {
+      "file": "html/v-aria-hidden-focusable.html",
+      "type": "html",
+      "kind": "violation",
+      "cause": "axe-incomplete",
+      "note": "Focusable button hidden from AT.",
+      "issues": [],
+      "misses": [
+        {
+          "defect": "aria-hidden-focus",
+          "missing": 1,
+          "rules": [
+            "aria-hidden-focus"
+          ],
+          "eligible_scanners": [
+            "axe-core"
+          ],
+          "cause": "axe-incomplete",
+          "coverage_status": {
+            "4.1.2": "auto"
+          }
+        }
+      ],
+      "per_scanner_detection": {
+        "axe-core": {
+          "expected": 1,
+          "detected": 0
+        }
+      },
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<div>\n  <button type=\"button\" aria-hidden=\"true\">Close</button>\n</div>\n"
+    },
+    {
+      "file": "html/v-checkbox-role-missing-state.html",
+      "type": "html",
+      "kind": "violation",
+      "note": "role=checkbox without aria-checked, literal markup.",
+      "issues": [
+        {
+          "verdict": "TP",
+          "rule": "aria-required-attr",
+          "scanner": "axe-core",
+          "wcag": [
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "critical",
+          "line": null,
+          "snippet": "<div role=\"checkbox\" tabindex=\"0\">Accept the terms</div>",
+          "message": "Required ARIA attributes must be provided (aria-required-attr)",
+          "defect": "role-required-attr"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {
+        "axe-core": {
+          "expected": 1,
+          "detected": 1
+        }
+      },
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<div role=\"checkbox\" tabindex=\"0\">Accept the terms</div>\n"
+    },
+    {
+      "file": "html/v-empty-link.html",
+      "type": "html",
+      "kind": "violation",
+      "note": "Link whose only content is an unlabelled svg.",
+      "issues": [
+        {
+          "verdict": "TP",
+          "rule": "link-name",
+          "scanner": "axe-core",
+          "wcag": [
+            "2.4.4",
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "serious",
+          "line": null,
+          "snippet": "<a href=\"https://github.com/example\">\n    <svg width=\"20\" height=\"20\" viewBox=\"0 0 20 20\"><circle cx=\"10\" cy=\"10\" r=\"8\"></circle></svg>\n  </a>",
+          "message": "Links must have discernible text (link-name)",
+          "defect": "link-name"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {
+        "axe-core": {
+          "expected": 1,
+          "detected": 1
+        }
+      },
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<footer>\n  <a href=\"https://github.com/example\">\n    <svg width=\"20\" height=\"20\" viewBox=\"0 0 20 20\"><circle cx=\"10\" cy=\"10\" r=\"8\"/></svg>\n  </a>\n</footer>\n"
+    },
+    {
+      "file": "html/v-icon-button-no-name.html",
+      "type": "html",
+      "kind": "violation",
+      "note": "Icon-only button, svg has no title, no aria-label.",
+      "issues": [
+        {
+          "verdict": "TP",
+          "rule": "button-name",
+          "scanner": "axe-core",
+          "wcag": [
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "critical",
+          "line": null,
+          "snippet": "<button type=\"button\" class=\"icon-btn\">\n    <svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\"><path d=\"M2 2l12 12M14 2L2 14\"></path></svg>\n  </button>",
+          "message": "Buttons must have discernible text (button-name)",
+          "defect": "button-name"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {
+        "axe-core": {
+          "expected": 1,
+          "detected": 1
+        }
+      },
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<div class=\"toolbar\">\n  <button type=\"button\" class=\"icon-btn\">\n    <svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\"><path d=\"M2 2l12 12M14 2L2 14\"/></svg>\n  </button>\n</div>\n"
+    },
+    {
+      "file": "html/v-iframe-no-title.html",
+      "type": "html",
+      "kind": "violation",
+      "note": "iframe without title.",
+      "issues": [
+        {
+          "verdict": "TP",
+          "rule": "frame-title",
+          "scanner": "axe-core",
+          "wcag": [
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "serious",
+          "line": null,
+          "snippet": "<iframe src=\"https://www.youtube.com/embed/abc123\" width=\"560\" height=\"315\"></iframe>",
+          "message": "Frames must have an accessible name (frame-title)",
+          "defect": "frame-title"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {
+        "axe-core": {
+          "expected": 1,
+          "detected": 1
+        }
+      },
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<div class=\"video\">\n  <iframe src=\"https://www.youtube.com/embed/abc123\" width=\"560\" height=\"315\"></iframe>\n</div>\n"
+    },
+    {
+      "file": "html/v-img-no-alt.html",
+      "type": "html",
+      "kind": "violation",
+      "note": "img without any alt attribute.",
+      "issues": [
+        {
+          "verdict": "TP",
+          "rule": "image-alt",
+          "scanner": "axe-core",
+          "wcag": [
+            "1.1.1"
+          ],
+          "best_practice": false,
+          "severity": "critical",
+          "line": null,
+          "snippet": "<img src=\"/team.jpg\">",
+          "message": "Images must have alternative text (image-alt)",
+          "defect": "img-alt"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {
+        "axe-core": {
+          "expected": 1,
+          "detected": 1
+        }
+      },
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<section>\n  <h2>Our team</h2>\n  <img src=\"/team.jpg\">\n</section>\n"
+    },
+    {
+      "file": "html/v-input-image-no-alt.html",
+      "type": "html",
+      "kind": "violation",
+      "note": "input type=image without alt.",
+      "issues": [
+        {
+          "verdict": "TP",
+          "rule": "input-image-alt",
+          "scanner": "axe-core",
+          "wcag": [
+            "1.1.1",
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "critical",
+          "line": null,
+          "snippet": "<input type=\"image\" src=\"/go.png\">",
+          "message": "Image buttons must have alternative text (input-image-alt)",
+          "defect": "input-image-alt"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {
+        "axe-core": {
+          "expected": 1,
+          "detected": 1
+        }
+      },
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<form action=\"/go\">\n  <input type=\"image\" src=\"/go.png\">\n</form>\n"
+    },
+    {
+      "file": "html/v-input-no-label.html",
+      "type": "html",
+      "kind": "violation",
+      "note": "Text input with no label, aria-label, title or placeholder.",
+      "issues": [
+        {
+          "verdict": "TP",
+          "rule": "label",
+          "scanner": "axe-core",
+          "wcag": [
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "critical",
+          "line": null,
+          "snippet": "<input type=\"text\" name=\"q\">",
+          "message": "Form elements must have labels (label)",
+          "defect": "control-label"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {
+        "axe-core": {
+          "expected": 1,
+          "detected": 1
+        }
+      },
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<form action=\"/search\">\n  <input type=\"text\" name=\"q\">\n  <button type=\"submit\">Search</button>\n</form>\n"
+    },
+    {
+      "file": "html/v-invalid-role.html",
+      "type": "html",
+      "kind": "violation",
+      "note": "role=buton is not a valid role.",
+      "issues": [
+        {
+          "verdict": "TP",
+          "rule": "aria-roles",
+          "scanner": "axe-core",
+          "wcag": [
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "critical",
+          "line": null,
+          "snippet": "<div role=\"buton\" tabindex=\"0\">Save</div>",
+          "message": "ARIA roles used must conform to valid values (aria-roles)",
+          "defect": "role-invalid"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {
+        "axe-core": {
+          "expected": 1,
+          "detected": 1
+        }
+      },
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<div role=\"buton\" tabindex=\"0\">Save</div>\n"
+    },
+    {
+      "file": "html/v-list-invalid-child.html",
+      "type": "html",
+      "kind": "violation",
+      "note": "div as direct child of ul.",
+      "issues": [
+        {
+          "verdict": "TP",
+          "rule": "list",
+          "scanner": "axe-core",
+          "wcag": [
+            "1.3.1"
+          ],
+          "best_practice": false,
+          "severity": "serious",
+          "line": null,
+          "snippet": "<ul>\n  <div>First item</div>\n  <li>Second item</li>\n</ul>",
+          "message": "<ul> and <ol> must only directly contain <li>, <script> or <template> elements (list)",
+          "defect": "list-structure"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {
+        "axe-core": {
+          "expected": 1,
+          "detected": 1
+        }
+      },
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<ul>\n  <div>First item</div>\n  <li>Second item</li>\n</ul>\n"
+    },
+    {
+      "file": "html/v-marquee.html",
+      "type": "html",
+      "kind": "violation",
+      "note": "marquee: moving content without pause.",
+      "issues": [
+        {
+          "verdict": "TP",
+          "rule": "marquee",
+          "scanner": "axe-core",
+          "wcag": [
+            "2.2.2"
+          ],
+          "best_practice": false,
+          "severity": "serious",
+          "line": null,
+          "snippet": "<marquee>Big sale this week only!</marquee>",
+          "message": "<marquee> elements are deprecated and must not be used (marquee)",
+          "defect": "marquee"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {
+        "axe-core": {
+          "expected": 1,
+          "detected": 1
+        }
+      },
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<div>\n  <marquee>Big sale this week only!</marquee>\n</div>\n"
+    },
+    {
+      "file": "html/v-page-no-lang.html",
+      "type": "html",
+      "kind": "violation",
+      "note": "Complete document without lang.",
+      "issues": [
+        {
+          "verdict": "TP",
+          "rule": "html-has-lang",
+          "scanner": "axe-core",
+          "wcag": [
+            "3.1.1"
+          ],
+          "best_practice": false,
+          "severity": "serious",
+          "line": null,
+          "snippet": "<html><head>\n    <meta charset=\"utf-8\">\n    <title>Pricing</title>\n  </head>\n  <body>\n    <main>\n      <h1>Pricing</h1>\n      <p>Simple plans for everyone.</p>\n    </main>\n  \n\n</body></html>",
+          "message": "<html> element must have a lang attribute (html-has-lang)",
+          "defect": "html-lang"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {
+        "axe-core": {
+          "expected": 1,
+          "detected": 1
+        }
+      },
+      "reclassified": [],
+      "warnings": [],
+      "extracted_html_for_axe": "<!DOCTYPE html>\n<html>\n  <head>\n    <meta charset=\"utf-8\">\n    <title>Pricing</title>\n  </head>\n  <body>\n    <main>\n      <h1>Pricing</h1>\n      <p>Simple plans for everyone.</p>\n    </main>\n  </body>\n</html>\n"
+    },
+    {
+      "file": "html/v-page-no-title.html",
+      "type": "html",
+      "kind": "violation",
+      "note": "Complete document without <title>.",
+      "issues": [
+        {
+          "verdict": "TP",
+          "rule": "document-title",
+          "scanner": "axe-core",
+          "wcag": [
+            "2.4.2"
+          ],
+          "best_practice": false,
+          "severity": "serious",
+          "line": null,
+          "snippet": "<html lang=\"en\"><head>\n    <meta charset=\"utf-8\">\n  </head>\n  <body>\n    <main>\n      <h1>Contact</h1>\n      <p>Write to us.</p>\n    </main>\n  \n\n</body></html>",
+          "message": "Documents must have <title> element to aid in navigation (document-title)",
+          "defect": "doc-title"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {
+        "axe-core": {
+          "expected": 1,
+          "detected": 1
+        }
+      },
+      "reclassified": [],
+      "warnings": [],
+      "extracted_html_for_axe": "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"utf-8\">\n  </head>\n  <body>\n    <main>\n      <h1>Contact</h1>\n      <p>Write to us.</p>\n    </main>\n  </body>\n</html>\n"
+    },
+    {
+      "file": "html/v-positive-tabindex.html",
+      "type": "html",
+      "kind": "violation",
+      "note": "tabindex=3 breaks focus order (axe tags this best-practice; counted as expected either way).",
+      "issues": [
+        {
+          "verdict": "TP",
+          "rule": "tabindex",
+          "scanner": "axe-core",
+          "wcag": [],
+          "best_practice": true,
+          "severity": "serious",
+          "line": null,
+          "snippet": "<a href=\"/login\" tabindex=\"3\">Log in</a>",
+          "message": "Elements should not have tabindex greater than zero (tabindex)",
+          "defect": "positive-tabindex"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {
+        "axe-core": {
+          "expected": 1,
+          "detected": 1
+        }
+      },
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<div>\n  <a href=\"/login\" tabindex=\"3\">Log in</a>\n  <a href=\"/signup\">Sign up</a>\n</div>\n"
+    },
+    {
+      "file": "html/v-select-no-label.html",
+      "type": "html",
+      "kind": "violation",
+      "note": "select with no label.",
+      "issues": [
+        {
+          "verdict": "TP",
+          "rule": "select-name",
+          "scanner": "axe-core",
+          "wcag": [
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "critical",
+          "line": null,
+          "snippet": "<select name=\"country\">\n    <option value=\"fr\">France</option>\n    <option value=\"be\">Belgium</option>\n  </select>",
+          "message": "Select element must have an accessible name (select-name)",
+          "defect": "select-name"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {
+        "axe-core": {
+          "expected": 1,
+          "detected": 1
+        }
+      },
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<form>\n  <select name=\"country\">\n    <option value=\"fr\">France</option>\n    <option value=\"be\">Belgium</option>\n  </select>\n</form>\n"
+    },
+    {
+      "file": "html/v-two-unnamed-buttons-same-prefix.html",
+      "type": "html",
+      "kind": "violation",
+      "cause": "dedup",
+      "note": "Two DISTINCT unnamed buttons whose first 80 chars of markup are identical. Tests the dedup key.",
+      "issues": [
+        {
+          "verdict": "TP",
+          "rule": "button-name",
+          "scanner": "axe-core",
+          "wcag": [
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "critical",
+          "line": null,
+          "snippet": "<button type=\"button\" class=\"btn btn-secondary btn-small pager-control pager-control-prev-next\"><svg width=\"8\" height=\"8\"><path d=\"M6 0L2 4l4 4\"></path></svg></button>",
+          "message": "Buttons must have discernible text (button-name)",
+          "defect": "button-name"
+        }
+      ],
+      "misses": [
+        {
+          "defect": "button-name",
+          "missing": 1,
+          "rules": [
+            "button-name"
+          ],
+          "eligible_scanners": [
+            "axe-core"
+          ],
+          "cause": "dedup",
+          "coverage_status": {
+            "4.1.2": "auto"
+          }
+        }
+      ],
+      "per_scanner_detection": {
+        "axe-core": {
+          "expected": 2,
+          "detected": 1
+        }
+      },
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<div class=\"pager\">\n  <button type=\"button\" class=\"btn btn-secondary btn-small pager-control pager-control-prev-next\"><svg width=\"8\" height=\"8\"><path d=\"M6 0L2 4l4 4\"/></svg></button>\n  <button type=\"button\" class=\"btn btn-secondary btn-small pager-control pager-control-prev-next\"><svg width=\"8\" height=\"8\"><path d=\"M2 0l4 4-4 4\"/></svg></button>\n</div>\n"
+    },
+    {
+      "file": "html/v-viewport-no-zoom.html",
+      "type": "html",
+      "kind": "violation",
+      "note": "user-scalable=no / maximum-scale=1.",
+      "issues": [
+        {
+          "verdict": "TP",
+          "rule": "meta-viewport",
+          "scanner": "axe-core",
+          "wcag": [
+            "1.4.4"
+          ],
+          "best_practice": false,
+          "severity": "moderate",
+          "line": null,
+          "snippet": "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no\">",
+          "message": "Zooming and scaling must not be disabled (meta-viewport)",
+          "defect": "viewport-zoom"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {
+        "axe-core": {
+          "expected": 1,
+          "detected": 1
+        }
+      },
+      "reclassified": [],
+      "warnings": [],
+      "extracted_html_for_axe": "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"utf-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no\">\n    <title>App</title>\n  </head>\n  <body>\n    <main><h1>App</h1></main>\n  </body>\n</html>\n"
+    },
+    {
+      "file": "jsx/c-button-text.tsx",
+      "type": "tsx",
+      "kind": "clean",
+      "note": "Buttons with literal text.",
+      "issues": [],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<div className=\"flex justify-end gap-2\">\n      <button type=\"button\">Cancel</button>\n      <button type=\"submit\">Save changes</button>\n    </div>"
+    },
+    {
+      "file": "jsx/c-classname-clsx-object.tsx",
+      "type": "tsx",
+      "kind": "clean",
+      "cause": "classname",
+      "note": "className via clsx object with aria-selected: key.",
+      "issues": [],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<span\n      className={clsx('rounded-full px-2 text-xs', {\n        'bg-primary text-primary-foreground': selected,\n        'aria-selected:ring-2': !selected,\n      }"
+    },
+    {
+      "file": "jsx/c-classname-cn-multiline.tsx",
+      "type": "tsx",
+      "kind": "clean",
+      "cause": "classname",
+      "note": "Multi-line className={cn(...)} with Tailwind aria-*/data-* variants on a named button.",
+      "issues": [
+        {
+          "verdict": "FP",
+          "rule": "aria-valid-attr",
+          "scanner": "axe-core",
+          "wcag": [
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "critical",
+          "line": null,
+          "snippet": "<button type=\"submit\" classname=\"{cn(\" 'inline-flex=\"\" h-9=\"\" items-center=\"\" rounded-md=\"\" px-4=\"\" text-sm',=\"\" 'aria-invalid:border-destructive=\"\" aria-disabled:opacity-50=\"\" data-[state=\"open]:bg-a",
+          "message": "ARIA attributes must conform to valid names (aria-valid-attr)",
+          "cause": "classname"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<button\n      type=\"submit\"\n      className={cn(\n        'inline-flex h-9 items-center rounded-md px-4 text-sm',\n        'aria-invalid:border-destructive aria-disabled:opacity-50 data-[state=open]:bg-accent',\n        pending && 'opacity-70'"
+    },
+    {
+      "file": "jsx/c-classname-template-literal.tsx",
+      "type": "tsx",
+      "kind": "clean",
+      "cause": "classname",
+      "note": "className via template literal containing aria-[...] variant.",
+      "issues": [],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<a\n      href=\"/settings\"\n     \n    >\n      Settings\n    </a>"
+    },
+    {
+      "file": "jsx/c-comment-and-img-alt.tsx",
+      "type": "tsx",
+      "kind": "clean",
+      "note": "JSX comment + img with alt.",
+      "issues": [
+        {
+          "verdict": "FP",
+          "rule": "jsx-a11y/img-redundant-alt",
+          "scanner": "eslint-jsx-a11y",
+          "wcag": [
+            "1.1.1"
+          ],
+          "best_practice": false,
+          "severity": "serious",
+          "line": 5,
+          "snippet": "<img src=\"/me.jpg\" alt=\"Profile picture of Ada Lovelace\" width={32} height={32} />",
+          "message": "Redundant alt attribute. Screen-readers already announce `img` tags as an image. You don’t need to use the words `image`, `photo,` or `picture` (or any specified custom words) in the alt prop. (jsx-a11y/img-redundant-alt)",
+          "cause": "over-mapped-rule"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<div className=\"flex items-center gap-2\">\n      {/* The user's profile picture */}\n      <img src=\"/me.jpg\" alt=\"Profile picture of Ada Lovelace\" />\n      <span>Ada Lovelace</span>\n    </div>"
+    },
+    {
+      "file": "jsx/c-fragment-heading.tsx",
+      "type": "tsx",
+      "kind": "clean",
+      "note": "Fragment <>...</> with h1 + p.",
+      "issues": [],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "region",
+          "count": 2
+        },
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<>\n      <h1 className=\"text-4xl font-bold\">Ship accessible UI</h1>\n      <p className=\"text-muted-foreground\">Catch issues while you write code.</p>\n    </>"
+    },
+    {
+      "file": "jsx/c-generic-arrow-component.tsx",
+      "type": "tsx",
+      "kind": "clean",
+      "note": "Generic arrow component, text-only output.",
+      "issues": [],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<p>\n      {label}: {count}\n    </p>"
+    },
+    {
+      "file": "jsx/c-htmlfor-literal.tsx",
+      "type": "tsx",
+      "kind": "clean",
+      "cause": "jsx-attr-name",
+      "note": "label htmlFor=\"email\" + input id=\"email\": correct association in React.",
+      "issues": [],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [],
+      "warnings": [
+        "[axe-core] Skipped jsx/c-htmlfor-literal.tsx: Cannot read properties of undefined (reading 'htmlfor=\"email\"')"
+      ],
+      "extracted_html_for_axe": "<div className=\"grid gap-1\">\n      <label htmlFor=\"email\">Email</label>\n      <input id=\"email\" type=\"email\" name=\"email\" autoComplete=\"email\" />\n    </div>"
+    },
+    {
+      "file": "jsx/c-icon-button-aria-label.tsx",
+      "type": "tsx",
+      "kind": "clean",
+      "note": "Literal aria-label.",
+      "issues": [],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<button type=\"button\" aria-label=\"Close dialog\">\n      <svg aria-hidden=\"true\" width=\"16\" height=\"16\" viewBox=\"0 0 16 16\">\n        <path d=\"M2 2l12 12\" />\n      </svg>\n    </button>"
+    },
+    {
+      "file": "jsx/c-root-layout-lang.tsx",
+      "type": "tsx",
+      "kind": "clean",
+      "cause": "framework-injected",
+      "note": "Root layout with lang; title comes from Next `metadata`.",
+      "issues": [
+        {
+          "verdict": "FP",
+          "rule": "document-title",
+          "scanner": "axe-core",
+          "wcag": [
+            "2.4.2"
+          ],
+          "best_practice": false,
+          "severity": "serious",
+          "line": null,
+          "snippet": "<html lang=\"en\"><head></head><body classname=\"min-h-screen antialiased\">{children}\n    </body></html>",
+          "message": "Documents must have <title> element to aid in navigation (document-title)",
+          "cause": "framework-injected"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [],
+      "warnings": [],
+      "extracted_html_for_axe": "<html lang=\"en\">\n      <body className=\"min-h-screen antialiased\">{children}</body>\n    </html>"
+    },
+    {
+      "file": "jsx/c-self-closing-div.tsx",
+      "type": "tsx",
+      "kind": "clean",
+      "cause": "other",
+      "note": "Self-closing <div /> (valid JSX, not valid HTML) before a list.",
+      "issues": [],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<section>\n      <div className=\"h-px w-full bg-border\" />\n      <ul>\n        <li>One</li>\n        <li>Two</li>\n      </ul>\n    </section>"
+    },
+    {
+      "file": "jsx/c-single-line-return.tsx",
+      "type": "tsx",
+      "kind": "clean",
+      "note": "Single-line return.",
+      "issues": [],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<span className=\"badge\">New</span>"
+    },
+    {
+      "file": "jsx/c-sr-only-text.tsx",
+      "type": "tsx",
+      "kind": "clean",
+      "note": "Visually hidden text names the button.",
+      "issues": [],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<button type=\"button\" className=\"relative p-2\">\n      <svg aria-hidden=\"true\" width=\"20\" height=\"20\" viewBox=\"0 0 20 20\">\n        <circle cx=\"10\" cy=\"10\" r=\"8\" />\n      </svg>\n      <span className=\"sr-only\">Open cart</span>\n    </button>"
+    },
+    {
+      "file": "jsx/c-style-object.tsx",
+      "type": "tsx",
+      "kind": "clean",
+      "cause": "dynamic-attr",
+      "note": "Named progressbar; aria-value* given as expressions {0} {100} {value}, style object.",
+      "issues": [
+        {
+          "verdict": "FP",
+          "rule": "jsx-a11y/prefer-tag-over-role",
+          "scanner": "eslint-jsx-a11y",
+          "wcag": [
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "serious",
+          "line": 3,
+          "snippet": "<div       role=\"progressbar\"       aria-label=\"Upload progress\"       aria-valuemin={0}       aria-valuemax={100}       aria-valuenow={value}       style={{ width: `${value}%` }}       className=\"h-2",
+          "message": "Use <progress> instead of the \"progressbar\" role to ensure accessibility across all devices. (jsx-a11y/prefer-tag-over-role)",
+          "cause": "over-mapped-rule"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<div\n      role=\"progressbar\"\n      aria-label=\"Upload progress\"\n     \n     \n     \n      style={{ width: `${value}%` }}\n      className=\"h-2 bg-primary\"\n    />"
+    },
+    {
+      "file": "jsx/c-table.tsx",
+      "type": "tsx",
+      "kind": "clean",
+      "note": "Correct table.",
+      "issues": [],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<table>\n      <caption>Plans</caption>\n      <thead>\n        <tr>\n          <th scope=\"col\">Plan</th>\n          <th scope=\"col\">Price</th>\n        </tr>\n      </thead>\n      <tbody>\n        <tr>\n          <th scope=\"row\">Basic</th>\n          <td>5 EUR</td>\n        </tr>\n      </tbody>\n    </table>"
+    },
+    {
+      "file": "jsx/c-wrapped-label.tsx",
+      "type": "tsx",
+      "kind": "clean",
+      "note": "Input wrapped in its label.",
+      "issues": [],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<label className=\"flex items-center gap-2\">\n      <input type=\"checkbox\" name=\"terms\" />\n      I accept the terms\n    </label>"
+    },
+    {
+      "file": "jsx/i-anchor-hash-onclick.tsx",
+      "type": "tsx",
+      "kind": "indeterminate",
+      "cause": "over-mapped-rule",
+      "note": "<a href=\"#\" onClick>: poor practice (should be a button) but keyboard-operable and named; not a certain 2.4.4 failure.",
+      "issues": [
+        {
+          "verdict": "FP",
+          "rule": "jsx-a11y/anchor-is-valid",
+          "scanner": "eslint-jsx-a11y",
+          "wcag": [
+            "2.4.4"
+          ],
+          "best_practice": false,
+          "severity": "serious",
+          "line": 3,
+          "snippet": "<a       href=\"#\"       onClick={(e) => {         e.preventDefault()         window.scrollTo({ top: 0 })       }}     >",
+          "message": "Anchor used as a button. Anchors are primarily expected to navigate. Use the button element instead. Learn more: https://github.com/jsx-eslint/eslint-plugin-jsx-a11y/blob/HEAD/docs/rules/anchor-is-valid.md (jsx-a11y/anchor-is-valid)",
+          "cause": "over-mapped-rule"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<a\n      href=\"#\"\n      onClick={(e) => {\n        e.preventDefault("
+    },
+    {
+      "file": "jsx/i-anchor-spread.tsx",
+      "type": "tsx",
+      "kind": "indeterminate",
+      "cause": "props-spread",
+      "note": "Anchor whose href/children come via {...props}.",
+      "issues": [
+        {
+          "verdict": "FP",
+          "rule": "jsx-a11y/anchor-has-content",
+          "scanner": "eslint-jsx-a11y",
+          "wcag": [
+            "2.4.4",
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "serious",
+          "line": 5,
+          "snippet": "<a className=\"underline underline-offset-4\" {...props} />",
+          "message": "Anchors must have content and the content must be accessible by a screen reader. (jsx-a11y/anchor-has-content)",
+          "cause": "props-spread"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<a className=\"underline underline-offset-4\" {...props} />"
+    },
+    {
+      "file": "jsx/i-async-server-page.tsx",
+      "type": "tsx",
+      "kind": "indeterminate",
+      "cause": "map-children",
+      "note": "Next.js async server page, list from .map() with template-literal href.",
+      "issues": [
+        {
+          "verdict": "FP",
+          "rule": "list",
+          "scanner": "axe-core",
+          "wcag": [
+            "1.3.1"
+          ],
+          "best_practice": false,
+          "severity": "serious",
+          "line": null,
+          "snippet": "<ul>\n        {posts.map((post) =&gt; (\n          <li>\n            <a>{post.title}</a>\n          </li>\n        )\n    \n  </ul>",
+          "message": "<ul> and <ol> must only directly contain <li>, <script> or <template> elements (list)",
+          "cause": "map-children"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<main>\n      <h1>Blog</h1>\n      <ul>\n        {posts.map((post) => (\n          <li>\n            <a>{post.title}</a>\n          </li>\n        )"
+    },
+    {
+      "file": "jsx/i-autofocus.tsx",
+      "type": "tsx",
+      "kind": "indeterminate",
+      "cause": "over-mapped-rule",
+      "note": "autoFocus in a command-palette search: not a WCAG failure per se (no SC forbids autofocus; 2.4.3/3.2.1 are only failed by specific effects).",
+      "issues": [
+        {
+          "verdict": "FP",
+          "rule": "label",
+          "scanner": "axe-core",
+          "wcag": [
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "critical",
+          "line": null,
+          "snippet": "<input id=\"cmdk\" type=\"search\" autofocus=\"\">",
+          "message": "Form elements must have labels (label)",
+          "cause": "jsx-attr-name"
+        },
+        {
+          "verdict": "FP",
+          "rule": "jsx-a11y/no-autofocus",
+          "scanner": "eslint-jsx-a11y",
+          "wcag": [
+            "2.4.3"
+          ],
+          "best_practice": false,
+          "severity": "serious",
+          "line": 5,
+          "snippet": "autoFocus",
+          "message": "The autoFocus prop should not be used, as it can reduce usability and accessibility for users. (jsx-a11y/no-autofocus)",
+          "cause": "over-mapped-rule"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<div role=\"search\">\n      <label htmlFor=\"cmdk\">Search commands</label>\n      <input id=\"cmdk\" type=\"search\" autoFocus />\n    </div>"
+    },
+    {
+      "file": "jsx/i-conditional-error.tsx",
+      "type": "tsx",
+      "kind": "indeterminate",
+      "cause": "conditional",
+      "note": "Conditional error message with dynamic aria-invalid/aria-describedby.",
+      "issues": [
+        {
+          "verdict": "FP",
+          "rule": "label",
+          "scanner": "axe-core",
+          "wcag": [
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "critical",
+          "line": null,
+          "snippet": "<input id=\"signup-email\" type=\"email\">",
+          "message": "Form elements must have labels (label)",
+          "cause": "jsx-attr-name"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<div className=\"grid gap-1\">\n      <label htmlFor=\"signup-email\">Email</label>\n      <input\n        id=\"signup-email\"\n        type=\"email\"\n       \n       \n      />\n      {error && (\n        <p id=\"signup-email-error\" className=\"text-destructive text-sm\">\n          {error}\n        </p>"
+    },
+    {
+      "file": "jsx/i-custom-components-form.tsx",
+      "type": "tsx",
+      "kind": "indeterminate",
+      "cause": "custom-component",
+      "note": "shadcn Label/Input/Select components.",
+      "issues": [
+        {
+          "verdict": "FP",
+          "rule": "label",
+          "scanner": "axe-core",
+          "wcag": [
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "critical",
+          "line": null,
+          "snippet": "<input id=\"display-name\" name=\"displayName\">",
+          "message": "Form elements must have labels (label)",
+          "cause": "custom-component"
+        },
+        {
+          "verdict": "FP",
+          "rule": "select-name",
+          "scanner": "axe-core",
+          "wcag": [
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "critical",
+          "line": null,
+          "snippet": "<select name=\"role\">\n        \n          \n        \n        \n          Admin\n          Member\n        \n      </select>",
+          "message": "Select element must have an accessible name (select-name)",
+          "cause": "custom-component"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<form className=\"grid gap-4\">\n      <Label htmlFor=\"display-name\">Display name</Label>\n      <Input id=\"display-name\" name=\"displayName\" />\n      <Select name=\"role\">\n        <SelectTrigger aria-label=\"Role\">\n          <SelectValue placeholder=\"Pick a role\" />\n        </SelectTrigger>\n        <SelectContent>\n          <SelectItem value=\"admin\">Admin</SelectItem>\n          <SelectItem value=\"member\">Member</SelectItem>\n        </SelectContent>\n      </Select>\n    </form>"
+    },
+    {
+      "file": "jsx/i-custom-components-radix.tsx",
+      "type": "tsx",
+      "kind": "indeterminate",
+      "cause": "custom-component",
+      "note": "Radix DropdownMenu + shadcn Button: rendered DOM unknown statically (and the icon-only trigger may well be unnamed at runtime - but that is not provable from this file).",
+      "issues": [
+        {
+          "verdict": "FP",
+          "rule": "button-name",
+          "scanner": "axe-core",
+          "wcag": [
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "critical",
+          "line": null,
+          "snippet": "<button variant=\"ghost\" size=\"icon\">\n          <usericon>\n        </usericon></button>",
+          "message": "Buttons must have discernible text (button-name)",
+          "cause": "custom-component"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<DropdownMenu.Root>\n      <DropdownMenu.Trigger asChild>\n        <Button variant=\"ghost\" size=\"icon\">\n          <UserIcon />\n        </Button>\n      </DropdownMenu.Trigger>\n      <DropdownMenu.Content align=\"end\">\n        <DropdownMenu.Item>Profile</DropdownMenu.Item>\n        <DropdownMenu.Item>Sign out</DropdownMenu.Item>\n      </DropdownMenu.Content>\n    </DropdownMenu.Root>"
+    },
+    {
+      "file": "jsx/i-definition-list-map.tsx",
+      "type": "tsx",
+      "kind": "indeterminate",
+      "cause": "map-children",
+      "note": "dl whose dt/dd come from a child component in .map().",
+      "issues": [
+        {
+          "verdict": "FP",
+          "rule": "definition-list",
+          "scanner": "axe-core",
+          "wcag": [
+            "1.3.1"
+          ],
+          "best_practice": false,
+          "severity": "serious",
+          "line": null,
+          "snippet": "<dl classname=\"grid grid-cols-2 gap-2\">\n      {specs.map((spec) =&gt; (\n        <specrow>\n      )\n    \n  </specrow></dl>",
+          "message": "<dl> elements must only directly contain properly-ordered <dt> and <dd> groups, <script>, <template> or <div> elements (definition-list)",
+          "cause": "map-children"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<dl className=\"grid grid-cols-2 gap-2\">\n      {specs.map((spec) => (\n        <SpecRow />\n      )"
+    },
+    {
+      "file": "jsx/i-dynamic-aria-label-i18n.tsx",
+      "type": "tsx",
+      "kind": "indeterminate",
+      "cause": "i18n",
+      "note": "aria-label={t('close')}.",
+      "issues": [],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<button type=\"button\" aria-label={t('close'"
+    },
+    {
+      "file": "jsx/i-dynamic-htmlfor-id.tsx",
+      "type": "tsx",
+      "kind": "indeterminate",
+      "cause": "dynamic-attr",
+      "note": "useId(): htmlFor={id} + id={id}, associated at runtime.",
+      "issues": [
+        {
+          "verdict": "FP",
+          "rule": "label",
+          "scanner": "axe-core",
+          "wcag": [
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "critical",
+          "line": null,
+          "snippet": "<input type=\"text\" name=\"name\">",
+          "message": "Form elements must have labels (label)",
+          "cause": "dynamic-attr"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<div className=\"grid gap-1\">\n      <label>Name</label>\n      <input type=\"text\" name=\"name\" />\n    </div>"
+    },
+    {
+      "file": "jsx/i-dynamic-img-alt.tsx",
+      "type": "tsx",
+      "kind": "indeterminate",
+      "cause": "dynamic-attr",
+      "note": "alt={post.coverAlt}.",
+      "issues": [],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<figure>\n      <img alt=\"…\" />\n      <figcaption>{post.title}</figcaption>\n    </figure>"
+    },
+    {
+      "file": "jsx/i-dynamic-role.tsx",
+      "type": "tsx",
+      "kind": "indeterminate",
+      "cause": "dynamic-attr",
+      "note": "role={urgent ? 'alert' : 'status'}.",
+      "issues": [],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<div className=\"rounded border p-4\">\n      {children}\n    </div>"
+    },
+    {
+      "file": "jsx/i-i18n-text-children.tsx",
+      "type": "tsx",
+      "kind": "indeterminate",
+      "cause": "i18n",
+      "note": "Text via {t('...')} in h2/a/button.",
+      "issues": [],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<section>\n      <h2>{t('title'"
+    },
+    {
+      "file": "jsx/i-img-spread.tsx",
+      "type": "tsx",
+      "kind": "indeterminate",
+      "cause": "props-spread",
+      "note": "img whose alt comes via {...props}.",
+      "issues": [
+        {
+          "verdict": "FP",
+          "rule": "jsx-a11y/alt-text",
+          "scanner": "eslint-jsx-a11y",
+          "scanners": [
+            "eslint-jsx-a11y",
+            "axe-core"
+          ],
+          "wcag": [
+            "1.1.1"
+          ],
+          "best_practice": false,
+          "severity": "serious",
+          "line": 5,
+          "snippet": "<img       data-slot=\"avatar-image\"       className={className}       {...props}     />",
+          "message": "img elements must have an alt prop, either with meaningful text, or an empty string for decorative images. (jsx-a11y/alt-text)",
+          "cause": "props-spread"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<img\n      data-slot=\"avatar-image\"\n     \n      {...props}\n    />"
+    },
+    {
+      "file": "jsx/i-link-dynamic-href-aria-label.tsx",
+      "type": "tsx",
+      "kind": "indeterminate",
+      "cause": "dynamic-attr",
+      "note": "<a href={url} aria-label=\"...\">: a real link at runtime.",
+      "issues": [
+        {
+          "verdict": "FP",
+          "rule": "aria-prohibited-attr",
+          "scanner": "axe-core",
+          "wcag": [
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "serious",
+          "line": null,
+          "snippet": "<a aria-label=\"Open repository on GitHub\" classname=\"p-2\">\n      <svg aria-hidden=\"true\" width=\"20\" height=\"20\" viewBox=\"0 0 20 20\">\n        <circle cx=\"10\" cy=\"10\" r=\"8\"></circle>\n      </svg>\n    </",
+          "message": "Elements must only use permitted ARIA attributes (aria-prohibited-attr)",
+          "cause": "dynamic-attr"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<a aria-label=\"Open repository on GitHub\" className=\"p-2\">\n      <svg aria-hidden=\"true\" width=\"20\" height=\"20\" viewBox=\"0 0 20 20\">\n        <circle cx=\"10\" cy=\"10\" r=\"8\" />\n      </svg>\n    </a>"
+    },
+    {
+      "file": "jsx/i-list-children-prop.tsx",
+      "type": "tsx",
+      "kind": "indeterminate",
+      "cause": "map-children",
+      "note": "ul whose children come from the children prop.",
+      "issues": [
+        {
+          "verdict": "FP",
+          "rule": "list",
+          "scanner": "axe-core",
+          "wcag": [
+            "1.3.1"
+          ],
+          "best_practice": false,
+          "severity": "serious",
+          "line": null,
+          "snippet": "<ul classname=\"list-disc pl-6\">\n      {children}\n    </ul>",
+          "message": "<ul> and <ol> must only directly contain <li>, <script> or <template> elements (list)",
+          "cause": "map-children"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<ul className=\"list-disc pl-6\">\n      {children}\n    </ul>"
+    },
+    {
+      "file": "jsx/i-list-map.tsx",
+      "type": "tsx",
+      "kind": "indeterminate",
+      "cause": "map-children",
+      "note": "ul whose li come from .map() (the li is visible in source here).",
+      "issues": [
+        {
+          "verdict": "FP",
+          "rule": "jsx-a11y/no-redundant-roles",
+          "scanner": "eslint-jsx-a11y",
+          "wcag": [
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "serious",
+          "line": 5,
+          "snippet": "<ul className=\"space-y-2\" role=\"list\">",
+          "message": "The element ul has an implicit role of list. Defining this explicitly is redundant and should be avoided. (jsx-a11y/no-redundant-roles)",
+          "cause": "over-mapped-rule"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<ul className=\"space-y-2\" role=\"list\">\n      {items.map((item) => (\n        <li>{item.label}</li>\n      )"
+    },
+    {
+      "file": "jsx/i-native-button-spread.tsx",
+      "type": "tsx",
+      "kind": "indeterminate",
+      "cause": "props-spread",
+      "note": "Native button whose children/aria-label come via {...props}.",
+      "issues": [
+        {
+          "verdict": "FP",
+          "rule": "button-name",
+          "scanner": "axe-core",
+          "wcag": [
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "critical",
+          "line": null,
+          "snippet": "<button type=\"button\" {...props}=\"\">\n    \n  </button>",
+          "message": "Buttons must have discernible text (button-name)",
+          "cause": "props-spread"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<button\n      type=\"button\"\n     \n      {...props}\n    />"
+    },
+    {
+      "file": "jsx/i-native-select-spread.tsx",
+      "type": "tsx",
+      "kind": "indeterminate",
+      "cause": "props-spread",
+      "note": "Native select, label via props/usage.",
+      "issues": [
+        {
+          "verdict": "FP",
+          "rule": "select-name",
+          "scanner": "axe-core",
+          "wcag": [
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "critical",
+          "line": null,
+          "snippet": "<select classname=\"h-9 rounded-md border px-2\" {...props}=\"\">\n      {children}\n    </select>",
+          "message": "Select element must have an accessible name (select-name)",
+          "cause": "props-spread"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<select className=\"h-9 rounded-md border px-2\" {...props}>\n      {children}\n    </select>"
+    },
+    {
+      "file": "jsx/i-next-image-link.tsx",
+      "type": "tsx",
+      "kind": "indeterminate",
+      "cause": "custom-component",
+      "note": "next/link + next/image with alt.",
+      "issues": [],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<Link href=\"/\" className=\"flex items-center gap-2\">\n      <Image src=\"/logo.svg\" alt=\"Acme\" priority />\n    </Link>"
+    },
+    {
+      "file": "jsx/i-radiogroup-dynamic-checked.tsx",
+      "type": "tsx",
+      "kind": "indeterminate",
+      "cause": "dynamic-attr",
+      "note": "role=radio with aria-checked={expr}: present at runtime.",
+      "issues": [
+        {
+          "verdict": "FP",
+          "rule": "aria-required-attr",
+          "scanner": "axe-core",
+          "wcag": [
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "critical",
+          "line": null,
+          "snippet": "<button type=\"button\" role=\"radio\" onclick=\"{()\" ==\"\"> onChange(option.value\n    \n  </button>",
+          "message": "Required ARIA attributes must be provided (aria-required-attr)",
+          "cause": "dynamic-attr"
+        },
+        {
+          "verdict": "FP",
+          "rule": "jsx-a11y/prefer-tag-over-role",
+          "scanner": "eslint-jsx-a11y",
+          "wcag": [
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "serious",
+          "line": 15,
+          "snippet": "<button           key={option.value}           type=\"button\"           role=\"radio\"           aria-checked={option.value === value}           onClick={() => onChange(option.value)}         >",
+          "message": "Use <input type=\"radio\"> instead of the \"radio\" role to ensure accessibility across all devices. (jsx-a11y/prefer-tag-over-role)",
+          "cause": "over-mapped-rule"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<div role=\"radiogroup\" aria-label=\"View mode\" className=\"inline-flex rounded-md border\">\n      {options.map((option) => (\n        <button\n         \n          type=\"button\"\n          role=\"radio\"\n         \n          onClick={() => onChange(option.value"
+    },
+    {
+      "file": "jsx/i-react-hook-form-field.tsx",
+      "type": "tsx",
+      "kind": "indeterminate",
+      "cause": "props-spread",
+      "note": "Input wrapped by its label, {...register()} spread.",
+      "issues": [],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<form>\n      <label className=\"grid gap-1\">\n        <span>Email</span>\n        <input type=\"email\" {...register('email'"
+    },
+    {
+      "file": "jsx/i-shadcn-button.tsx",
+      "type": "tsx",
+      "kind": "indeterminate",
+      "cause": "custom-component",
+      "note": "shadcn/ui Button: <Comp> (Slot or button), name via children in props.",
+      "issues": [],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<Comp\n      data-slot=\"button\"\n      className={cn(buttonVariants({ variant, size, className })"
+    },
+    {
+      "file": "jsx/i-shadcn-input.tsx",
+      "type": "tsx",
+      "kind": "indeterminate",
+      "cause": "props-spread",
+      "note": "shadcn/ui Input: label/aria-label arrive through {...props}. Unknowable statically.",
+      "issues": [
+        {
+          "verdict": "FP",
+          "rule": "aria-valid-attr",
+          "scanner": "axe-core",
+          "wcag": [
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "critical",
+          "line": null,
+          "snippet": "<input data-slot=\"input\" classname=\"{cn(\" 'file:text-foregroun...=\"\" placeholder:text-mut...=\"\" selection:bg-primary=\"\" selection:text-prima...=\"\" dark:bg-input=\"\" 30=\"\" border-input=\"\" flex=\"\" h-9=\"\"",
+          "message": "ARIA attributes must conform to valid names (aria-valid-attr)",
+          "cause": "classname"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<input\n     \n      data-slot=\"input\"\n      className={cn(\n        'file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input flex h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none',\n        'focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]',\n        'aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive',\n        className"
+    },
+    {
+      "file": "jsx/i-shadcn-textarea.tsx",
+      "type": "tsx",
+      "kind": "indeterminate",
+      "cause": "props-spread",
+      "note": "shadcn/ui Textarea, same as Input.",
+      "issues": [
+        {
+          "verdict": "FP",
+          "rule": "aria-valid-attr",
+          "scanner": "axe-core",
+          "wcag": [
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "critical",
+          "line": null,
+          "snippet": "<textarea data-slot=\"textarea\" classname=\"{cn(\" 'border-input=\"\" placeholder:text-mut...=\"\" focus-visible:border...=\"\" aria-invalid:border-...=\"\" flex=\"\" field-sizing-content=\"\" min-h-16=\"\" w-full=\"\" ",
+          "message": "ARIA attributes must conform to valid names (aria-valid-attr)",
+          "cause": "classname"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<textarea\n      data-slot=\"textarea\"\n      className={cn(\n        'border-input placeholder:text-muted-foreground focus-visible:border-ring aria-invalid:border-destructive flex field-sizing-content min-h-16 w-full rounded-md border bg-transparent px-3 py-2',\n        className"
+    },
+    {
+      "file": "jsx/i-svg-dynamic-title.tsx",
+      "type": "tsx",
+      "kind": "indeterminate",
+      "cause": "dynamic-attr",
+      "note": "svg role=img aria-label={label}.",
+      "issues": [
+        {
+          "verdict": "FP",
+          "rule": "jsx-a11y/prefer-tag-over-role",
+          "scanner": "eslint-jsx-a11y",
+          "wcag": [
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "serious",
+          "line": 3,
+          "snippet": "<svg role=\"img\" aria-label={label} width=\"12\" height=\"12\" viewBox=\"0 0 12 12\">",
+          "message": "Use <img alt=...>, or <img alt=...> instead of the \"img\" role to ensure accessibility across all devices. (jsx-a11y/prefer-tag-over-role)",
+          "cause": "over-mapped-rule"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<svg role=\"img\" aria-label=\"…\" width=\"12\" height=\"12\" viewBox=\"0 0 12 12\">\n      <circle cx=\"6\" cy=\"6\" r=\"5\" />\n    </svg>"
+    },
+    {
+      "file": "jsx/i-tabs-dynamic-selected.tsx",
+      "type": "tsx",
+      "kind": "indeterminate",
+      "cause": "dynamic-attr",
+      "note": "tablist/tab with dynamic aria-selected/aria-controls/id.",
+      "issues": [],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<div role=\"tablist\" aria-label=\"Sections\">\n      {tabs.map((tab) => (\n        <button\n         \n          role=\"tab\"\n         \n         \n         \n         \n          onClick={() => onSelect(tab.id"
+    },
+    {
+      "file": "jsx/i-video-no-track.tsx",
+      "type": "tsx",
+      "kind": "indeterminate",
+      "cause": "over-mapped-rule",
+      "note": "Muted, aria-hidden decorative loop: captions (1.2.2) apply to media with audio. Not provable either way from source.",
+      "issues": [],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<video src=\"/hero-loop.mp4\" autoPlay muted loop playsInline aria-hidden=\"true\" />"
+    },
+    {
+      "file": "jsx/v-aria-attr-typo.tsx",
+      "type": "tsx",
+      "kind": "violation",
+      "note": "aria-lable typo.",
+      "issues": [
+        {
+          "verdict": "TP",
+          "rule": "jsx-a11y/aria-props",
+          "scanner": "eslint-jsx-a11y",
+          "scanners": [
+            "eslint-jsx-a11y",
+            "axe-core"
+          ],
+          "wcag": [
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "serious",
+          "line": 3,
+          "snippet": "aria-lable=\"Primary\"",
+          "message": "aria-lable: This attribute is an invalid ARIA attribute. Did you mean to use aria-label? (jsx-a11y/aria-props)",
+          "defect": "aria-attr-name"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {
+        "axe-core": {
+          "expected": 1,
+          "detected": 1
+        },
+        "eslint-jsx-a11y": {
+          "expected": 1,
+          "detected": 1
+        }
+      },
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<nav aria-lable=\"Primary\">\n      <ul>\n        <li>\n          <a href=\"/\">Home</a>\n        </li>\n      </ul>\n    </nav>"
+    },
+    {
+      "file": "jsx/v-aria-expanded-bad-value.tsx",
+      "type": "tsx",
+      "kind": "violation",
+      "note": "aria-expanded=\"yes\".",
+      "issues": [
+        {
+          "verdict": "TP",
+          "rule": "jsx-a11y/aria-proptypes",
+          "scanner": "eslint-jsx-a11y",
+          "scanners": [
+            "eslint-jsx-a11y",
+            "axe-core"
+          ],
+          "wcag": [
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "serious",
+          "line": 3,
+          "snippet": "aria-expanded=\"yes\"",
+          "message": "The value for aria-expanded must be a boolean. (jsx-a11y/aria-proptypes)",
+          "defect": "aria-attr-value"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {
+        "axe-core": {
+          "expected": 1,
+          "detected": 1
+        },
+        "eslint-jsx-a11y": {
+          "expected": 1,
+          "detected": 1
+        }
+      },
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<button type=\"button\" aria-expanded=\"yes\">\n      Menu\n    </button>"
+    },
+    {
+      "file": "jsx/v-checkbox-role-missing-state.tsx",
+      "type": "tsx",
+      "kind": "violation",
+      "note": "role=checkbox with no aria-checked at all (not dynamic: absent).",
+      "issues": [
+        {
+          "verdict": "TP",
+          "rule": "jsx-a11y/role-has-required-aria-props",
+          "scanner": "eslint-jsx-a11y",
+          "scanners": [
+            "eslint-jsx-a11y",
+            "axe-core"
+          ],
+          "wcag": [
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "serious",
+          "line": 3,
+          "snippet": "role=\"checkbox\"",
+          "message": "Elements with the ARIA role \"checkbox\" must have the following attributes defined: aria-checked (jsx-a11y/role-has-required-aria-props)",
+          "defect": "role-required-attr"
+        },
+        {
+          "verdict": "FP",
+          "rule": "jsx-a11y/prefer-tag-over-role",
+          "scanner": "eslint-jsx-a11y",
+          "wcag": [
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "serious",
+          "line": 3,
+          "snippet": "<div role=\"checkbox\" tabIndex={0}>",
+          "message": "Use <input type=\"checkbox\"> instead of the \"checkbox\" role to ensure accessibility across all devices. (jsx-a11y/prefer-tag-over-role)",
+          "cause": "over-mapped-rule"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {
+        "axe-core": {
+          "expected": 1,
+          "detected": 1
+        },
+        "eslint-jsx-a11y": {
+          "expected": 1,
+          "detected": 1
+        }
+      },
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<div role=\"checkbox\">\n      Accept the terms\n    </div>"
+    },
+    {
+      "file": "jsx/v-div-onclick.tsx",
+      "type": "tsx",
+      "kind": "violation",
+      "note": "Non-focusable div with onClick and no key handler or role: keyboard users cannot activate it.",
+      "issues": [
+        {
+          "verdict": "TP",
+          "rule": "jsx-a11y/click-events-have-key-events",
+          "scanner": "eslint-jsx-a11y",
+          "wcag": [
+            "2.1.1"
+          ],
+          "best_practice": false,
+          "severity": "serious",
+          "line": 3,
+          "snippet": "<div className=\"card\" onClick={onOpen}>",
+          "message": "Visible, non-interactive elements with click handlers must have at least one keyboard listener. (jsx-a11y/click-events-have-key-events)",
+          "defect": "keyboard-static-click"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {
+        "eslint-jsx-a11y": {
+          "expected": 1,
+          "detected": 1
+        }
+      },
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<div className=\"card\">\n      Open details\n    </div>"
+    },
+    {
+      "file": "jsx/v-empty-anchor.tsx",
+      "type": "tsx",
+      "kind": "violation",
+      "note": "Empty anchor.",
+      "issues": [
+        {
+          "verdict": "TP",
+          "rule": "jsx-a11y/anchor-has-content",
+          "scanner": "eslint-jsx-a11y",
+          "scanners": [
+            "eslint-jsx-a11y",
+            "axe-core"
+          ],
+          "wcag": [
+            "2.4.4",
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "serious",
+          "line": 4,
+          "snippet": "<a href=\"https://github.com/example\">",
+          "message": "Anchors must have content and the content must be accessible by a screen reader. (jsx-a11y/anchor-has-content)",
+          "defect": "link-name"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {
+        "axe-core": {
+          "expected": 1,
+          "detected": 1
+        },
+        "eslint-jsx-a11y": {
+          "expected": 1,
+          "detected": 1
+        }
+      },
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<footer>\n      <a href=\"https://github.com/example\"></a>\n    </footer>"
+    },
+    {
+      "file": "jsx/v-icon-button-after-arrow-handler.tsx",
+      "type": "tsx",
+      "kind": "violation",
+      "cause": "extraction",
+      "note": "Icon-only button after an element with onClick={() => fn(x)}.",
+      "issues": [],
+      "misses": [
+        {
+          "defect": "button-name",
+          "missing": 1,
+          "rules": [
+            "button-name"
+          ],
+          "eligible_scanners": [
+            "axe-core"
+          ],
+          "cause": "extraction",
+          "coverage_status": {
+            "4.1.2": "auto"
+          }
+        }
+      ],
+      "per_scanner_detection": {
+        "axe-core": {
+          "expected": 1,
+          "detected": 0
+        }
+      },
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<div className=\"flex items-center justify-between\">\n      <p>New release available.</p>\n      <a href=\"/changelog\" onClick={() => setOpen(false"
+    },
+    {
+      "file": "jsx/v-icon-button-in-autocomplete-form.tsx",
+      "type": "tsx",
+      "kind": "violation",
+      "cause": "other",
+      "note": "Icon-only submit button in a form whose input carries autoComplete; the label wraps the input (clean). Exercises the axe-core singleton shared with jsx-a11y's autocomplete-valid rule.",
+      "issues": [],
+      "misses": [
+        {
+          "defect": "button-name",
+          "missing": 1,
+          "rules": [
+            "button-name"
+          ],
+          "eligible_scanners": [
+            "axe-core"
+          ],
+          "cause": "other",
+          "coverage_status": {
+            "4.1.2": "auto"
+          }
+        }
+      ],
+      "per_scanner_detection": {
+        "axe-core": {
+          "expected": 1,
+          "detected": 0
+        }
+      },
+      "reclassified": [],
+      "warnings": [
+        "[axe-core] Skipped jsx/v-icon-button-in-autocomplete-form.tsx: Cannot read properties of undefined (reading 'type=\"email\"')"
+      ],
+      "extracted_html_for_axe": "<form className=\"grid gap-2\">\n      <label>\n        Email\n        <input type=\"email\" name=\"email\" autoComplete=\"email\" />\n      </label>\n      <button type=\"submit\">\n        <svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\">\n          <path d=\"M2 8h12M9 3l5 5-5 5\" />\n        </svg>\n      </button>\n    </form>"
+    },
+    {
+      "file": "jsx/v-icon-button-no-name.tsx",
+      "type": "tsx",
+      "kind": "violation",
+      "note": "Icon-only button, no name.",
+      "issues": [
+        {
+          "verdict": "TP",
+          "rule": "button-name",
+          "scanner": "axe-core",
+          "wcag": [
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "critical",
+          "line": null,
+          "snippet": "<button type=\"button\" classname=\"rounded p-2\">\n        <svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\">\n          <path d=\"M2 2l12 12M14 2L2 14\"></path>\n        </svg>\n      </button>",
+          "message": "Buttons must have discernible text (button-name)",
+          "defect": "button-name"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {
+        "axe-core": {
+          "expected": 1,
+          "detected": 1
+        }
+      },
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<div className=\"flex gap-2\">\n      <button type=\"button\" className=\"rounded p-2\">\n        <svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\">\n          <path d=\"M2 2l12 12M14 2L2 14\" />\n        </svg>\n      </button>\n    </div>"
+    },
+    {
+      "file": "jsx/v-iframe-no-title.tsx",
+      "type": "tsx",
+      "kind": "violation",
+      "note": "iframe without title.",
+      "issues": [
+        {
+          "verdict": "TP",
+          "rule": "jsx-a11y/iframe-has-title",
+          "scanner": "eslint-jsx-a11y",
+          "scanners": [
+            "eslint-jsx-a11y",
+            "axe-core"
+          ],
+          "wcag": [
+            "2.4.1",
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "serious",
+          "line": 4,
+          "snippet": "<iframe src=\"https://www.youtube.com/embed/abc123\" width=\"560\" height=\"315\" />",
+          "message": "<iframe> elements must have a unique title property. (jsx-a11y/iframe-has-title)",
+          "defect": "frame-title"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {
+        "axe-core": {
+          "expected": 1,
+          "detected": 1
+        },
+        "eslint-jsx-a11y": {
+          "expected": 1,
+          "detected": 1
+        }
+      },
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<div className=\"aspect-video\">\n      <iframe src=\"https://www.youtube.com/embed/abc123\" width=\"560\" height=\"315\" />\n    </div>"
+    },
+    {
+      "file": "jsx/v-img-after-helper-return.tsx",
+      "type": "tsx",
+      "kind": "violation",
+      "cause": "extraction",
+      "note": "The img is in the component; a helper function earlier in the file also uses `return (`.",
+      "issues": [
+        {
+          "verdict": "TP",
+          "rule": "jsx-a11y/alt-text",
+          "scanner": "eslint-jsx-a11y",
+          "wcag": [
+            "1.1.1"
+          ],
+          "best_practice": false,
+          "severity": "serious",
+          "line": 10,
+          "snippet": "<img src=\"/bell.svg\" />",
+          "message": "img elements must have an alt prop, either with meaningful text, or an empty string for decorative images. (jsx-a11y/alt-text)",
+          "defect": "img-alt"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {
+        "axe-core": {
+          "expected": 1,
+          "detected": 0
+        },
+        "eslint-jsx-a11y": {
+          "expected": 1,
+          "detected": 1
+        }
+      },
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "count > 99 ? '99+' : String(count"
+    },
+    {
+      "file": "jsx/v-img-in-map.tsx",
+      "type": "tsx",
+      "kind": "violation",
+      "cause": "map-children",
+      "note": "img rendered in .map() with no alt attribute at all: statically certain whatever the data.",
+      "issues": [
+        {
+          "verdict": "TP",
+          "rule": "jsx-a11y/alt-text",
+          "scanner": "eslint-jsx-a11y",
+          "scanners": [
+            "eslint-jsx-a11y",
+            "axe-core"
+          ],
+          "wcag": [
+            "1.1.1"
+          ],
+          "best_practice": false,
+          "severity": "serious",
+          "line": 8,
+          "snippet": "<img src={logo.src} />",
+          "message": "img elements must have an alt prop, either with meaningful text, or an empty string for decorative images. (jsx-a11y/alt-text)",
+          "defect": "img-alt"
+        },
+        {
+          "verdict": "FP",
+          "rule": "list",
+          "scanner": "axe-core",
+          "wcag": [
+            "1.3.1"
+          ],
+          "best_practice": false,
+          "severity": "serious",
+          "line": null,
+          "snippet": "<ul classname=\"grid grid-cols-4 gap-4\">\n      {logos.map((logo) =&gt; (\n        <li>\n          <img>\n        </li>\n      )\n    \n  </ul>",
+          "message": "<ul> and <ol> must only directly contain <li>, <script> or <template> elements (list)",
+          "cause": "map-children"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {
+        "axe-core": {
+          "expected": 1,
+          "detected": 1
+        },
+        "eslint-jsx-a11y": {
+          "expected": 1,
+          "detected": 1
+        }
+      },
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<ul className=\"grid grid-cols-4 gap-4\">\n      {logos.map((logo) => (\n        <li>\n          <img />\n        </li>\n      )"
+    },
+    {
+      "file": "jsx/v-img-no-alt.tsx",
+      "type": "tsx",
+      "kind": "violation",
+      "note": "Literal img without alt.",
+      "issues": [
+        {
+          "verdict": "TP",
+          "rule": "jsx-a11y/alt-text",
+          "scanner": "eslint-jsx-a11y",
+          "scanners": [
+            "eslint-jsx-a11y",
+            "axe-core"
+          ],
+          "wcag": [
+            "1.1.1"
+          ],
+          "best_practice": false,
+          "severity": "serious",
+          "line": 5,
+          "snippet": "<img src=\"/team.jpg\" width={640} height={320} />",
+          "message": "img elements must have an alt prop, either with meaningful text, or an empty string for decorative images. (jsx-a11y/alt-text)",
+          "defect": "img-alt"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {
+        "axe-core": {
+          "expected": 1,
+          "detected": 1
+        },
+        "eslint-jsx-a11y": {
+          "expected": 1,
+          "detected": 1
+        }
+      },
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<section>\n      <h2>Our team</h2>\n      <img src=\"/team.jpg\" />\n    </section>"
+    },
+    {
+      "file": "jsx/v-input-no-label.tsx",
+      "type": "tsx",
+      "kind": "violation",
+      "note": "Literal input, no label mechanism, no spread.",
+      "issues": [
+        {
+          "verdict": "TP",
+          "rule": "label",
+          "scanner": "axe-core",
+          "wcag": [
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "critical",
+          "line": null,
+          "snippet": "<input type=\"text\" name=\"q\">",
+          "message": "Form elements must have labels (label)",
+          "defect": "control-label"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {
+        "axe-core": {
+          "expected": 1,
+          "detected": 1
+        },
+        "eslint-jsx-a11y": {
+          "expected": 1,
+          "detected": 0
+        }
+      },
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<form action=\"/search\">\n      <input type=\"text\" name=\"q\" />\n      <button type=\"submit\">Search</button>\n    </form>"
+    },
+    {
+      "file": "jsx/v-invalid-role.tsx",
+      "type": "tsx",
+      "kind": "violation",
+      "note": "role=buton.",
+      "issues": [
+        {
+          "verdict": "TP",
+          "rule": "jsx-a11y/aria-role",
+          "scanner": "eslint-jsx-a11y",
+          "scanners": [
+            "eslint-jsx-a11y",
+            "axe-core"
+          ],
+          "wcag": [
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "serious",
+          "line": 3,
+          "snippet": "role=\"buton\"",
+          "message": "Elements with ARIA roles must use a valid, non-abstract ARIA role. (jsx-a11y/aria-role)",
+          "defect": "role-invalid"
+        },
+        {
+          "verdict": "acceptable",
+          "rule": "jsx-a11y/no-noninteractive-tabindex",
+          "scanner": "eslint-jsx-a11y",
+          "wcag": [
+            "2.4.3"
+          ],
+          "best_practice": false,
+          "severity": "serious",
+          "line": 3,
+          "snippet": "tabIndex={0}",
+          "message": "`tabIndex` should only be declared on interactive elements. (jsx-a11y/no-noninteractive-tabindex)"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {
+        "axe-core": {
+          "expected": 1,
+          "detected": 1
+        },
+        "eslint-jsx-a11y": {
+          "expected": 1,
+          "detected": 1
+        }
+      },
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<div role=\"buton\">\n      Save\n    </div>"
+    },
+    {
+      "file": "jsx/v-label-not-associated.tsx",
+      "type": "tsx",
+      "kind": "violation",
+      "note": "Sibling label with no htmlFor and input with no id: not associated.",
+      "issues": [
+        {
+          "verdict": "TP",
+          "rule": "label",
+          "scanner": "axe-core",
+          "wcag": [
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "critical",
+          "line": null,
+          "snippet": "<input type=\"email\" name=\"email\">",
+          "message": "Form elements must have labels (label)",
+          "defect": "control-label"
+        },
+        {
+          "verdict": "duplicate",
+          "rule": "jsx-a11y/label-has-associated-control",
+          "scanner": "eslint-jsx-a11y",
+          "wcag": [
+            "1.3.1"
+          ],
+          "best_practice": false,
+          "severity": "serious",
+          "line": 4,
+          "snippet": "<label>",
+          "message": "A form label must be associated with a control. (jsx-a11y/label-has-associated-control)",
+          "defect": "control-label"
+        },
+        {
+          "verdict": "duplicate",
+          "rule": "jsx-a11y/label-has-associated-control",
+          "scanner": "eslint-jsx-a11y",
+          "wcag": [
+            "3.3.2"
+          ],
+          "best_practice": false,
+          "severity": "serious",
+          "line": 4,
+          "snippet": "<label>",
+          "message": "A form label must be associated with a control. (jsx-a11y/label-has-associated-control)",
+          "defect": "control-label"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {
+        "axe-core": {
+          "expected": 1,
+          "detected": 1
+        },
+        "eslint-jsx-a11y": {
+          "expected": 1,
+          "detected": 1
+        }
+      },
+      "reclassified": [
+        {
+          "rule": "region",
+          "count": 2
+        },
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<form>\n      <label>Email</label>\n      <input type=\"email\" name=\"email\" />\n      <button type=\"submit\">Subscribe</button>\n    </form>"
+    },
+    {
+      "file": "jsx/v-positive-tabindex-expr.tsx",
+      "type": "tsx",
+      "kind": "violation",
+      "note": "tabIndex={3}: a literal number inside an expression, statically certain.",
+      "issues": [
+        {
+          "verdict": "TP",
+          "rule": "jsx-a11y/tabindex-no-positive",
+          "scanner": "eslint-jsx-a11y",
+          "wcag": [
+            "2.4.3"
+          ],
+          "best_practice": false,
+          "severity": "serious",
+          "line": 4,
+          "snippet": "tabIndex={3}",
+          "message": "Avoid positive integer values for tabIndex. (jsx-a11y/tabindex-no-positive)",
+          "defect": "positive-tabindex"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {
+        "axe-core": {
+          "expected": 1,
+          "detected": 0
+        },
+        "eslint-jsx-a11y": {
+          "expected": 1,
+          "detected": 1
+        }
+      },
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<div>\n      <a href=\"/login\">\n        Log in\n      </a>\n    </div>"
+    },
+    {
+      "file": "jsx/v-positive-tabindex-literal.tsx",
+      "type": "tsx",
+      "kind": "violation",
+      "note": "tabIndex=\"3\".",
+      "issues": [
+        {
+          "verdict": "TP",
+          "rule": "tabindex",
+          "scanner": "axe-core",
+          "wcag": [],
+          "best_practice": true,
+          "severity": "serious",
+          "line": null,
+          "snippet": "<a href=\"/login\" tabindex=\"3\">\n        Log in\n      </a>",
+          "message": "Elements should not have tabindex greater than zero (tabindex)",
+          "defect": "positive-tabindex"
+        },
+        {
+          "verdict": "duplicate",
+          "rule": "jsx-a11y/tabindex-no-positive",
+          "scanner": "eslint-jsx-a11y",
+          "wcag": [
+            "2.4.3"
+          ],
+          "best_practice": false,
+          "severity": "serious",
+          "line": 4,
+          "snippet": "tabIndex=\"3\"",
+          "message": "Avoid positive integer values for tabIndex. (jsx-a11y/tabindex-no-positive)",
+          "defect": "positive-tabindex"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {
+        "axe-core": {
+          "expected": 1,
+          "detected": 1
+        },
+        "eslint-jsx-a11y": {
+          "expected": 1,
+          "detected": 1
+        }
+      },
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<div>\n      <a href=\"/login\" tabIndex=\"3\">\n        Log in\n      </a>\n    </div>"
+    },
+    {
+      "file": "jsx/v-root-layout-no-lang.tsx",
+      "type": "tsx",
+      "kind": "violation",
+      "cause": "framework-injected",
+      "note": "Next.js App Router root layout with <html> and no lang. The <title> is injected by Next from `metadata`, so a document-title report is a false positive.",
+      "issues": [
+        {
+          "verdict": "TP",
+          "rule": "jsx-a11y/html-has-lang",
+          "scanner": "eslint-jsx-a11y",
+          "scanners": [
+            "eslint-jsx-a11y",
+            "axe-core"
+          ],
+          "wcag": [
+            "3.1.1"
+          ],
+          "best_practice": false,
+          "severity": "serious",
+          "line": 7,
+          "snippet": "<html>",
+          "message": "<html> elements must have the lang prop. (jsx-a11y/html-has-lang)",
+          "defect": "html-lang"
+        },
+        {
+          "verdict": "FP",
+          "rule": "document-title",
+          "scanner": "axe-core",
+          "wcag": [
+            "2.4.2"
+          ],
+          "best_practice": false,
+          "severity": "serious",
+          "line": null,
+          "snippet": "<html><head></head><body>{children}\n    </body></html>",
+          "message": "Documents must have <title> element to aid in navigation (document-title)",
+          "cause": "framework-injected"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {
+        "axe-core": {
+          "expected": 1,
+          "detected": 1
+        },
+        "eslint-jsx-a11y": {
+          "expected": 1,
+          "detected": 1
+        }
+      },
+      "reclassified": [],
+      "warnings": [],
+      "extracted_html_for_axe": "<html>\n      <body>{children}</body>\n    </html>"
+    },
+    {
+      "file": "jsx/v-second-component.tsx",
+      "type": "tsx",
+      "kind": "violation",
+      "cause": "extraction",
+      "note": "The violation is in the SECOND component of the file.",
+      "issues": [
+        {
+          "verdict": "TP",
+          "rule": "jsx-a11y/alt-text",
+          "scanner": "eslint-jsx-a11y",
+          "wcag": [
+            "1.1.1"
+          ],
+          "best_practice": false,
+          "severity": "serious",
+          "line": 9,
+          "snippet": "<img src=\"/plans.png\" className=\"rounded\" />",
+          "message": "img elements must have an alt prop, either with meaningful text, or an empty string for decorative images. (jsx-a11y/alt-text)",
+          "defect": "img-alt"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {
+        "axe-core": {
+          "expected": 1,
+          "detected": 0
+        },
+        "eslint-jsx-a11y": {
+          "expected": 1,
+          "detected": 1
+        }
+      },
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<h3 className=\"text-lg font-semibold\">Plans</h3>"
+    },
+    {
+      "file": "svelte/c-label-for.svelte",
+      "type": "svelte",
+      "kind": "clean",
+      "note": "Literal for/id with bind:value={x}.",
+      "issues": [],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<form>\n  <label for=\"svelte-email\">Email</label>\n  <input id=\"svelte-email\" type=\"email\" bind:value={email}>\n</form>"
+    },
+    {
+      "file": "svelte/i-arrow-handler-aria-label.svelte",
+      "type": "svelte",
+      "kind": "indeterminate",
+      "cause": "dynamic-attr",
+      "note": "on:click={() => ...} arrow handler, aria-label={label}.",
+      "issues": [],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<button type=\"button\" on:click={() => (open = !open)} aria-expanded={open} aria-label={label}>\n  <svg aria-hidden=\"true\" width=\"16\" height=\"16\"><path d=\"M1 3h14\" /></svg>\n</button>"
+    },
+    {
+      "file": "svelte/i-each-dynamic-alt.svelte",
+      "type": "svelte",
+      "kind": "indeterminate",
+      "cause": "dynamic-attr",
+      "note": "{#each} with alt={photo.alt}.",
+      "issues": [
+        {
+          "verdict": "FP",
+          "rule": "list",
+          "scanner": "axe-core",
+          "wcag": [
+            "1.3.1"
+          ],
+          "best_practice": false,
+          "severity": "serious",
+          "line": null,
+          "snippet": "<ul>\n  {#each photos as photo}\n    <li><img src=\"{photo.src}\" alt=\"{photo.alt}\"></li>\n  {/each}\n</ul>",
+          "message": "<ul> and <ol> must only directly contain <li>, <script> or <template> elements (list)",
+          "cause": "map-children"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<ul>\n  {#each photos as photo}\n    <li><img src={photo.src} alt={photo.alt}></li>\n  {/each}\n</ul>"
+    },
+    {
+      "file": "svelte/v-img-no-alt.svelte",
+      "type": "svelte",
+      "kind": "violation",
+      "note": "img without alt.",
+      "issues": [
+        {
+          "verdict": "TP",
+          "rule": "image-alt",
+          "scanner": "axe-core",
+          "wcag": [
+            "1.1.1"
+          ],
+          "best_practice": false,
+          "severity": "critical",
+          "line": null,
+          "snippet": "<img src=\"/team.jpg\">",
+          "message": "Images must have alternative text (image-alt)",
+          "defect": "img-alt"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {
+        "axe-core": {
+          "expected": 1,
+          "detected": 1
+        }
+      },
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "<section>\n  <h2>Our {name}</h2>\n  <img src=\"/team.jpg\">\n</section>"
+    },
+    {
+      "file": "vue/c-label-for-literal.vue",
+      "type": "vue",
+      "kind": "clean",
+      "note": "Literal for/id.",
+      "issues": [],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "\n  <form>\n    <label for=\"city\">City</label>\n    <input id=\"city\" v-model=\"city\" type=\"text\">\n  </form>\n"
+    },
+    {
+      "file": "vue/c-static-img-alt.vue",
+      "type": "vue",
+      "kind": "clean",
+      "note": ":src bound, literal alt.",
+      "issues": [],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "\n  <header>\n    <a href=\"/\"><img :src=\"logoUrl\" alt=\"Acme home\"></a>\n  </header>\n"
+    },
+    {
+      "file": "vue/c-v-for-list.vue",
+      "type": "vue",
+      "kind": "clean",
+      "note": "li v-for inside ul.",
+      "issues": [],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "\n  <ul>\n    <li v-for=\"item in items\" :key=\"item.id\">{{ item.name }}</li>\n  </ul>\n"
+    },
+    {
+      "file": "vue/i-attrs-fallthrough-input.vue",
+      "type": "vue",
+      "kind": "indeterminate",
+      "cause": "props-spread",
+      "note": "v-bind=\"$attrs\" (the Vue props spread).",
+      "issues": [
+        {
+          "verdict": "FP",
+          "rule": "label",
+          "scanner": "axe-core",
+          "wcag": [
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "critical",
+          "line": null,
+          "snippet": "<input class=\"base-input\" v-bind=\"$attrs\">",
+          "message": "Form elements must have labels (label)",
+          "cause": "props-spread"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "\n  <input class=\"base-input\" v-bind=\"$attrs\">\n"
+    },
+    {
+      "file": "vue/i-bound-alt.vue",
+      "type": "vue",
+      "kind": "indeterminate",
+      "cause": "framework-binding",
+      "note": ":alt=\"alt\" (Vue binding syntax).",
+      "issues": [
+        {
+          "verdict": "FP",
+          "rule": "image-alt",
+          "scanner": "axe-core",
+          "wcag": [
+            "1.1.1"
+          ],
+          "best_practice": false,
+          "severity": "critical",
+          "line": null,
+          "snippet": "<img :src=\"src\" :alt=\"alt\">",
+          "message": "Images must have alternative text (image-alt)",
+          "cause": "framework-binding"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "\n  <figure>\n    <img :src=\"src\" :alt=\"alt\">\n  </figure>\n"
+    },
+    {
+      "file": "vue/i-bound-aria-label-button.vue",
+      "type": "vue",
+      "kind": "indeterminate",
+      "cause": "framework-binding",
+      "note": ":aria-label=\"label\" on an icon button.",
+      "issues": [
+        {
+          "verdict": "FP",
+          "rule": "button-name",
+          "scanner": "axe-core",
+          "wcag": [
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "critical",
+          "line": null,
+          "snippet": "<button type=\"button\" :aria-label=\"label\" @click=\"$emit('close')\">\n    <svg aria-hidden=\"true\" width=\"16\" height=\"16\"><path d=\"M2 2l12 12\"></path></svg>\n  </button>",
+          "message": "Buttons must have discernible text (button-name)",
+          "cause": "framework-binding"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "\n  <button type=\"button\" :aria-label=\"label\" @click=\"$emit('close')\">\n    <svg aria-hidden=\"true\" width=\"16\" height=\"16\"><path d=\"M2 2l12 12\" /></svg>\n  </button>\n"
+    },
+    {
+      "file": "vue/i-bound-for-id.vue",
+      "type": "vue",
+      "kind": "indeterminate",
+      "cause": "framework-binding",
+      "note": ":for / :id bindings.",
+      "issues": [
+        {
+          "verdict": "FP",
+          "rule": "label",
+          "scanner": "axe-core",
+          "wcag": [
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "critical",
+          "line": null,
+          "snippet": "<input :id=\"id\" v-model=\"model\" type=\"text\">",
+          "message": "Form elements must have labels (label)",
+          "cause": "framework-binding"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "\n  <div class=\"field\">\n    <label :for=\"id\">{{ label }}</label>\n    <input :id=\"id\" v-model=\"model\" type=\"text\">\n  </div>\n"
+    },
+    {
+      "file": "vue/i-dynamic-component.vue",
+      "type": "vue",
+      "kind": "indeterminate",
+      "cause": "custom-component",
+      "note": "<component :is>.",
+      "issues": [],
+      "misses": [],
+      "per_scanner_detection": {},
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "\n  <component :is=\"tag\" class=\"heading\">\n    <slot />\n  </component>\n"
+    },
+    {
+      "file": "vue/v-icon-button-no-name.vue",
+      "type": "vue",
+      "kind": "violation",
+      "note": "Icon-only button.",
+      "issues": [
+        {
+          "verdict": "TP",
+          "rule": "button-name",
+          "scanner": "axe-core",
+          "wcag": [
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "critical",
+          "line": null,
+          "snippet": "<button type=\"button\" class=\"icon\" @click=\"toggle\">\n    <svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\"><path d=\"M1 3h14M1 8h14\"></path></svg>\n  </button>",
+          "message": "Buttons must have discernible text (button-name)",
+          "defect": "button-name"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {
+        "axe-core": {
+          "expected": 1,
+          "detected": 1
+        }
+      },
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "\n  <button type=\"button\" class=\"icon\" @click=\"toggle\">\n    <svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\"><path d=\"M1 3h14M1 8h14\" /></svg>\n  </button>\n"
+    },
+    {
+      "file": "vue/v-img-after-nested-template.vue",
+      "type": "vue",
+      "kind": "violation",
+      "cause": "extraction",
+      "note": "img without alt placed after a nested <template v-if>.",
+      "issues": [],
+      "misses": [
+        {
+          "defect": "img-alt",
+          "missing": 1,
+          "rules": [
+            "image-alt",
+            "jsx-a11y/alt-text"
+          ],
+          "eligible_scanners": [
+            "axe-core"
+          ],
+          "cause": "extraction",
+          "coverage_status": {
+            "1.1.1": "auto"
+          }
+        }
+      ],
+      "per_scanner_detection": {
+        "axe-core": {
+          "expected": 1,
+          "detected": 0
+        }
+      },
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "\n  <div class=\"card\">\n    <template v-if=\"featured\">\n      <p class=\"badge\">Featured</p>\n    "
+    },
+    {
+      "file": "vue/v-img-no-alt.vue",
+      "type": "vue",
+      "kind": "violation",
+      "note": "img without alt.",
+      "issues": [
+        {
+          "verdict": "TP",
+          "rule": "image-alt",
+          "scanner": "axe-core",
+          "wcag": [
+            "1.1.1"
+          ],
+          "best_practice": false,
+          "severity": "critical",
+          "line": null,
+          "snippet": "<img src=\"/team.jpg\">",
+          "message": "Images must have alternative text (image-alt)",
+          "defect": "img-alt"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {
+        "axe-core": {
+          "expected": 1,
+          "detected": 1
+        }
+      },
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "\n  <section>\n    <h2>Our team</h2>\n    <img src=\"/team.jpg\">\n  </section>\n"
+    },
+    {
+      "file": "vue/v-input-no-label.vue",
+      "type": "vue",
+      "kind": "violation",
+      "note": "v-model input without label.",
+      "issues": [
+        {
+          "verdict": "TP",
+          "rule": "label",
+          "scanner": "axe-core",
+          "wcag": [
+            "4.1.2"
+          ],
+          "best_practice": false,
+          "severity": "critical",
+          "line": null,
+          "snippet": "<input v-model=\"q\" type=\"text\" name=\"q\">",
+          "message": "Form elements must have labels (label)",
+          "defect": "control-label"
+        }
+      ],
+      "misses": [],
+      "per_scanner_detection": {
+        "axe-core": {
+          "expected": 1,
+          "detected": 1
+        }
+      },
+      "reclassified": [
+        {
+          "rule": "document-title",
+          "count": 1
+        },
+        {
+          "rule": "html-has-lang",
+          "count": 1
+        },
+        {
+          "rule": "region",
+          "count": 1
+        }
+      ],
+      "warnings": [],
+      "extracted_html_for_axe": "\n  <form @submit.prevent=\"search\">\n    <input v-model=\"q\" type=\"text\" name=\"q\">\n    <button type=\"submit\">Search</button>\n  </form>\n"
+    }
+  ]
+}

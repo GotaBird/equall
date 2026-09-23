@@ -1,0 +1,6 @@
+---
+import type { HTMLAttributes } from 'astro/types'
+type Props = HTMLAttributes<'input'>
+const { class: className, ...rest } = Astro.props
+---
+<input class:list={['input', className]} {...rest} />
