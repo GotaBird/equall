@@ -194,9 +194,10 @@ export class AxeScanner implements ScannerAdapter {
         const issues = await this.scanHtml(html, file.path, runTags, componentSource)
         allIssues.push(...issues)
       } catch (error) {
-        // Skip files that fail to parse — don't crash the whole scan
+        // Skip files that fail — never crash the whole scan, never pass silently: the file
+        // was not checked by axe, and the result says so.
         const msg = error instanceof Error ? error.message : String(error)
-        console.warn(`  [axe-core] Skipped ${file.path}: ${msg.slice(0, 80)}`)
+        context.diagnostics?.push(`[axe-core] ${file.path} could not be analysed and was not checked by axe: ${msg.slice(0, 100)}`)
       }
     }
 

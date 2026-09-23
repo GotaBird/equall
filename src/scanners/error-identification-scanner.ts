@@ -59,7 +59,7 @@ export class ErrorIdentificationScanner implements ScannerAdapter {
         })
       } catch (error) {
         const msg = error instanceof Error ? error.message : String(error)
-        console.warn(`  [error-identification] Skipped ${file.path}: ${msg.slice(0, 80)}`)
+        context.diagnostics?.push(`[error-identification] ${file.path} could not be analysed: ${msg.slice(0, 100)}`)
       }
     }
 

@@ -200,6 +200,12 @@ export class EslintJsxA11yScanner implements ScannerAdapter {
         const relativePath = fileEntry?.path ?? result.filePath
 
         for (const msg of result.messages) {
+          // A fatal message (ruleId null) means the file could not be parsed, so no rule ran
+          // on it. Never let that read as a clean file.
+          if (msg.fatal) {
+            context.diagnostics?.push(`[eslint-jsx-a11y] ${relativePath} could not be parsed and was not checked by the JSX rules: ${msg.message.slice(0, 100)}`)
+            continue
+          }
           if (!msg.ruleId || !msg.ruleId.startsWith('jsx-a11y/')) continue
 
           const wcagMapping = RULE_WCAG_MAP[msg.ruleId]
@@ -240,8 +246,10 @@ export class EslintJsxA11yScanner implements ScannerAdapter {
         }
       }
     } catch (error) {
+      // The whole lint run failed: surface it as a scanner failure (runScan records it on
+      // diagnostics and leaves this scanner out of the coverage it would otherwise claim).
       const errMsg = error instanceof Error ? error.message : String(error)
-      console.warn(`  [eslint-jsx-a11y] Scan failed: ${errMsg.slice(0, 120)}`)
+      throw new Error(`eslint-jsx-a11y: ${errMsg.slice(0, 120)}`)
     }
 
     return allIssues

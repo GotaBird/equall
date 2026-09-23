@@ -16,9 +16,15 @@ import type {
 //
 // The rule that fixes the dishonesty: a scanner counts only if the scan actually contained
 // files of one of its `fileTypes`. "Capable" is never reported as "tested".
-export function computeCoverage(scanners: ScannerAdapter[], files: FileEntry[]): CoverageReport {
+// A scanner that failed outright (`failed`) exercised nothing: it never counts as having run,
+// so its criteria fall back to `manual` instead of being credited as tested.
+export function computeCoverage(
+  scanners: ScannerAdapter[],
+  files: FileEntry[],
+  failed: ReadonlySet<string> = new Set(),
+): CoverageReport {
   const presentTypes = new Set(files.map((f) => f.type))
-  const ran = scanners.filter((s) => s.fileTypes.some((t) => presentTypes.has(t)))
+  const ran = scanners.filter((s) => !failed.has(s.name) && s.fileTypes.some((t) => presentTypes.has(t)))
 
   // Criteria only partially testable, declared by the scanners that actually ran.
   const partialSet = new Set(ran.flatMap((s) => s.partialCriteria ?? []))

@@ -23,6 +23,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **A file the engine could not analyse is reported, never passed as clean.** A JSX/TSX file
+  that failed to parse used to produce no finding and no warning (score 100). Files skipped
+  or not parsed by any scanner are now listed on `diagnostics` (printed on stderr by the CLI,
+  carried in `--json`), and a scanner that fails outright is no longer credited in the
+  coverage report: its criteria show as "Not evaluated" instead of tested. The engine itself
+  no longer writes these warnings to stderr; they travel on the result.
 - **axe no longer skips JSX files that use `autoComplete`.** axe-core shared its global state
   with the JSX lint rules (`autocomplete-valid` drives axe internally). Depending on how the
   engine was loaded, a lint pass could reset axe mid-run: the file was skipped with a
