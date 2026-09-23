@@ -44,7 +44,9 @@ export function computeConformance(
   issues: EquallIssue[],
   coverage: CoverageReport
 ): CriterionConformance[] {
-  const active = issues.filter((i) => !i.ignored)
+  // Failing set: counted issues only. Ignored ones are accepted exceptions (below), and
+  // review-only ones could not be confirmed statically, so neither makes a criterion fail.
+  const active = issues.filter((i) => !i.ignored && !i.review_only)
 
   // Criterion → failing-issue fingerprints (fail evidence). One issue can map to several
   // criteria, so it becomes evidence for each. Fingerprints are populated by runScan before
