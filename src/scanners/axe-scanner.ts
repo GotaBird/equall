@@ -85,14 +85,21 @@ export class AxeScanner implements ScannerAdapter {
   name = 'axe-core'
   version = ''
   fileTypes: FileType[] = ['html', 'jsx', 'tsx', 'vue', 'astro', 'svelte']
-  // Contrast rules (color-contrast / color-contrast-enhanced) are disabled below —
-  // they need real rendering — so 1.4.3 is only partially testable statically.
-  partialCriteria = ['1.4.3']
+  // Criteria whose rules run but cannot conclude without a rendered layout, so they are
+  // never reported as automatically tested (verdict: needs the rendered/assisted check):
+  // - 1.4.3: contrast rules are disabled below (they need real rendering)
+  // - 1.4.1: link-in-text-block is always "inapplicable" under jsdom (no computed styles)
+  // - 2.5.8: target-size "passes" any size under jsdom (no layout: a 10×10px button passes)
+  partialCriteria = ['1.4.3', '1.4.1', '2.5.8']
+  // Only criteria with at least one rule that actually runs under this configuration.
+  // Not listed although axe tags them: 1.2.1 (audio-caption is deprecated and never runs),
+  // 1.3.4 (css-orientation-lock) and 2.5.3 (label-content-name-mismatch) are experimental
+  // rules outside the run tags — claiming them would report untested criteria as tested.
   coveredCriteria = [
-    '1.1.1', '1.2.1', '1.2.2', '1.3.1', '1.3.4', '1.3.5',
+    '1.1.1', '1.2.2', '1.3.1', '1.3.5',
     '1.4.1', '1.4.2', '1.4.3', '1.4.4', '1.4.12',
     '2.1.1', '2.1.3', '2.2.1', '2.2.2', '2.4.1', '2.4.2', '2.4.4',
-    '2.5.3', '2.5.8',
+    '2.5.8',
     '3.1.1', '3.1.2', '3.3.2',
     '4.1.2',
   ]
