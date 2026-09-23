@@ -23,6 +23,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **axe no longer skips JSX files that use `autoComplete`.** axe-core shared its global state
+  with the JSX lint rules (`autocomplete-valid` drives axe internally). Depending on how the
+  engine was loaded, a lint pass could reset axe mid-run: the file was skipped with a
+  warning, and the lint rules could then fail on a torn-down window. Each scanned document
+  now gets its own axe instance, so both engines always analyse every file, and several
+  scans can run in the same process. Scans take slightly longer (about 20% on a large repo).
 - **`<label htmlFor>` is recognized on JSX.** The JSX spelling `htmlFor` (and `httpEquiv`,
   `acceptCharset`, `xlinkHref`) is translated to its HTML name before axe runs, so a
   correctly labelled input is no longer reported as unlabelled.
