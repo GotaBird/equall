@@ -66,6 +66,27 @@ export const DEFAULT_EXCLUDE = [
   '**/storybook-static/**',
 ]
 
+// Glob → RegExp for the DEFAULT_EXCLUDE forms (`**/dir/**`, `**/*.x.*`): `**/` matches any
+// leading directories, `/**` anything below, `*` one path segment. Used where there is no
+// directory to walk (the diff scan reads files from git, not from disk).
+function excludePatternToRegExp(pattern: string): RegExp {
+  let re = ''
+  for (let i = 0; i < pattern.length; i++) {
+    if (pattern.startsWith('**/', i)) { re += '(?:.*/)?'; i += 2 }
+    else if (pattern.startsWith('/**', i)) { re += '/.*'; i += 2 }
+    else if (pattern[i] === '*') re += '[^/]*'
+    else re += pattern[i].replace(/[.+?^${}()|[\]\\]/g, '\\$&')
+  }
+  return new RegExp(`^${re}$`)
+}
+
+const DEFAULT_EXCLUDE_RES = DEFAULT_EXCLUDE.map(excludePatternToRegExp)
+
+// True when a repo-relative POSIX path falls under DEFAULT_EXCLUDE (tests, stories, builds…).
+export function isDefaultExcluded(path: string): boolean {
+  return DEFAULT_EXCLUDE_RES.some((re) => re.test(path))
+}
+
 export async function discoverFiles(
   rootPath: string,
   options: ScanOptions

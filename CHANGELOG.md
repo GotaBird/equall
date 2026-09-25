@@ -15,6 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Diff scan: `new_issues` now holds counted violations only** (`runDiffScan`, library API).
+  Review-only findings move to the new `new_review_only`, and best-practice and above-target
+  findings to `new_advisory`; `legacy_issues` is unchanged. The result shape only gains
+  fields, but code that read every introduced finding from `new_issues` must now also read
+  the two new lists. `formatDiffGuardrail` names them when there are some.
+
 - **Findings static analysis cannot confirm are reported for review, not counted.** On
   JSX/TSX, Vue, Svelte and Astro files, axe only sees markup reconstructed from the source
   code, not a rendered page. When its finding sits on an element whose content or name
@@ -29,6 +35,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   fingerprint changed. Scores on component code can rise as a result.
 
 ### Fixed
+
+- **Diff scan reports what a change introduced, and nothing else.** Three defects made "new"
+  unreliable in both directions:
+  - a copy of an existing violation read as pre-existing, because the base and head
+    fingerprints were compared as sets; occurrences are now counted per fingerprint;
+  - the cross-engine merge could fire on one side of the diff and not the other, turning a
+    pre-existing defect into a phantom new one; base and head are now compared before the
+    merge, which is applied afterwards;
+  - changed test, story and build files were scanned although a full scan skips them; they
+    are now skipped and listed on the new `excluded` field.
+  Identical copies added to one file still fold into one finding, as in a full scan.
 
 - **The same code always produces the same JSON.** Files were scanned in filesystem-walk
   order and results collected as scanners finished, so two scans of an unchanged tree could
