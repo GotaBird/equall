@@ -59,6 +59,7 @@ export class ErrorIdentificationScanner implements ScannerAdapter {
         })
       } catch (error) {
         const msg = error instanceof Error ? error.message : String(error)
+        context.unchecked?.push({ scanner: this.name, file_path: file.path, reason: 'analysis_error' })
         context.diagnostics?.push(`[error-identification] ${file.path} could not be analysed: ${msg.slice(0, 100)}`)
       }
     }

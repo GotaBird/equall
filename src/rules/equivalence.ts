@@ -1,4 +1,5 @@
 import type { EquallIssue } from '../types.js'
+import { fingerprint } from '../utils/fingerprint.js'
 
 // Cross-engine rule equivalence — the dedup layer's knowledge of which rules assert the
 // SAME requirement on the SAME element across engines. Aggregating engines means the same
@@ -104,7 +105,7 @@ export function mergeCrossEngineDuplicates(issues: EquallIssue[]): EquallIssue[]
   }
 
   const dropped = new Set<EquallIssue>()
-  const credited = new Map<EquallIssue, string[]>()
+  const credited = new Map<EquallIssue, { scanners: string[]; merged: string[] }>()
 
   for (const rules of byFileAndRule.values()) {
     for (const { eslint, axe } of RULE_EQUIVALENCE) {
@@ -115,7 +116,9 @@ export function mergeCrossEngineDuplicates(issues: EquallIssue[]): EquallIssue[]
       const survivor = eslintSide[0]
       const twin = axeSide[0]
       dropped.add(twin)
-      credited.set(survivor, [survivor.scanner, twin.scanner])
+      // The twin's fields are final here, so its fingerprint is the one it would carry
+      // unmerged. Recorded so a consumer can tell a twin merged back from a twin fixed.
+      credited.set(survivor, { scanners: [survivor.scanner, twin.scanner], merged: [fingerprint(twin)] })
     }
   }
 
@@ -123,7 +126,7 @@ export function mergeCrossEngineDuplicates(issues: EquallIssue[]): EquallIssue[]
   return issues
     .filter((issue) => !dropped.has(issue))
     .map((issue) => {
-      const scanners = credited.get(issue)
-      return scanners ? { ...issue, scanners } : issue
+      const merge = credited.get(issue)
+      return merge ? { ...issue, scanners: merge.scanners, merged_fingerprints: merge.merged } : issue
     })
 }

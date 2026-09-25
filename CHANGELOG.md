@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **`unchecked` on the scan result**: the files a scanner could not check, as
+  `{ scanner, file_path, reason }` (`parse_error`, `analysis_error`, `language_skipped`).
+  It is the structured form of the matching `diagnostics` lines, for tools that track issues
+  across scans: a finding missing from an unchecked file was not re-checked, not fixed. A
+  scanner that failed outright is not listed per file; it is absent from `scanners_used`.
+- **`merged_fingerprints` on merged issues**: the fingerprint of the finding a cross-engine
+  merge absorbed (the axe twin of a jsx-a11y finding), exactly as it reads when unmerged.
+  It lets a tracking tool tell that a twin which reappears and then disappears again was
+  merged back, not fixed. The issue's own fingerprint is unchanged.
+
 - **`--show-review`** lists the findings static analysis cannot confirm (see below) in a
   "To review" section. Without it, the terminal prints a single line with their count; the
   JSON output always carries them.

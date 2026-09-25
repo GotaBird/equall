@@ -191,6 +191,7 @@ export class AxeScanner implements ScannerAdapter {
         // Skip files that fail — never crash the whole scan, never pass silently: the file
         // was not checked by axe, and the result says so.
         const msg = error instanceof Error ? error.message : String(error)
+        context.unchecked?.push({ scanner: this.name, file_path: file.path, reason: 'analysis_error' })
         context.diagnostics?.push(`[axe-core] ${file.path} could not be analysed and was not checked by axe: ${msg.slice(0, 100)}`)
       }
     }

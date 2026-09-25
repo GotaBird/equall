@@ -11,7 +11,7 @@ import { isDocumentUnit } from './utils/html-extract.js'
 import { partitionPageLevelIssues, summarizeReclassified } from './rules/page-level.js'
 import { mergeCrossEngineDuplicates } from './rules/equivalence.js'
 import { detectRoutes, type RouteDetection } from './routes.js'
-import type { ScanOptions, ScanResult, ScannerInfo, EquallIssue, WcagLevel, WcagStandard, FileEntry } from './types.js'
+import type { ScanOptions, ScanResult, ScannerInfo, EquallIssue, WcagLevel, WcagStandard, FileEntry, UncheckedFile } from './types.js'
 
 // A single in-memory file: code provided directly instead of read from disk (T1.1).
 export interface FileInput {
@@ -65,6 +65,7 @@ function attachEmptyReport(result: ScanResult, files: FileEntry[], scanOptions: 
   result.standard = standard
   result.confidence_flags = computeConfidenceFlags(files)
   result.diagnostics = diagnostics
+  result.unchecked = []
   // Tri-state (see ScanResult.routes): absent when detection was not attempted.
   if (detection) result.routes = detection.routes
   return result
@@ -119,7 +120,8 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
 
   // 3. Run all scanners in parallel
   // Scanners report what they could not analyse on the shared diagnostics list.
-  const scanContext = { root_path: rootPath, files, options: scanOptions, in_memory: inMemory, diagnostics }
+  const unchecked: UncheckedFile[] = []
+  const scanContext = { root_path: rootPath, files, options: scanOptions, in_memory: inMemory, diagnostics, unchecked }
 
   const scannerResults = await Promise.allSettled(
     scanners.map(async (scanner) => {
@@ -236,6 +238,8 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
   // 14. Non-fatal scan warnings — returned on the result, never written to the host's stderr.
   // Scanners run in parallel and push as they go: sort for a stable output.
   result.diagnostics = [...diagnostics].sort()
+  result.unchecked = [...unchecked].sort((a, b) =>
+    a.file_path.localeCompare(b.file_path) || a.scanner.localeCompare(b.scanner) || a.reason.localeCompare(b.reason))
 
   // 15. File-based routes — the additive inventory detected in step 1b. Tri-state (see
   // ScanResult.routes): absent when detection was not attempted (in-memory input), []

@@ -203,6 +203,7 @@ export class EslintJsxA11yScanner implements ScannerAdapter {
           // A fatal message (ruleId null) means the file could not be parsed, so no rule ran
           // on it. Never let that read as a clean file.
           if (msg.fatal) {
+            context.unchecked?.push({ scanner: this.name, file_path: relativePath, reason: 'parse_error' })
             context.diagnostics?.push(`[eslint-jsx-a11y] ${relativePath} could not be parsed and was not checked by the JSX rules: ${msg.message.slice(0, 100)}`)
             continue
           }

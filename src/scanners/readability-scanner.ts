@@ -80,6 +80,7 @@ export class ReadabilityScanner implements ScannerAdapter {
         if (langAttr && !langAttr.toLowerCase().startsWith('en')) {
           // If language is explicitly set to non-English, readability formulas will be skewed based on English syllables
           // It's safer to skip unless the user forces it (not supported yet)
+          context.unchecked?.push({ scanner: this.name, file_path: file.path, reason: 'language_skipped' })
           context.diagnostics?.push(`[readability] ${file.path} skipped: document language is '${langAttr}', but the reading-level formula is English-calibrated`)
           continue
         }
@@ -157,6 +158,7 @@ export class ReadabilityScanner implements ScannerAdapter {
         }
       } catch (error) {
         const msg = error instanceof Error ? error.message : String(error)
+        context.unchecked?.push({ scanner: this.name, file_path: file.path, reason: 'analysis_error' })
         context.diagnostics?.push(`[readability] ${file.path} could not be analysed: ${msg.slice(0, 100)}`)
       }
     }
