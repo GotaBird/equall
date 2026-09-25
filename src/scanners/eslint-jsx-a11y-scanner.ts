@@ -128,7 +128,7 @@ export class EslintJsxA11yScanner implements ScannerAdapter {
     // same jsx-a11y rules run on the .astro template (T1.8) — frontmatter is handled
     // by the parser; rules apply to the markup.
     const eligibleFiles = context.files.filter(
-      (f) => f.type === 'jsx' || f.type === 'tsx' || f.type === 'astro'
+      (f) => this.fileTypes.includes(f.type)
     )
     if (eligibleFiles.length === 0) return []
 

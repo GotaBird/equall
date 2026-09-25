@@ -19,7 +19,7 @@ export class ErrorIdentificationScanner implements ScannerAdapter {
 
   async scan(context: ScanContext): Promise<EquallIssue[]> {
     const scannableFiles = context.files.filter(
-      (f) => f.type === 'html' || f.type === 'vue' || f.type === 'svelte' || f.type === 'astro'
+      (f) => this.fileTypes.includes(f.type)
     )
 
     const allIssues: EquallIssue[] = []

@@ -155,15 +155,9 @@ export class AxeScanner implements ScannerAdapter {
   async scan(context: ScanContext): Promise<EquallIssue[]> {
     this.version = axe.version ?? 'unknown'
 
-    const htmlFiles = context.files.filter(
-      (f) =>
-        f.type === 'html' ||
-        f.type === 'jsx' ||
-        f.type === 'tsx' ||
-        f.type === 'vue' ||
-        f.type === 'astro' ||
-        f.type === 'svelte'
-    )
+    // Read exactly the file types declared in `fileTypes` (the single source that coverage
+    // also relies on), never a separate hardcoded list.
+    const htmlFiles = context.files.filter((f) => this.fileTypes.includes(f.type))
 
     // Only scan files that actually contain renderable HTML.
     const scannableFiles = htmlFiles.filter((f) => {
