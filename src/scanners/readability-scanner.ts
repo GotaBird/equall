@@ -56,6 +56,8 @@ export class ReadabilityScanner implements ScannerAdapter {
     // className attributes and {expressions} which pollute readability scores.
     // A real JSX parser would fix this but is overkill for v1.
     const scannableFiles = context.files.filter((f) => {
+      // Declared `fileTypes` first (the single source coverage relies on), then per-type checks.
+      if (!this.fileTypes.includes(f.type)) return false
       if (f.type === 'html') return true
       if (f.type === 'vue') return f.content.includes('<template')
       // Astro is markup-first (template at top level) — extractHtml strips its
