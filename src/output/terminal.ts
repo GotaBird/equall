@@ -159,6 +159,9 @@ export interface PrintOptions {
   verbose?: boolean
   all?: boolean
   showManual?: boolean
+  // List review-only findings in full. Off by default: the summary line still states how
+  // many were held back, so nothing is hidden silently.
+  showReview?: boolean
   // ANSI colors on/off. Defaults to on; the CLI resolves it with shouldUseColor()
   // (--no-color, NO_COLOR, FORCE_COLOR, TTY detection).
   color?: boolean
@@ -201,11 +204,11 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
   console.log(`${BOLD}  ◆ EQUALL — Accessibility Score${RESET}`)
   console.log()
 
-  printSummary(result, parts)
+  printSummary(result, parts, options)
   printViolations(parts.wcag, target, options)
   printAdvisory(parts.advisory, target, options)
   printBestPractices(parts.bestPractice, options)
-  printReviewOnly(parts.reviewOnly, options)
+  if (options.showReview) printReviewOnly(parts.reviewOnly, options)
   printNotVerifiable(result, options)
   printConfidenceFlags(result)
   if (options.showIgnored) printIgnored(parts.ignored)
@@ -226,7 +229,7 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
   printSupportSummary(result, target, options)
 }
 
-function printSummary(result: ScanResult, parts: ReportIssues): void {
+function printSummary(result: ScanResult, parts: ReportIssues, options: PrintOptions): void {
   const { summary } = result
   // Every count here is over COUNTED issues only — the ones the score and the verdict
   // are computed from. Ignored and review-only issues are announced on their own lines, so
@@ -265,7 +268,9 @@ function printSummary(result: ScanResult, parts: ReportIssues): void {
     console.log(`  ${GRAY}${routes.length} ${plural(routes.length, 'route')} detected · ${breakdown}${RESET}`)
   }
   if (parts.reviewOnly.length > 0) {
-    console.log(`  ${GRAY}${parts.reviewOnly.length} ${plural(parts.reviewOnly.length, 'finding')} to review — static analysis can't confirm ${plural(parts.reviewOnly.length, 'it', 'them')}, not counted${RESET}`)
+    const n = parts.reviewOnly.length
+    const hint = options.showReview ? 'listed below' : 'run with --show-review'
+    console.log(`  ${GRAY}${n} ${plural(n, 'finding')} not counted — static analysis can't confirm ${plural(n, 'it', 'them')} · ${hint}${RESET}`)
   }
   if (summary.ignored_count > 0) {
     console.log(`  ${GRAY}${summary.ignored_count} ${plural(summary.ignored_count, 'issue')} suppressed via equall-ignore${RESET}`)

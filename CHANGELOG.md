@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`--show-review`** lists the findings static analysis cannot confirm (see below) in a
+  "To review" section. Without it, the terminal prints a single line with their count; the
+  JSON output always carries them.
+
 ### Changed
 
 - **Findings static analysis cannot confirm are reported for review, not counted.** On
@@ -15,8 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   depends on props, runtime expressions or a component (`<Button>`, `{...props}`,
   `aria-checked={state}`), or comes from a rule that needs the rendered page, the issue is
   now flagged `review_only` with a `review_reason`. It keeps its fingerprint and stays in the
-  JSON output and in a "To review" section of the terminal report, but no longer counts in
-  the score, the violation counts or the conformance verdicts. Plain `.html` is never
+  JSON output, but no longer counts in the score, the violation counts or the conformance
+  verdicts. The terminal report states how many were held back and lists them only with
+  `--show-review`. Plain `.html` is never
   affected. Measured on a labelled corpus, the share of counted findings that are real rose
   from about half to more than three quarters, with no real defect dropped and no
   fingerprint changed. Scores on component code can rise as a result.

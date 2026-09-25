@@ -69,16 +69,30 @@ describe('JSX attribute names are translated before axe', () => {
 })
 
 describe('terminal report', () => {
-  it('lists review-only findings under "To review", outside the violation counts', async () => {
-    const r = await scanBuffer(`export function Toolbar() { return (<div><Button><SunIcon /></Button></div>) }`, 'Toolbar.tsx')
+  const toolbar = `export function Toolbar() { return (<div><Button><SunIcon /></Button></div>) }`
+
+  async function render(showReview?: boolean): Promise<string> {
+    const r = await scanBuffer(toolbar, 'Toolbar.tsx')
     const lines: string[] = []
     const spy = vi.spyOn(console, 'log').mockImplementation((...a: unknown[]) => { lines.push(a.join(' ')) })
     try {
-      printResult(r, { color: false })
+      printResult(r, { color: false, showReview })
     } finally {
       spy.mockRestore()
     }
-    const out = lines.join('\n')
+    return lines.join('\n')
+  }
+
+  it('holds review-only findings back by default, but says how many and how to see them', async () => {
+    const out = await render()
+    expect(out).toContain('0 WCAG violations')
+    expect(out).toMatch(/1 finding not counted .* run with --show-review/)
+    expect(out).not.toContain('To review')
+    expect(out).not.toContain('WCAG Violations')
+  })
+
+  it('lists them under "To review" with --show-review, still outside the violation counts', async () => {
+    const out = await render(true)
     expect(out).toContain('0 WCAG violations')
     expect(out).toContain('To review')
     expect(out).toContain('button-name')
