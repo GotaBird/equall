@@ -29,6 +29,12 @@ export interface RunScanOptions {
   // In-memory input (T1.1): when provided, scan these buffers instead of discovering
   // files on disk. Unblocks the MCP (T1.4) and diff-aware scanning (T1.2).
   files?: FileInput[]
+  // Keep every occurrence: skip the cross-engine merge and the dedup (step 5). For the diff
+  // scan only, which compares base and head occurrence by occurrence and then merges and
+  // dedups the result itself. Both steps fold findings (the merge only when it is 1:1, the
+  // dedup on identical markup), so running them before the comparison hides copies and can
+  // fire on one side only.
+  keepOccurrences?: boolean
 }
 
 // Build FileEntry[] from caller-supplied buffers, mirroring what discoverFiles
@@ -151,7 +157,7 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
   // see rules/equivalence.ts), then deduplicate within engines (same file + same
   // rule + same line = one issue). Both run before fingerprinting, so surviving
   // issues keep the identity they would have had anyway.
-  const deduped = deduplicateIssues(mergeCrossEngineDuplicates(allIssues))
+  const deduped = options.keepOccurrences ? allIssues : deduplicateIssues(mergeCrossEngineDuplicates(allIssues))
 
   // 5b. Reclassify page-level rules on fragment units — engine-agnostic
   // post-filter, after dedup (honest counts) and before ignores (an equall-ignore on a

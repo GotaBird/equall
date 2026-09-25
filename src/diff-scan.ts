@@ -1,7 +1,9 @@
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
-import { scanBuffer } from './scan.js'
-import { fileTypeForPath } from './discover.js'
+import { scanBuffer, deduplicateIssues } from './scan.js'
+import { fileTypeForPath, isDefaultExcluded } from './discover.js'
+import { mergeCrossEngineDuplicates } from './rules/equivalence.js'
+import { isBeyondTarget } from './scoring/score.js'
 import type { EquallIssue, WcagLevel } from './types.js'
 
 const execFileAsync = promisify(execFile)
@@ -24,15 +26,23 @@ export interface DiffScanResult {
   base: string                 // Resolved base commit SHA
   head: string                 // Resolved head commit SHA
   merge_base: string           // merge-base(base, head) — the three-dot anchor
-  new_issues: EquallIssue[]    // Violations the diff introduced (fingerprint absent at base)
-  legacy_issues: EquallIssue[] // Violations present in changed files but already at base
+  // Counted WCAG violations the diff introduced, within the target level: the ones a gate
+  // acts on. Review-only, best-practice and above-target findings have their own lists.
+  new_issues: EquallIssue[]
+  new_review_only: EquallIssue[] // Introduced, but static analysis can't confirm them (review_only)
+  new_advisory: EquallIssue[]    // Introduced best-practice or above-target findings (never counted)
+  legacy_issues: EquallIssue[] // Findings in changed files that already existed at base (any kind)
   not_testable: string[]       // Changed files outside the scannable set
+  excluded: string[]           // Changed files skipped like a full scan skips them (tests, stories, builds)
   summary: {
     files_changed: number
     files_scanned: number
     new_count: number
+    new_review_only_count: number
+    new_advisory_count: number
     legacy_count: number
     not_testable_count: number
+    excluded_count: number
   }
 }
 
@@ -102,13 +112,39 @@ async function showFile(cwd: string, sha: string, path: string): Promise<string 
   }
 }
 
-const activeFingerprints = (issues: EquallIssue[]): Set<string> =>
-  new Set(issues.filter((i) => !i.ignored && i.fingerprint).map((i) => i.fingerprint as string))
+// Split head occurrences into new / legacy by counting them per fingerprint. Set membership
+// is not enough: a copy-pasted violation has the same fingerprint as the original, so the
+// first N occurrences at head match the N at base and every extra one is new.
+function classifyByCount(headIssues: EquallIssue[], baseIssues: EquallIssue[]): Set<EquallIssue> {
+  const remaining = new Map<string, number>()
+  for (const issue of baseIssues) {
+    if (issue.fingerprint) remaining.set(issue.fingerprint, (remaining.get(issue.fingerprint) ?? 0) + 1)
+  }
+  const isNew = new Set<EquallIssue>()
+  for (const issue of headIssues) {
+    const left = issue.fingerprint ? remaining.get(issue.fingerprint) ?? 0 : 0
+    if (left > 0) remaining.set(issue.fingerprint as string, left - 1)
+    else isNew.add(issue)
+  }
+  return isNew
+}
+
+// Fold the classified occurrences the way a full scan does (cross-engine merge, then dedup),
+// within the new and within the legacy findings separately. One added defect seen by two
+// engines is reported once, even when the file already held copies of it (the merge only
+// fires 1:1). Identical added copies fold into one new finding, as in a full scan.
+function foldClassified(headIssues: EquallIssue[], isNew: Set<EquallIssue>): { newIssues: EquallIssue[]; legacyIssues: EquallIssue[] } {
+  const fold = (issues: EquallIssue[]) => deduplicateIssues(mergeCrossEngineDuplicates(issues))
+  return {
+    newIssues: fold(headIssues.filter((i) => isNew.has(i))),
+    legacyIssues: fold(headIssues.filter((i) => !isNew.has(i))),
+  }
+}
 
 // Diff-aware "only-new" scan (T1.2): scan each changed scannable file at HEAD and at
-// the merge-base, then classify each HEAD violation by whether its fingerprint already
-// existed at base. Identity is the T0.4 fingerprint (never the line), so a pure
-// reformat keeps the same identity and produces zero false "new".
+// the merge-base, then classify each HEAD violation against the base occurrences of the
+// same fingerprint. Identity is the fingerprint (never the line), so a pure reformat keeps
+// the same identity and produces zero false "new".
 export async function runDiffScan(options: DiffScanOptions): Promise<DiffScanResult> {
   const cwd = options.cwd ?? process.cwd()
   const level = options.level ?? 'AA'
@@ -120,14 +156,26 @@ export async function runDiffScan(options: DiffScanOptions): Promise<DiffScanRes
   const changed = await changedFiles(cwd, mergeBase, headSha)
 
   const newIssues: EquallIssue[] = []
+  const newReviewOnly: EquallIssue[] = []
+  const newAdvisory: EquallIssue[] = []
   const legacyIssues: EquallIssue[] = []
   const notTestable: string[] = []
+  const excluded: string[] = []
   let filesScanned = 0
 
-  // Sequential on purpose: scanBuffer drives axe-core, whose global console.error
-  // patch races under parallel scans (same constraint as the worker).
+  // Compare occurrence by occurrence, then fold the classified head issues (foldClassified).
+  const scanOptions = { level, keepOccurrences: true }
+  const active = (issues: EquallIssue[]) => issues.filter((i) => !i.ignored)
+
+  // Sequential on purpose: keeps memory flat and the output order stable.
   for (const file of changed) {
     if (file.status === 'D') continue // gone at HEAD — nothing to assess
+
+    // Same default excludes as a full scan: a test or story file is not product code.
+    if (isDefaultExcluded(file.path)) {
+      excluded.push(file.path)
+      continue
+    }
 
     if (!SCANNABLE.has(fileTypeForPath(file.path))) {
       notTestable.push(file.path)
@@ -141,20 +189,18 @@ export async function runDiffScan(options: DiffScanOptions): Promise<DiffScanRes
       continue
     }
 
-    const headIssues = (await scanBuffer(headContent, file.path, { level })).issues.filter((i) => !i.ignored)
+    const headIssues = active((await scanBuffer(headContent, file.path, scanOptions)).issues)
 
     // Whole-file scope: the base version of the SAME path is the reference set.
     const baseContent = file.status === 'A' ? null : await showFile(cwd, mergeBase, file.path)
-    const baseFps = baseContent == null
-      ? new Set<string>()
-      : activeFingerprints((await scanBuffer(baseContent, file.path, { level })).issues)
+    const baseIssues = baseContent == null ? [] : active((await scanBuffer(baseContent, file.path, scanOptions)).issues)
 
-    for (const issue of headIssues) {
-      if (issue.fingerprint && baseFps.has(issue.fingerprint)) {
-        legacyIssues.push(issue)
-      } else {
-        newIssues.push(issue)
-      }
+    const classified = foldClassified(headIssues, classifyByCount(headIssues, baseIssues))
+    legacyIssues.push(...classified.legacyIssues)
+    for (const issue of classified.newIssues) {
+      if (issue.review_only) newReviewOnly.push(issue)
+      else if (issue.wcag_criteria.length === 0 || isBeyondTarget(issue, level)) newAdvisory.push(issue)
+      else newIssues.push(issue)
     }
     filesScanned++
   }
@@ -164,21 +210,32 @@ export async function runDiffScan(options: DiffScanOptions): Promise<DiffScanRes
     head: headSha,
     merge_base: mergeBase,
     new_issues: newIssues,
+    new_review_only: newReviewOnly,
+    new_advisory: newAdvisory,
     legacy_issues: legacyIssues,
     not_testable: notTestable,
+    excluded,
     summary: {
       files_changed: changed.length,
       files_scanned: filesScanned,
       new_count: newIssues.length,
+      new_review_only_count: newReviewOnly.length,
+      new_advisory_count: newAdvisory.length,
       legacy_count: legacyIssues.length,
       not_testable_count: notTestable.length,
+      excluded_count: excluded.length,
     },
   }
 }
 
 // Always-formulated diff guardrail (T1.3): a single line that never claims "clean/done",
 // even at zero new — it always names the legacy debt, the untested files, and the next step.
+// Findings introduced but not counted (review-only, advisory) are named only when present.
 export function formatDiffGuardrail(result: DiffScanResult): string {
-  const { new_count, legacy_count, not_testable_count } = result.summary
-  return `${new_count} new · ${legacy_count} legacy · ${not_testable_count} not statically testable → run the rendered check`
+  const { new_count, new_review_only_count = 0, new_advisory_count = 0, legacy_count, not_testable_count } = result.summary
+  const uncounted = [
+    new_review_only_count > 0 ? `${new_review_only_count} new to review` : '',
+    new_advisory_count > 0 ? `${new_advisory_count} new advisory` : '',
+  ].filter(Boolean)
+  return [`${new_count} new`, ...uncounted, `${legacy_count} legacy`, `${not_testable_count} not statically testable`].join(' · ') + ' → run the rendered check'
 }
