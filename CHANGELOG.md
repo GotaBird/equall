@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-09-26
+
+Findings the engine cannot confirm by static analysis are now reported for review instead
+of counted, coverage no longer claims criteria no check concludes on, and the diff scan
+reports only what a change introduced.
+
+**Fingerprint impact:** none measured. On 15 real repositories every fingerprint was kept,
+none appeared and none disappeared. One narrow case can change a fingerprint; it is
+described under the `htmlFor` entry below.
+
+**Score impact:** the scoring formula is unchanged (`score_model` stays 2), but what it
+counts changes. Review-only findings leave the score, the counts and the conformance
+verdicts, and some criteria are now reported as partial. Scores and verdicts on component
+code (JSX/TSX, Vue, Svelte, Astro) can rise with no change to the code, so compare scores
+from before and after 0.3.0 with care. Plain HTML is not affected.
+
 ### Added
 
 - **`unchecked` on the scan result**: the files a scanner could not check, as
@@ -18,7 +34,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   merge absorbed (the axe twin of a jsx-a11y finding), exactly as it reads when unmerged.
   It lets a tracking tool tell that a twin which reappears and then disappears again was
   merged back, not fixed. The issue's own fingerprint is unchanged.
-
 - **`--show-review`** lists the findings static analysis cannot confirm (see below) in a
   "To review" section. Without it, the terminal prints a single line with their count; the
   JSON output always carries them.
