@@ -1,4 +1,5 @@
 import axeModule from 'axe-core'
+import { Script } from 'node:vm'
 import { JSDOM, VirtualConsole } from 'jsdom'
 import type {
   ScannerAdapter,
@@ -10,6 +11,9 @@ import type {
   FileType,
 } from '../types.js'
 import { extractHtml, wrapFragment, DYNAMIC_MARKER_PREFIX, COMPONENT_MARKER } from '../utils/html-extract.js'
+
+// axe-core compiled once per process, then run in each document's own VM context.
+let axeScript: Script | undefined
 
 const axe = (axeModule as any).default ?? axeModule
 
@@ -247,7 +251,10 @@ export class AxeScanner implements ScannerAdapter {
       // on how the engine was loaded (from source they did; the bundled build ships two
       // copies), so tests and the published CLI disagreed. One axe per document removes the
       // shared state in every build, and makes concurrent scans in one process safe.
-      dom.window.eval(axe.source)
+      // Injected through jsdom's VM context (its documented way to run code in the window),
+      // from one script compiled once, rather than by evaluating the source string.
+      axeScript ??= new Script(axe.source, { filename: 'axe-core.js' })
+      axeScript.runInContext(dom.getInternalVMContext())
       const windowAxe = (dom.window as unknown as { axe: typeof axe }).axe
       windowAxe.configure({ rules: AXE_RULE_OVERRIDES })
       const results = await windowAxe.run(document.documentElement, {
