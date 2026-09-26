@@ -77,6 +77,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`<label htmlFor>` is recognized on JSX.** The JSX spelling `htmlFor` (and `httpEquiv`,
   `acceptCharset`, `xlinkHref`) is translated to its HTML name before axe runs, so a
   correctly labelled input is no longer reported as unlabelled.
+  **Fingerprint impact:** an axe `label` finding on an input correctly labelled with
+  `htmlFor` was a false positive and no longer appears. In a narrow case, an axe finding
+  whose element markup is shorter than 300 characters and contains a `<label htmlFor>`
+  carries `for` in its snippet instead, which changes its fingerprint. Measured on 15 real
+  repositories (46 uses of `htmlFor`): no fingerprint changed.
 - **The terminal summary counts what the report lists.** Ignored issues were included in the
   "N WCAG violations" and severity counts while the list below excluded them; the summary
   now counts only the issues that affect the score, and states ignored and review-only
