@@ -56,6 +56,8 @@ export class ReadabilityScanner implements ScannerAdapter {
     // className attributes and {expressions} which pollute readability scores.
     // A real JSX parser would fix this but is overkill for v1.
     const scannableFiles = context.files.filter((f) => {
+      // Declared `fileTypes` first (the single source coverage relies on), then per-type checks.
+      if (!this.fileTypes.includes(f.type)) return false
       if (f.type === 'html') return true
       if (f.type === 'vue') return f.content.includes('<template')
       // Astro is markup-first (template at top level) — extractHtml strips its
@@ -78,7 +80,8 @@ export class ReadabilityScanner implements ScannerAdapter {
         if (langAttr && !langAttr.toLowerCase().startsWith('en')) {
           // If language is explicitly set to non-English, readability formulas will be skewed based on English syllables
           // It's safer to skip unless the user forces it (not supported yet)
-          console.warn(`  [readability] Skipped ${file.path}: Document language is '${langAttr}', but scoring is English-calibrated`)
+          context.unchecked?.push({ scanner: this.name, file_path: file.path, reason: 'language_skipped' })
+          context.diagnostics?.push(`[readability] ${file.path} skipped: document language is '${langAttr}', but the reading-level formula is English-calibrated`)
           continue
         }
 
@@ -155,7 +158,8 @@ export class ReadabilityScanner implements ScannerAdapter {
         }
       } catch (error) {
         const msg = error instanceof Error ? error.message : String(error)
-        console.warn(`  [readability] Skipped ${file.path}: ${msg.slice(0, 80)}`)
+        context.unchecked?.push({ scanner: this.name, file_path: file.path, reason: 'analysis_error' })
+        context.diagnostics?.push(`[readability] ${file.path} could not be analysed: ${msg.slice(0, 100)}`)
       }
     }
 

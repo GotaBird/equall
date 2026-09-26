@@ -19,7 +19,7 @@ export class ErrorIdentificationScanner implements ScannerAdapter {
 
   async scan(context: ScanContext): Promise<EquallIssue[]> {
     const scannableFiles = context.files.filter(
-      (f) => f.type === 'html' || f.type === 'vue' || f.type === 'svelte' || f.type === 'astro'
+      (f) => this.fileTypes.includes(f.type)
     )
 
     const allIssues: EquallIssue[] = []
@@ -59,7 +59,8 @@ export class ErrorIdentificationScanner implements ScannerAdapter {
         })
       } catch (error) {
         const msg = error instanceof Error ? error.message : String(error)
-        console.warn(`  [error-identification] Skipped ${file.path}: ${msg.slice(0, 80)}`)
+        context.unchecked?.push({ scanner: this.name, file_path: file.path, reason: 'analysis_error' })
+        context.diagnostics?.push(`[error-identification] ${file.path} could not be analysed: ${msg.slice(0, 100)}`)
       }
     }
 

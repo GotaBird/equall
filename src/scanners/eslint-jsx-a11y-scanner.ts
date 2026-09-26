@@ -98,6 +98,11 @@ export class EslintJsxA11yScanner implements ScannerAdapter {
   name = 'eslint-jsx-a11y'
   version = ''
   fileTypes: FileType[] = ['jsx', 'tsx', 'astro']
+  // Criteria this scanner only touches indirectly, so they are never reported as
+  // automatically tested: 2.4.7 Focus Visible comes from interactive-supports-focus (is the
+  // element focusable at all, not whether focus is visible) and 2.3.1 Three Flashes from
+  // no-distracting-elements (<marquee>/<blink>, not flash frequency).
+  partialCriteria = ['2.4.7', '2.3.1']
   coveredCriteria = [
     '1.1.1', '1.2.2', '1.2.3', '1.3.1', '1.3.5',
     '2.1.1', '2.3.1', '2.4.1', '2.4.3', '2.4.4', '2.4.6', '2.4.7',
@@ -123,7 +128,7 @@ export class EslintJsxA11yScanner implements ScannerAdapter {
     // same jsx-a11y rules run on the .astro template (T1.8) — frontmatter is handled
     // by the parser; rules apply to the markup.
     const eligibleFiles = context.files.filter(
-      (f) => f.type === 'jsx' || f.type === 'tsx' || f.type === 'astro'
+      (f) => this.fileTypes.includes(f.type)
     )
     if (eligibleFiles.length === 0) return []
 
@@ -195,6 +200,13 @@ export class EslintJsxA11yScanner implements ScannerAdapter {
         const relativePath = fileEntry?.path ?? result.filePath
 
         for (const msg of result.messages) {
+          // A fatal message (ruleId null) means the file could not be parsed, so no rule ran
+          // on it. Never let that read as a clean file.
+          if (msg.fatal) {
+            context.unchecked?.push({ scanner: this.name, file_path: relativePath, reason: 'parse_error' })
+            context.diagnostics?.push(`[eslint-jsx-a11y] ${relativePath} could not be parsed and was not checked by the JSX rules: ${msg.message.slice(0, 100)}`)
+            continue
+          }
           if (!msg.ruleId || !msg.ruleId.startsWith('jsx-a11y/')) continue
 
           const wcagMapping = RULE_WCAG_MAP[msg.ruleId]
@@ -235,8 +247,10 @@ export class EslintJsxA11yScanner implements ScannerAdapter {
         }
       }
     } catch (error) {
+      // The whole lint run failed: surface it as a scanner failure (runScan records it on
+      // diagnostics and leaves this scanner out of the coverage it would otherwise claim).
       const errMsg = error instanceof Error ? error.message : String(error)
-      console.warn(`  [eslint-jsx-a11y] Scan failed: ${errMsg.slice(0, 120)}`)
+      throw new Error(`eslint-jsx-a11y: ${errMsg.slice(0, 120)}`)
     }
 
     return allIssues

@@ -26,6 +26,20 @@ export interface EquallIssue {
   // Suppression
   ignored?: boolean                  // true if suppressed by equall-ignore comment
 
+  // Review-only: a finding static analysis cannot confirm (e.g. axe on markup reconstructed
+  // from component source, on an element whose name or content depends on props, runtime
+  // expressions or a component). Reported with its fingerprint unchanged for a human or agent
+  // to check, but never counted as a failure: excluded from the score, the conformance
+  // verdicts and the violation counts. Absent = a counted finding.
+  review_only?: boolean
+  review_reason?: string             // why it could not be confirmed (plain language)
+
+  // Cross-engine merge (rules/equivalence.ts): fingerprints of the findings this issue
+  // absorbed (the axe twin of a jsx-a11y finding). Present only on merged issues; never part
+  // of the fingerprint. A consumer tracking issues by fingerprint uses it to tell that a
+  // twin which reappears, then disappears again, was merged back rather than fixed.
+  merged_fingerprints?: string[]
+
   // Stable identity — survives reformatting; see utils/fingerprint.ts.
   // Populated by runScan() after dedup; absent on raw scanner output.
   // Hash of file_path + scanner_rule_id + sorted criteria + normalized html_snippet.
@@ -141,6 +155,20 @@ export interface ScanContext {
   in_memory?: boolean                 // true when files come from buffers (T1.1) and
                                       // do not exist on disk — scanners that read the
                                       // filesystem (eslint) must use their in-memory path
+  diagnostics?: string[]              // where a scanner reports what it could NOT analyse
+                                      // (a file it skipped or failed to parse). runScan
+                                      // returns them on ScanResult.diagnostics; scanners
+                                      // never write to stderr themselves.
+  unchecked?: UncheckedFile[]         // the same cases, structured (see ScanResult.unchecked)
+}
+
+// A file a scanner could not check. Its findings from that scanner are unknown, so a consumer
+// must not read their absence as a fix. A scanner that failed outright is not listed per
+// file: it is absent from ScanResult.scanners_used.
+export interface UncheckedFile {
+  scanner: string                     // scanner name, as in EquallIssue.scanner
+  file_path: string                   // as in EquallIssue.file_path
+  reason: 'parse_error' | 'analysis_error' | 'language_skipped'
 }
 
 export interface FileEntry {
@@ -183,6 +211,10 @@ export interface ScanResult {
   // runScan ([] when none) so the engine never writes to the host's stderr — the CLI decides
   // whether to print them, and a library / MCP consumer can capture them.
   diagnostics?: string[]
+  // Files a scanner could not check, structured for consumers that track issues across scans
+  // (the diagnostics above are the human-readable form). Attached by runScan ([] when none),
+  // sorted by file then scanner.
+  unchecked?: UncheckedFile[]
   // File-based routes detected in the scanned tree (Next.js App/Pages Router, Astro, plain
   // HTML) — an additive inventory, never routed into the score, verdicts, or coverage.
   // UNLIKE `coverage?`, absence is meaningful here (tri-state): the field is absent when

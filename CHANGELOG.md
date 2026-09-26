@@ -7,7 +7,94 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`unchecked` on the scan result**: the files a scanner could not check, as
+  `{ scanner, file_path, reason }` (`parse_error`, `analysis_error`, `language_skipped`).
+  It is the structured form of the matching `diagnostics` lines, for tools that track issues
+  across scans: a finding missing from an unchecked file was not re-checked, not fixed. A
+  scanner that failed outright is not listed per file; it is absent from `scanners_used`.
+- **`merged_fingerprints` on merged issues**: the fingerprint of the finding a cross-engine
+  merge absorbed (the axe twin of a jsx-a11y finding), exactly as it reads when unmerged.
+  It lets a tracking tool tell that a twin which reappears and then disappears again was
+  merged back, not fixed. The issue's own fingerprint is unchanged.
+
+- **`--show-review`** lists the findings static analysis cannot confirm (see below) in a
+  "To review" section. Without it, the terminal prints a single line with their count; the
+  JSON output always carries them.
+
+### Changed
+
+- **Diff scan: `new_issues` now holds counted violations only** (`runDiffScan`, library API).
+  Review-only findings move to the new `new_review_only`, and best-practice and above-target
+  findings to `new_advisory`; `legacy_issues` is unchanged. The result shape only gains
+  fields, but code that read every introduced finding from `new_issues` must now also read
+  the two new lists. `formatDiffGuardrail` names them when there are some.
+
+- **Findings static analysis cannot confirm are reported for review, not counted.** On
+  JSX/TSX, Vue, Svelte and Astro files, axe only sees markup reconstructed from the source
+  code, not a rendered page. When its finding sits on an element whose content or name
+  depends on props, runtime expressions or a component (`<Button>`, `{...props}`,
+  `aria-checked={state}`), or comes from a rule that needs the rendered page, the issue is
+  now flagged `review_only` with a `review_reason`. It keeps its fingerprint and stays in the
+  JSON output, but no longer counts in the score, the violation counts or the conformance
+  verdicts. The terminal report states how many were held back and lists them only with
+  `--show-review`. Plain `.html` is never
+  affected. Measured on a labelled corpus, the share of counted findings that are real rose
+  from about half to more than three quarters, with no real defect dropped and no
+  fingerprint changed. Scores on component code can rise as a result.
+
 ### Fixed
+
+- **Diff scan reports what a change introduced, and nothing else.** Three defects made "new"
+  unreliable in both directions:
+  - a copy of an existing violation read as pre-existing, because the base and head
+    fingerprints were compared as sets; occurrences are now counted per fingerprint;
+  - the cross-engine merge could fire on one side of the diff and not the other, turning a
+    pre-existing defect into a phantom new one; base and head are now compared before the
+    merge, which is applied afterwards;
+  - changed test, story and build files were scanned although a full scan skips them; they
+    are now skipped and listed on the new `excluded` field.
+  Identical copies added to one file still fold into one finding, as in a full scan.
+
+- **The same code always produces the same JSON.** Files were scanned in filesystem-walk
+  order and results collected as scanners finished, so two scans of an unchanged tree could
+  list issues, page-level files and diagnostics in a different order (different bytes, same
+  content). Files, issues, reclassified page-level files and diagnostics are now sorted; only
+  `scanned_at` and `duration_ms` differ between two scans. Fingerprints are unchanged.
+- **A file the engine could not analyse is reported, never passed as clean.** A JSX/TSX file
+  that failed to parse used to produce no finding and no warning (score 100). Files skipped
+  or not parsed by any scanner are now listed on `diagnostics` (printed on stderr by the CLI,
+  carried in `--json`), and a scanner that fails outright is no longer credited in the
+  coverage report: its criteria show as "Not evaluated" instead of tested. The engine itself
+  no longer writes these warnings to stderr; they travel on the result.
+- **axe no longer skips JSX files that use `autoComplete`.** axe-core shared its global state
+  with the JSX lint rules (`autocomplete-valid` drives axe internally). Depending on how the
+  engine was loaded, a lint pass could reset axe mid-run: the file was skipped with a
+  warning, and the lint rules could then fail on a torn-down window. Each scanned document
+  now gets its own axe instance, so both engines always analyse every file, and several
+  scans can run in the same process. Scans take slightly longer (about 20% on a large repo).
+- **`<label htmlFor>` is recognized on JSX.** The JSX spelling `htmlFor` (and `httpEquiv`,
+  `acceptCharset`, `xlinkHref`) is translated to its HTML name before axe runs, so a
+  correctly labelled input is no longer reported as unlabelled.
+  **Fingerprint impact:** an axe `label` finding on an input correctly labelled with
+  `htmlFor` was a false positive and no longer appears. In a narrow case, an axe finding
+  whose element markup is shorter than 300 characters and contains a `<label htmlFor>`
+  carries `for` in its snippet instead, which changes its fingerprint. Measured on 15 real
+  repositories (46 uses of `htmlFor`): no fingerprint changed.
+- **The terminal summary counts what the report lists.** Ignored issues were included in the
+  "N WCAG violations" and severity counts while the list below excluded them; the summary
+  now counts only the issues that affect the score, and states ignored and review-only
+  findings on their own lines.
+
+- **No criterion is reported as automatically tested unless a check can conclude on it.**
+  Seven criteria were credited as "Supports (automated)" without a real test: 1.2.1,
+  1.3.4 and 2.5.3 (their axe rules are deprecated or experimental and never run), 1.4.1
+  and 2.5.8 (the rules run but cannot conclude without a rendered layout — a 10×10px
+  button passed the target-size check), and 2.4.7 and 2.3.1 (only touched indirectly by
+  the JSX lint rules). The first three are now "Not evaluated — manual"; the other four
+  "Not evaluated — needs the rendered check". Issues, fingerprints and the score are
+  unchanged; only the conformance verdicts and the coverage counts move.
 
 - **Plain-text output when colors are off.** `--no-color` was accepted but ignored, so a
   report redirected to a file (`equall scan . --all > report.txt`) or read in a CI log was

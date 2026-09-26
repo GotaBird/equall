@@ -147,3 +147,30 @@ describe('runScan honest coverage (integration)', () => {
     expect(cov.counts.auto).toBeGreaterThan(0)
   })
 })
+
+// ---------------------------------------------------------------------------
+// No criterion is reported as automatically tested unless a rule that runs can
+// actually conclude on it (verified against axe under jsdom and the eslint mappings).
+// ---------------------------------------------------------------------------
+describe('coverage never over-claims', () => {
+  it('criteria whose rules never run or cannot conclude without rendering are not auto', async () => {
+    const html = `<!DOCTYPE html>
+<html lang="en"><head><title>T</title></head>
+<body><main><h1>Hi</h1><p>Read <a href="/x">this</a>.</p><button style="width:10px;height:10px">x</button></main></body></html>`
+    const jsx = `export function C() { return (<div><button>Save</button></div>) }`
+    const result = await runScan({ files: [
+      { path: 'index.html', content: html },
+      { path: 'C.tsx', content: jsx },
+    ] })
+    const status = (c: string) => result.coverage!.criteria.find((x) => x.criterion === c)?.status
+    // Rules that never run (deprecated / experimental): not claimed at all.
+    for (const c of ['1.2.1', '1.3.4', '2.5.3']) expect(status(c)).toBeUndefined()
+    // Rules that run but cannot conclude without a rendered layout, or only touch the
+    // criterion indirectly: partial, never auto.
+    for (const c of ['1.4.1', '2.5.8', '2.4.7', '2.3.1']) expect(status(c)).toBe('partial')
+    for (const c of ['1.2.1', '1.3.4', '1.4.1', '2.3.1', '2.4.7', '2.5.3', '2.5.8']) {
+      expect(result.coverage!.auto_criteria).not.toContain(c)
+      expect(result.criterion_conformance?.find((v) => v.criterion === c)?.verdict).not.toBe('pass_automated')
+    }
+  })
+})

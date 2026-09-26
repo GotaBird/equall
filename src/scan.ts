@@ -11,7 +11,7 @@ import { isDocumentUnit } from './utils/html-extract.js'
 import { partitionPageLevelIssues, summarizeReclassified } from './rules/page-level.js'
 import { mergeCrossEngineDuplicates } from './rules/equivalence.js'
 import { detectRoutes, type RouteDetection } from './routes.js'
-import type { ScanOptions, ScanResult, ScannerInfo, EquallIssue, WcagLevel, WcagStandard, FileEntry } from './types.js'
+import type { ScanOptions, ScanResult, ScannerInfo, EquallIssue, WcagLevel, WcagStandard, FileEntry, UncheckedFile } from './types.js'
 
 // A single in-memory file: code provided directly instead of read from disk (T1.1).
 export interface FileInput {
@@ -29,6 +29,12 @@ export interface RunScanOptions {
   // In-memory input (T1.1): when provided, scan these buffers instead of discovering
   // files on disk. Unblocks the MCP (T1.4) and diff-aware scanning (T1.2).
   files?: FileInput[]
+  // Keep every occurrence: skip the cross-engine merge and the dedup (step 5). For the diff
+  // scan only, which compares base and head occurrence by occurrence and then merges and
+  // dedups the result itself. Both steps fold findings (the merge only when it is 1:1, the
+  // dedup on identical markup), so running them before the comparison hides copies and can
+  // fire on one side only.
+  keepOccurrences?: boolean
 }
 
 // Build FileEntry[] from caller-supplied buffers, mirroring what discoverFiles
@@ -59,6 +65,7 @@ function attachEmptyReport(result: ScanResult, files: FileEntry[], scanOptions: 
   result.standard = standard
   result.confidence_flags = computeConfidenceFlags(files)
   result.diagnostics = diagnostics
+  result.unchecked = []
   // Tri-state (see ScanResult.routes): absent when detection was not attempted.
   if (detection) result.routes = detection.routes
   return result
@@ -112,7 +119,9 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
   }
 
   // 3. Run all scanners in parallel
-  const scanContext = { root_path: rootPath, files, options: scanOptions, in_memory: inMemory }
+  // Scanners report what they could not analyse on the shared diagnostics list.
+  const unchecked: UncheckedFile[] = []
+  const scanContext = { root_path: rootPath, files, options: scanOptions, in_memory: inMemory, diagnostics, unchecked }
 
   const scannerResults = await Promise.allSettled(
     scanners.map(async (scanner) => {
@@ -127,6 +136,7 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
   // 4. Aggregate results
   const allIssues: EquallIssue[] = []
   const scannersUsed: ScannerInfo[] = []
+  const failedScanners = new Set<string>()
 
   for (const result of scannerResults) {
     if (result.status === 'fulfilled') {
@@ -141,6 +151,7 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
     } else {
       const err = result.reason instanceof Error ? result.reason.message : String(result.reason)
       diagnostics.push(`[scanner] failed: ${err.slice(0, 120)}`)
+      failedScanners.add(scanners[scannerResults.indexOf(result)].name)
     }
   }
 
@@ -148,7 +159,7 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
   // see rules/equivalence.ts), then deduplicate within engines (same file + same
   // rule + same line = one issue). Both run before fingerprinting, so surviving
   // issues keep the identity they would have had anyway.
-  const deduped = deduplicateIssues(mergeCrossEngineDuplicates(allIssues))
+  const deduped = options.keepOccurrences ? allIssues : deduplicateIssues(mergeCrossEngineDuplicates(allIssues))
 
   // 5b. Reclassify page-level rules on fragment units — engine-agnostic
   // post-filter, after dedup (honest counts) and before ignores (an equall-ignore on a
@@ -163,6 +174,13 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
   // 6. Apply equall-ignore comments
   const { active, ignored } = applyIgnoreComments(kept, files)
 
+  // 6b. Review-only findings (static analysis cannot confirm them — see axe-scanner) are
+  // reported but never counted: they stay out of the score, the summary counts and the
+  // conformance failures. Split AFTER dedup and ignores, so which issue survives and what it
+  // is called (its fingerprint) is exactly what it would have been without the flag.
+  const counted = active.filter((i) => !i.review_only)
+  const reviewOnly = active.filter((i) => i.review_only)
+
   // 7. Merge coverage from all active scanners.
   // criteria_covered is the CAPABLE union — it still feeds POUR scoring in score.ts and
   // is stored as-is; never route honest coverage into the score.
@@ -176,14 +194,14 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
   // Computed BEFORE scoring so the genuinely-exercised set feeds the honest
   // criteria_tested + POUR n/a gating. The reclassified summary is what honestTestedCriteria
   // subtracts (page-level rules that can't be verified on a fragment).
-  const coverage = computeCoverage(scanners, files)
+  const coverage = computeCoverage(scanners, files, failedScanners)
   coverage.reclassified = summarizeReclassified(reclassified)
   const exercised = honestTestedCriteria(coverage, coverage.reclassified)
 
-  // 8. Compute score (only active issues affect scoring). `exercised` drives the honest
+  // 8. Compute score (only counted issues affect scoring: not ignored, not review-only). `exercised` drives the honest
   // criteria_tested and the POUR n/a gating; `criteriaCovered` stays the stored capable union.
   const durationMs = Date.now() - startTime
-  const result = computeScanResult(active, files.length, scannersUsed, durationMs, scanOptions.wcag_level, criteriaCovered, criteriaTotal, exercised)
+  const result = computeScanResult(counted, files.length, scannersUsed, durationMs, scanOptions.wcag_level, criteriaCovered, criteriaTotal, exercised)
 
   // 9. Attach stable fingerprints — identity for diff-aware scanning.
   // Metadata only: does not affect scoring (computed above from `active`).
@@ -191,8 +209,11 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
     list.map((issue) => ({ ...issue, fingerprint: fingerprint(issue) }))
 
   // Include ignored issues in output for transparency, update count
-  const activeFingerprinted = withFingerprint(active)
-  result.issues = [...activeFingerprinted, ...withFingerprint(ignored)]
+  // Each group in a stable order (file, position, rule, identity), so the same code always
+  // produces the same JSON, whatever order the scanners finished in.
+  const inStableOrder = (list: EquallIssue[]) => withFingerprint(list).sort(compareIssues)
+  const activeFingerprinted = inStableOrder(counted)
+  result.issues = [...activeFingerprinted, ...inStableOrder(reviewOnly), ...inStableOrder(ignored)]
   result.summary.ignored_count = ignored.length
 
   // 10. Attach the honest coverage report computed above.
@@ -215,7 +236,10 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
   result.confidence_flags = computeConfidenceFlags(files)
 
   // 14. Non-fatal scan warnings — returned on the result, never written to the host's stderr.
-  result.diagnostics = diagnostics
+  // Scanners run in parallel and push as they go: sort for a stable output.
+  result.diagnostics = [...diagnostics].sort()
+  result.unchecked = [...unchecked].sort((a, b) =>
+    a.file_path.localeCompare(b.file_path) || a.scanner.localeCompare(b.scanner) || a.reason.localeCompare(b.reason))
 
   // 15. File-based routes — the additive inventory detected in step 1b. Tri-state (see
   // ScanResult.routes): absent when detection was not attempted (in-memory input), []
@@ -224,6 +248,15 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
   if (detection) result.routes = detection.routes
 
   return result
+}
+
+// Stable order for issues: file, line, column, rule, then fingerprint as the final tiebreak.
+function compareIssues(a: EquallIssue, b: EquallIssue): number {
+  return a.file_path.localeCompare(b.file_path)
+    || (a.line ?? -1) - (b.line ?? -1)
+    || (a.column ?? -1) - (b.column ?? -1)
+    || a.scanner_rule_id.localeCompare(b.scanner_rule_id)
+    || (a.fingerprint ?? '').localeCompare(b.fingerprint ?? '')
 }
 
 // Scan a single in-memory file (T1.1). Thin wrapper over runScan's buffer path —

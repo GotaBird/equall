@@ -136,7 +136,7 @@ function formatVerifiedSubset(result: ScanResult, target: WcagLevel): { line: st
 
     const failing = new Set<string>()
     for (const issue of result.issues) {
-      if (issue.ignored) continue
+      if (issue.ignored || issue.review_only) continue
       if (isBeyondTarget(issue, target)) continue
       for (const c of issue.wcag_criteria) failing.add(c)
     }
@@ -159,6 +159,9 @@ export interface PrintOptions {
   verbose?: boolean
   all?: boolean
   showManual?: boolean
+  // List review-only findings in full. Off by default: the summary line still states how
+  // many were held back, so nothing is hidden silently.
+  showReview?: boolean
   // ANSI colors on/off. Defaults to on; the CLI resolves it with shouldUseColor()
   // (--no-color, NO_COLOR, FORCE_COLOR, TTY detection).
   color?: boolean
@@ -170,17 +173,20 @@ export interface PrintOptions {
 // violation vs. a beyond-target advisory (e.g. AAA reading-level under an AA target):
 // advisory issues never count against conformance or the score.
 interface ReportIssues {
-  // Visible (non-ignored) issues, by section
+  // Counted issues (not ignored, not review-only), by section
   wcag: EquallIssue[]
   advisory: EquallIssue[]
   bestPractice: EquallIssue[]
+  // Reported but never counted
+  reviewOnly: EquallIssue[]
   ignored: EquallIssue[]
 }
 
 function partitionIssues(result: ScanResult, target: WcagLevel): ReportIssues {
-  const parts: ReportIssues = { wcag: [], advisory: [], bestPractice: [], ignored: [] }
+  const parts: ReportIssues = { wcag: [], advisory: [], bestPractice: [], reviewOnly: [], ignored: [] }
   for (const issue of result.issues) {
     if (issue.ignored) parts.ignored.push(issue)
+    else if (issue.review_only) parts.reviewOnly.push(issue)
     else if (issue.wcag_criteria.length === 0) parts.bestPractice.push(issue)
     else if (isBeyondTarget(issue, target)) parts.advisory.push(issue)
     else parts.wcag.push(issue)
@@ -198,10 +204,11 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
   console.log(`${BOLD}  ◆ EQUALL — Accessibility Score${RESET}`)
   console.log()
 
-  printSummary(result, target)
+  printSummary(result, parts, options)
   printViolations(parts.wcag, target, options)
   printAdvisory(parts.advisory, target, options)
   printBestPractices(parts.bestPractice, options)
+  if (options.showReview) printReviewOnly(parts.reviewOnly, options)
   printNotVerifiable(result, options)
   printConfidenceFlags(result)
   if (options.showIgnored) printIgnored(parts.ignored)
@@ -222,16 +229,18 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
   printSupportSummary(result, target, options)
 }
 
-function printSummary(result: ScanResult, target: WcagLevel): void {
+function printSummary(result: ScanResult, parts: ReportIssues, options: PrintOptions): void {
   const { summary } = result
-  // Beyond-target criteria are advisory: they don't penalize the score and aren't
-  // counted among conformance violations.
-  const isAdvisory = (i: EquallIssue) => i.wcag_criteria.length > 0 && isBeyondTarget(i, target)
-  const advisoryCount = result.issues.filter(isAdvisory).length
+  // Every count here is over COUNTED issues only — the ones the score and the verdict
+  // are computed from. Ignored and review-only issues are announced on their own lines, so
+  // the summary never announces more violations than the report lists.
+  // Beyond-target criteria (advisory) don't penalize the score and aren't counted among
+  // conformance violations.
+  const advisoryCount = parts.advisory.length
 
   console.log(`  ${BOLD}Summary${RESET}`)
-  const wcagIssuesCount = result.issues.filter(i => i.wcag_criteria.length > 0 && !isAdvisory(i)).length
-  const bpIssuesCount = result.issues.filter(i => i.wcag_criteria.length === 0).length
+  const wcagIssuesCount = parts.wcag.length
+  const bpIssuesCount = parts.bestPractice.length
   const advisorySuffix = advisoryCount > 0 ? `  ·  ${GRAY}${advisoryCount} AAA advisory${RESET}` : ''
   // Page-level rules reclassified on fragment scans — surfaced even in a skim.
   const reclassifiedCount = (result.coverage?.reclassified ?? []).reduce((n, r) => n + r.count, 0)
@@ -241,10 +250,7 @@ function printSummary(result: ScanResult, target: WcagLevel): void {
   // Severity breakdown over conformance-scope issues only (advisory AAA excluded),
   // with a one-line legend so "critical/serious/moderate/minor" isn't just a color soup
   const sevCounts: Record<Severity, number> = { critical: 0, serious: 0, moderate: 0, minor: 0 }
-  for (const i of result.issues) {
-    if (isAdvisory(i)) continue
-    sevCounts[i.severity]++
-  }
+  for (const i of [...parts.wcag, ...parts.bestPractice]) sevCounts[i.severity]++
   console.log(
     `  ${severityIcon('critical')} ${RED}${sevCounts.critical} critical${RESET}   ` +
     `${severityIcon('serious')} ${YELLOW}${sevCounts.serious} serious${RESET}   ` +
@@ -260,6 +266,11 @@ function printSummary(result: ScanResult, target: WcagLevel): void {
     for (const route of routes) byFramework.set(route.framework, (byFramework.get(route.framework) ?? 0) + 1)
     const breakdown = [...byFramework.entries()].map(([framework, count]) => `${framework} ${count}`).join(' · ')
     console.log(`  ${GRAY}${routes.length} ${plural(routes.length, 'route')} detected · ${breakdown}${RESET}`)
+  }
+  if (parts.reviewOnly.length > 0) {
+    const n = parts.reviewOnly.length
+    const hint = options.showReview ? 'listed below' : 'run with --show-review'
+    console.log(`  ${GRAY}${n} ${plural(n, 'finding')} not counted — static analysis can't confirm ${plural(n, 'it', 'them')} · ${hint}${RESET}`)
   }
   if (summary.ignored_count > 0) {
     console.log(`  ${GRAY}${summary.ignored_count} ${plural(summary.ignored_count, 'issue')} suppressed via equall-ignore${RESET}`)
@@ -366,6 +377,30 @@ function printBestPractices(issues: EquallIssue[], options: PrintOptions): void 
     const seen = new Set<string>()
     const byFile = group.issues.filter(issue => !seen.has(issue.file_path) && seen.add(issue.file_path))
     printFileList(byFile.map(issue => `${issue.file_path}${issue.line ? `:${issue.line}` : ''}`), options)
+    console.log()
+  }
+}
+
+// Review-only findings — reported with their fingerprint, never counted (see EquallIssue
+// review_only). Grouped by rule like best practices and kept quiet: GRAY, never a failure.
+function printReviewOnly(issues: EquallIssue[], options: PrintOptions): void {
+  if (issues.length === 0) return
+  console.log(`  ${BOLD}To review${RESET} ${GRAY}— ${issues.length} ${plural(issues.length, 'finding')} static analysis can't confirm on component source · not counted${RESET}`)
+  console.log()
+  const byRule = new Map<string, EquallIssue[]>()
+  for (const issue of issues) byRule.set(issue.scanner_rule_id, [...(byRule.get(issue.scanner_rule_id) ?? []), issue])
+  for (const [ruleId, group] of [...byRule.entries()].sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]))) {
+    const criteria = group[0].wcag_criteria
+    const wcag = criteria.length > 0 ? `  ${GRAY}WCAG ${criteria.join(', ')}${RESET}` : ''
+    console.log(
+      `  ${GRAY}○${RESET} ${BOLD}${ruleId}${RESET}  ` +
+      `${GRAY}${group.length} ${plural(group.length, 'occurrence')}${RESET}${wcag}`
+    )
+    const reason = group[0].review_reason
+    if (reason) console.log(`      ${GRAY}${reason}${RESET}`)
+    const seen = new Set<string>()
+    const byFile = group.filter(issue => !seen.has(issue.file_path) && seen.add(issue.file_path))
+    printFileList(byFile.map(issue => issue.file_path), options)
     console.log()
   }
 }
