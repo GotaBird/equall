@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-09-26
+
+Same content as 0.3.0, which was withdrawn from the npm registry shortly after publication
+and cannot be installed. Everything listed under 0.3.0 below ships in 0.3.1.
+
+### Changed
+
+- **axe-core is injected into each document through jsdom's VM context.** 0.3.0 gave each
+  scanned document its own axe instance by evaluating axe's source as a string in the
+  document's window. It now runs one script, compiled once per process, through jsdom's
+  documented VM context. Findings are identical (measured on 15 real repositories: every
+  fingerprint kept), and the source is no longer recompiled for every document.
+
 ## [0.3.0] - 2026-09-26
 
 Findings the engine cannot confirm by static analysis are now reported for review instead
