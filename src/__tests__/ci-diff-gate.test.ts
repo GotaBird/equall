@@ -1,10 +1,11 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { execFileSync, spawnSync } from 'node:child_process'
-import { mkdtempSync, writeFileSync, rmSync } from 'node:fs'
+import { mkdtempSync, writeFileSync, rmSync, readFileSync, mkdirSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
-import { resolveBaseRef, computeDiffExitCode, formatAnnotations, gatingIssues } from '../ci/diff-gate.js'
+import { resolveBaseRef, computeDiffExitCode, formatAnnotations, gatingIssues, formatStepSummary } from '../ci/diff-gate.js'
+import { runDiffScan } from '../diff-scan.js'
 import type { DiffScanResult } from '../diff-scan.js'
 import type { EquallIssue, Severity } from '../types.js'
 
@@ -30,8 +31,8 @@ const issue = (over: Partial<EquallIssue> = {}): EquallIssue => ({
 
 const result = (over: Partial<DiffScanResult> = {}): DiffScanResult => ({
   base: 'b', head: 'h', merge_base: 'm',
-  new_issues: [], new_review_only: [], new_advisory: [], legacy_issues: [], not_testable: [], excluded: [],
-  summary: { files_changed: 0, files_scanned: 0, new_count: 0, new_review_only_count: 0, new_advisory_count: 0, legacy_count: 0, not_testable_count: 0, excluded_count: 0 },
+  new_issues: [], new_review_only: [], new_advisory: [], legacy_issues: [], not_testable: [], excluded: [], unchecked: [],
+  summary: { files_changed: 0, files_scanned: 0, new_count: 0, new_review_only_count: 0, new_advisory_count: 0, legacy_count: 0, not_testable_count: 0, excluded_count: 0, unchecked_count: 0 },
   ...over,
 })
 
@@ -43,6 +44,9 @@ describe('base ref', () => {
     expect(resolveBaseRef(true, { GITHUB_BASE_REF: 'main' })).toBe('origin/main')
     expect(resolveBaseRef(true, { CI_MERGE_REQUEST_TARGET_BRANCH_NAME: 'dev' })).toBe('origin/dev')
     expect(resolveBaseRef(true, { SYSTEM_PULLREQUEST_TARGETBRANCH: 'refs/heads/release' })).toBe('origin/release')
+  })
+  it('prefers the merge-base commit GitLab computes, which is in the clone when the target branch is not', () => {
+    expect(resolveBaseRef(true, { CI_MERGE_REQUEST_DIFF_BASE_SHA: 'abc123', CI_MERGE_REQUEST_TARGET_BRANCH_NAME: 'main' })).toBe('abc123')
   })
   it('refuses to guess outside a pull request', () => {
     expect(() => resolveBaseRef(true, {})).toThrow(/No base to compare against/)
@@ -68,6 +72,24 @@ describe('gate', () => {
   it('reports only when no threshold is set', () => {
     expect(computeDiffExitCode(at('critical'), null)).toBe(0)
     expect(gatingIssues(at('critical'), null)).toEqual([])
+  })
+})
+
+describe('files a scanner could not check', () => {
+  it('get a warning annotation and a line in the job summary, and never pass silently', () => {
+    const r = result({ unchecked: [{ scanner: 'eslint-jsx-a11y', file_path: 'src/Broken.tsx', reason: 'parse_error' }] })
+    expect(computeDiffExitCode(r, 'critical')).toBe(0)
+    expect(formatAnnotations(r, 'critical')).toEqual([expect.stringMatching(/^::warning file=src\/Broken\.tsx,title=Equall · not checked::eslint-jsx-a11y could not analyse/)])
+    expect(formatStepSummary(r, 'origin/main', 'critical')).toContain('`src/Broken.tsx`: eslint-jsx-a11y (parse_error)')
+  })
+})
+
+describe('job summary', () => {
+  it('lists every finding, blocking ones marked, with the verdict', () => {
+    const many = Array.from({ length: 15 }, (_, n) => issue({ file_path: `src/C${n}.tsx` }))
+    const text = formatStepSummary(result({ new_issues: many }), 'origin/main', 'critical')
+    expect(text).toContain('**Check fails**: 15 new violation(s) at critical or above.')
+    expect(text.match(/\| blocking \|/g)).toHaveLength(15)
   })
 })
 
@@ -151,10 +173,51 @@ describe('scan --diff (integration)', () => {
     expect(cli(['scan', '.', '--diff'], dir, { GITHUB_BASE_REF: '' }).code).toBe(2)
   }, 120_000)
 
+  it('writes the job summary when GitHub provides the file', () => {
+    const summary = join(dir, '..', `summary-${Date.now()}.md`)
+    cli(['scan', '.', '--diff', 'main', '--fail-on', 'serious'], dir, { GITHUB_STEP_SUMMARY: summary })
+    expect(readFileSync(summary, 'utf-8')).toMatch(/### Equall: changes since main[\s\S]*\| blocking \| serious \|/)
+    rmSync(summary, { force: true })
+  }, 60_000)
+
   it('writes the diff result as JSON with --json, without annotations', () => {
     const r = cli(['scan', '.', '--diff', 'main', '--json'], dir, { GITHUB_ACTIONS: 'true' })
     const json = JSON.parse(r.out)
     expect(json.summary.new_count).toBe(1)
     expect(r.out).not.toContain('::error')
+  }, 60_000)
+})
+
+describe('diff scan scope and blind spots', () => {
+  let dir: string
+  const git = (...args: string[]) => execFileSync('git', args, { cwd: dir, stdio: 'pipe' })
+
+  beforeAll(() => {
+    dir = mkdtempSync(join(tmpdir(), 'equall-ci-scope-'))
+    git('init', '-q', '-b', 'main')
+    git('config', 'user.email', 'test@equall.dev')
+    git('config', 'user.name', 'Equall Test')
+    git('config', 'commit.gpgsign', 'false')
+    mkdirSync(join(dir, 'app')); mkdirSync(join(dir, 'other'))
+    writeFileSync(join(dir, 'app', 'Ok.tsx'), 'export function Ok() { return (<main><h1>Hi</h1></main>) }\n')
+    git('add', '-A'); git('commit', '-q', '-m', 'base')
+    // A file jsx-a11y cannot parse, and a change outside the scanned directory.
+    writeFileSync(join(dir, 'app', 'Broken.tsx'), 'export function Broken() {\n  return (\n    <div>\n      <img src="a.png">\n')
+    writeFileSync(join(dir, 'other', 'page.html'), '<!doctype html><html lang="en"><head><title>t</title></head><body><main><img src="x.png"></main></body></html>\n')
+    git('add', '-A'); git('commit', '-q', '-m', 'change')
+  })
+  afterAll(() => rmSync(dir, { recursive: true, force: true }))
+
+  it('lists a changed file a scanner could not check', async () => {
+    const r = await runDiffScan({ base: 'HEAD~1', cwd: join(dir, 'app') })
+    expect(r.unchecked).toContainEqual({ scanner: 'eslint-jsx-a11y', file_path: 'app/Broken.tsx', reason: 'parse_error' })
+    expect(r.summary.unchecked_count).toBeGreaterThan(0)
+  }, 60_000)
+
+  it('only looks at changes under the scanned directory, with paths from the repository root', async () => {
+    const r = await runDiffScan({ base: 'HEAD~1', cwd: join(dir, 'app') })
+    const touched = [...r.new_issues, ...r.new_review_only, ...r.new_advisory].map((i) => i.file_path)
+    expect(touched.every((p) => p.startsWith('app/'))).toBe(true)
+    expect(r.summary.files_changed).toBe(1)
   }, 60_000)
 })

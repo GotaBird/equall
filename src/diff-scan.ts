@@ -4,7 +4,7 @@ import { scanBuffer, deduplicateIssues } from './scan.js'
 import { fileTypeForPath, isDefaultExcluded } from './discover.js'
 import { mergeCrossEngineDuplicates } from './rules/equivalence.js'
 import { isBeyondTarget } from './scoring/score.js'
-import type { EquallIssue, WcagLevel } from './types.js'
+import type { EquallIssue, UncheckedFile, WcagLevel } from './types.js'
 
 const execFileAsync = promisify(execFile)
 
@@ -34,6 +34,9 @@ export interface DiffScanResult {
   legacy_issues: EquallIssue[] // Findings in changed files that already existed at base (any kind)
   not_testable: string[]       // Changed files outside the scannable set
   excluded: string[]           // Changed files skipped like a full scan skips them (tests, stories, builds)
+  // Changed files a scanner could not check at HEAD (parse or analysis error). What that
+  // scanner would have found there is unknown, so a passing gate says nothing about them.
+  unchecked: UncheckedFile[]
   summary: {
     files_changed: number
     files_scanned: number
@@ -43,6 +46,7 @@ export interface DiffScanResult {
     legacy_count: number
     not_testable_count: number
     excluded_count: number
+    unchecked_count: number
   }
 }
 
@@ -96,7 +100,9 @@ interface ChangedFile {
 // List files changed between two commits (rename detection off, so a move is a
 // delete + add — moved code is intentionally treated as "new", not tracked).
 async function changedFiles(cwd: string, fromSha: string, toSha: string): Promise<ChangedFile[]> {
-  const out = await git(cwd, ['diff', '--name-status', '--no-renames', '-z', fromSha, toSha])
+  // The '.' pathspec limits the diff to the scanned directory (git resolves it against cwd);
+  // paths stay relative to the repository root, as annotations need them.
+  const out = await git(cwd, ['diff', '--name-status', '--no-renames', '-z', fromSha, toSha, '--', '.'])
   const tokens = out.split('\0').filter((t) => t.length > 0)
   const files: ChangedFile[] = []
   for (let i = 0; i + 1 < tokens.length; i += 2) {
@@ -173,6 +179,7 @@ export async function runDiffScan(options: DiffScanOptions): Promise<DiffScanRes
   const legacyIssues: EquallIssue[] = []
   const notTestable: string[] = []
   const excluded: string[] = []
+  const unchecked: UncheckedFile[] = []
   let filesScanned = 0
 
   // Compare occurrence by occurrence, then fold the classified head issues (foldClassified).
@@ -201,7 +208,9 @@ export async function runDiffScan(options: DiffScanOptions): Promise<DiffScanRes
       continue
     }
 
-    const headIssues = active((await scanBuffer(headContent, file.path, scanOptions)).issues)
+    const headResult = await scanBuffer(headContent, file.path, scanOptions)
+    const headIssues = active(headResult.issues)
+    unchecked.push(...(headResult.unchecked ?? []))
 
     // Whole-file scope: the base version of the SAME path is the reference set.
     const baseContent = file.status === 'A' ? null : await showFile(cwd, mergeBase, file.path)
@@ -227,6 +236,7 @@ export async function runDiffScan(options: DiffScanOptions): Promise<DiffScanRes
     legacy_issues: legacyIssues,
     not_testable: notTestable,
     excluded,
+    unchecked,
     summary: {
       files_changed: changed.length,
       files_scanned: filesScanned,
@@ -236,6 +246,7 @@ export async function runDiffScan(options: DiffScanOptions): Promise<DiffScanRes
       legacy_count: legacyIssues.length,
       not_testable_count: notTestable.length,
       excluded_count: excluded.length,
+      unchecked_count: unchecked.length,
     },
   }
 }
@@ -244,10 +255,11 @@ export async function runDiffScan(options: DiffScanOptions): Promise<DiffScanRes
 // even at zero new — it always names the legacy debt, the untested files, and the next step.
 // Findings introduced but not counted (review-only, advisory) are named only when present.
 export function formatDiffGuardrail(result: DiffScanResult): string {
-  const { new_count, new_review_only_count = 0, new_advisory_count = 0, legacy_count, not_testable_count } = result.summary
+  const { new_count, new_review_only_count = 0, new_advisory_count = 0, legacy_count, not_testable_count, unchecked_count = 0 } = result.summary
   const uncounted = [
     new_review_only_count > 0 ? `${new_review_only_count} new to review` : '',
     new_advisory_count > 0 ? `${new_advisory_count} new advisory` : '',
   ].filter(Boolean)
-  return [`${new_count} new`, ...uncounted, `${legacy_count} legacy`, `${not_testable_count} not statically testable`].join(' · ') + ' → run the rendered check'
+  const blind = unchecked_count > 0 ? [`${unchecked_count} not checked`] : []
+  return [`${new_count} new`, ...uncounted, `${legacy_count} legacy`, ...blind, `${not_testable_count} not statically testable`].join(' · ') + ' → run the rendered check'
 }
