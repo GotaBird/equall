@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { resolve, basename } from 'node:path'
-import { existsSync, statSync } from 'node:fs'
+import { appendFileSync, existsSync, statSync } from 'node:fs'
 import { Command } from 'commander'
 import ora from 'ora'
 import { runScan } from './scan.js'
@@ -11,7 +11,7 @@ import { findIgnores, removeIgnore, clearAllIgnores, addIgnore, addIgnoreFile } 
 import { computeExitCode } from './exit-code.js'
 import { runDiffScan } from './diff-scan.js'
 import { printDiffResult } from './output/diff.js'
-import { SEVERITIES, isSeverity, resolveBaseRef, computeDiffExitCode, formatAnnotations } from './ci/diff-gate.js'
+import { SEVERITIES, isSeverity, resolveBaseRef, computeDiffExitCode, formatAnnotations, formatStepSummary } from './ci/diff-gate.js'
 import { ENGINE_VERSION } from './engine-version.js'
 import type { Severity, WcagLevel, WcagStandard } from './types.js'
 
@@ -252,6 +252,15 @@ async function runDiffCommand(
       printDiffResult(result, { base, failOn, color: shouldUseColor({ flag: opts.color }) })
       // Annotations are read from stdout by the Actions runner; never mixed into --json.
       if (process.env.GITHUB_ACTIONS === 'true') for (const line of formatAnnotations(result, failOn)) console.log(line)
+    }
+    // The job summary lists every finding (annotations are capped per step). Best effort: a
+    // summary that cannot be written never changes the check's result.
+    if (process.env.GITHUB_STEP_SUMMARY) {
+      try {
+        appendFileSync(process.env.GITHUB_STEP_SUMMARY, formatStepSummary(result, base, failOn) + '\n')
+      } catch {
+        // ignore
+      }
     }
     process.exit(computeDiffExitCode(result, failOn))
   } catch (error) {

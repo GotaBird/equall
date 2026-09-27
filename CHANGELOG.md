@@ -18,6 +18,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   finding becomes an annotation on its file and line. `--json` writes the diff result.
   Exit code `2` means the check could not run, for example when the base branch is missing
   from a shallow clone; the message says how to fetch it.
+  - A changed file a scanner could not analyse is listed as not checked (terminal, summary
+    line, a warning annotation, and `unchecked` in `--json`): a passing check says nothing
+    about it.
+  - On GitHub Actions, every finding is also written to the job summary, since GitHub shows
+    at most ten annotations of each kind per step.
+  - On GitLab, `--diff` with no value uses the merge-base commit GitLab computes
+    (`CI_MERGE_REQUEST_DIFF_BASE_SHA`), which is in a merge-request clone when the target
+    branch usually is not.
+  - `scan <dir> --diff` only looks at changes under `<dir>`.
 
 ## [0.3.1] - 2026-09-26
 

@@ -56,10 +56,15 @@ export function printDiffResult(result: DiffScanResult, options: PrintDiffOption
     const more = n > 3 ? `, and ${n - 3} more (full list in --json)` : ''
     console.log(`  ${GRAY}${n} changed file(s) not statically testable: ${shown}${more}${RESET}`)
   }
+  if (result.unchecked.length > 0) {
+    // A file a scanner could not analyse is a blind spot: never let a passing check hide it.
+    console.log(`  ${YELLOW}${result.unchecked.length} changed file(s) not checked — the scanner could not analyse them, so their findings are unknown:${RESET}`)
+    for (const u of result.unchecked) console.log(`    ${GRAY}${u.file_path} (${u.scanner}: ${u.reason})${RESET}`)
+  }
   if (result.excluded.length > 0) {
     console.log(`  ${GRAY}Skipped like a full scan (tests, stories, builds): ${result.excluded.length} file(s)${RESET}`)
   }
-  if (result.legacy_issues.length + result.not_testable.length + result.excluded.length > 0) console.log()
+  if (result.legacy_issues.length + result.not_testable.length + result.unchecked.length + result.excluded.length > 0) console.log()
 
   if (!options.failOn) {
     console.log(`  ${GRAY}Report only — add --fail-on <severity> to gate the change.${RESET}`)
