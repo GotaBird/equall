@@ -9,8 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.3.1] - 2026-09-26
 
-Same content as 0.3.0, which was withdrawn from the npm registry shortly after publication
-and cannot be installed. Everything listed under 0.3.0 below ships in 0.3.1.
+Same content as 0.3.0, with one change to how axe-core is injected (below). Both versions
+install identically; 0.3.1 is the recommended one. Everything listed under 0.3.0 below
+ships in 0.3.1.
 
 ### Changed
 
