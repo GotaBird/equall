@@ -14,18 +14,17 @@ npx equall-cli scan .
   ◆ EQUALL — Accessibility Score
 
   Summary
-  1 file scanned  ·  3 WCAG violations  ·  0 best-practice recommendations
-  Coverage  Level A   17/31 checked (55%)  ·  3 failing
-            Level AA  25/55 checked (45%)  ·  3 failing
+  1 file scanned  ·  4 WCAG violations  ·  0 best-practice recommendations
+  ■ 2 critical   ▲ 2 serious   ● 0 moderate   ○ 0 minor
 
   …grouped WCAG violations, each with how-to-fix and its scanner source…
 
-    54.63    WCAG 2.2 · score is a trend indicator
-  3 A/AA failures among the 25 criteria automatically verified (30 not evaluated).
+    72.25    WCAG 2.2 · score is a trend indicator
+  4 A/AA failures among the 18 criteria automatically verified (37 not evaluated).
 
   WCAG 2.2 Support Summary — AA target · automated basis only
-  ✓ Supports (automated) 20   ✕ Does not support 3   ○ Not evaluated 32
-  What each verdict means → equallscan.com/docs/verdicts
+  ✓ Supports (automated) 14   ✕ Does not support 4   ○ Not evaluated 37
+  What each verdict means → https://equallscan.com/docs/verdicts
 ```
 
 ## What is Equall?
@@ -40,6 +39,8 @@ Equall sits in that gap. It wraps existing open-source scanners and adds what th
 - **Score is a trend, not a grade** — a 0–100 number to watch move over time. It motivates; it certifies nothing. No fake "100% Meets WCAG" badges here.
 - **Speaks the legal standard** — `--standard wcag21` renders the WCAG 2.1 AA view cited by the EU Web Accessibility Directive / EN 301 549; `wcag22` is the default. Same scan, same score — only the criteria set changes.
 - **Honest about coverage** — automation covers a subset; the rest is `Not evaluated` (needs a rendered check or manual review). Page-level rules (landmarks, skip link, `<html lang>`) are reported as "not verifiable on this scan" when you scan components or partials — not as false violations.
+- **Counts only what it can stand behind** — on component code (JSX/TSX, Vue, Svelte, Astro), a finding static analysis cannot confirm (the name comes from props, a spread or a sub-component) is listed for review, not counted in the score or the verdicts. `--show-review` lists them.
+- **Built for CI** — `--diff` reports only what a change introduced and `--fail-on` gates on it, so existing debt never blocks a pull request.
 
 ## Install
 
@@ -55,19 +56,22 @@ equall scan . --standard wcag21    # WCAG 2.1 AA — the public-sector legal bar
 equall scan . --level A            # target a different conformance level
 equall scan . --verbose            # full per-criterion support table
 equall scan . --all                # list everything: all criteria, occurrences and files
+equall scan . --show-review        # also list findings static analysis can't confirm
 equall scan . --json               # machine-readable output for CI / tooling
-equall scan . --min-score 90       # CI gate: exit 1 if the score is below 90
+equall scan . --no-color           # plain text (also automatic when output is not a terminal)
+equall scan . --min-score 90       # score gate: exit 1 if the score is below 90
 equall --help                      # all commands and options
 ```
 
-A successful scan always exits `0`. Pass `--min-score <n>` to fail a pipeline when the
-score drops below a threshold. Criteria above your target level (e.g. AAA under the
+A successful scan always exits `0`. Pass `--min-score <n>` to fail when the score drops
+below a threshold. On a repository with existing debt, prefer the diff gate below: it fails
+only on what a change introduces. Criteria above your target level (e.g. AAA under the
 default AA target) are advisory and never count against the score.
 
 ## In CI: fail only on what a change introduces
 
 ```bash
-equall scan . --diff origin/main --fail-on serious
+equall scan . --diff origin/main --fail-on critical
 ```
 
 `--diff <base>` scans the files a change touched, at the change and at its merge-base with
@@ -75,7 +79,8 @@ equall scan . --diff origin/main --fail-on serious
 never blocking. In a pull request on GitHub Actions, GitLab CI or Azure Pipelines, `--diff`
 with no value reads the target branch. `--fail-on <severity>` (`critical`, `serious`,
 `moderate`, `minor`) exits `1` when the change introduces a counted violation at that
-severity or above. Findings static analysis cannot confirm, and best practices, never block.
+severity or above; `critical` is a good start, `serious` is stricter. Findings static
+analysis cannot confirm, and best practices, never block.
 
 On GitHub Actions, each new finding is annotated on its file and line. The base branch must
 be in the clone: use `actions/checkout` with `fetch-depth: 0`.
@@ -100,6 +105,25 @@ console.log('Verdicts:', result.criterion_conformance)
 `ScanResult` carries `criterion_conformance` (the per-criterion verdicts), `coverage`
 (what was actually exercised), `summary`, `standard`, and `engine_version` / `score_model`
 version stamps so results stay comparable across releases.
+
+Each issue carries a stable `fingerprint` (it survives reformatting, so the same issue can be
+tracked across commits). An issue static analysis cannot confirm has `review_only: true` and
+a `review_reason`, and is never counted. A merged issue lists the fingerprint it absorbed in
+`merged_fingerprints`. The result also says what could not be checked: `unchecked` lists
+`{ scanner, file_path, reason }` per file, and `diagnostics` carries the same in plain text.
+
+```typescript
+import { scanBuffer, runDiffScan } from 'equall-cli'
+
+// Scan code in memory, without touching the disk.
+const one = await scanBuffer('<button></button>', 'Button.html')
+
+// Only what a change introduced, against the merge-base with main.
+const diff = await runDiffScan({ base: 'origin/main', cwd: './my-project' })
+diff.new_issues      // counted violations the change introduced
+diff.new_review_only // introduced, but static analysis cannot confirm them
+diff.legacy_issues   // already there before the change
+```
 
 Disk scans also carry `routes` — the URL patterns the project's file-based routing defines
 (Next.js App/Pages Router, Astro, plain `.html`), each as `{ pattern, file, framework,
