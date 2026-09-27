@@ -81,7 +81,10 @@ async function resolveCommit(cwd: string, ref: string): Promise<string> {
     if (!sha) throw new Error('empty')
     return sha
   } catch {
-    throw new Error(`Cannot resolve git ref: ${ref}`)
+    throw new Error(
+      `Cannot resolve git ref: ${ref}. In CI, fetch it first ` +
+        '(for example actions/checkout with fetch-depth: 0, or git fetch origin <branch>).',
+    )
   }
 }
 
@@ -151,7 +154,16 @@ export async function runDiffScan(options: DiffScanOptions): Promise<DiffScanRes
 
   const baseSha = await resolveCommit(cwd, options.base)
   const headSha = await resolveCommit(cwd, options.head ?? 'HEAD')
-  const mergeBase = (await git(cwd, ['merge-base', baseSha, headSha])).trim()
+  // A shallow clone has no common ancestor to find: say so instead of failing on git's error.
+  let mergeBase: string
+  try {
+    mergeBase = (await git(cwd, ['merge-base', baseSha, headSha])).trim()
+  } catch {
+    throw new Error(
+      `No common ancestor between ${options.base} and ${options.head ?? 'HEAD'}. ` +
+        'The clone is probably shallow: fetch the full history (actions/checkout with fetch-depth: 0).',
+    )
+  }
 
   const changed = await changedFiles(cwd, mergeBase, headSha)
 
