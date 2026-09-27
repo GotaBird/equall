@@ -9,8 +9,11 @@ import { printResult, printJson } from './output/terminal.js'
 import { BOLD, GRAY, RESET, GREEN, YELLOW, setColorEnabled, shouldUseColor } from './output/color.js'
 import { findIgnores, removeIgnore, clearAllIgnores, addIgnore, addIgnoreFile } from './ignores.js'
 import { computeExitCode } from './exit-code.js'
+import { runDiffScan } from './diff-scan.js'
+import { printDiffResult } from './output/diff.js'
+import { SEVERITIES, isSeverity, resolveBaseRef, computeDiffExitCode, formatAnnotations } from './ci/diff-gate.js'
 import { ENGINE_VERSION } from './engine-version.js'
-import type { WcagLevel, WcagStandard } from './types.js'
+import type { Severity, WcagLevel, WcagStandard } from './types.js'
 
 const program = new Command()
 
@@ -36,6 +39,8 @@ program
   .option('--no-color', 'Disable colored output (also off when NO_COLOR is set or output is not a terminal; FORCE_COLOR forces it on)')
   .option('--no-readability', 'Disable readability (Flesch-Kincaid) scanner — English-only, experimental')
   .option('--min-score <n>', 'CI gate: exit 1 if the score is below <n> (0-100). Omit to always exit 0 on a successful scan')
+  .option('--diff [base]', 'Report only what changed since <base> (a git ref). With no value, the pull request target branch is read from GitHub Actions, GitLab CI or Azure Pipelines')
+  .option('--fail-on <severity>', 'With --diff: exit 1 if the change introduces a violation at <severity> or above (critical, serious, moderate, minor)')
   .addHelpText('after', `
 Examples:
   equall scan .                        Scan current directory (Level AA)
@@ -44,10 +49,12 @@ Examples:
   equall scan . --show-manual          List criteria needing manual review
   equall scan . --include "src/**"     Scan only src/ folder
   equall scan . --no-readability       Skip reading-grade (Flesch-Kincaid) checks
+  equall scan . --diff origin/main --fail-on serious
+                                       CI: fail only on violations the change introduces
 
 Supported files: .html .htm .jsx .tsx .vue .svelte .astro
 `)
-  .action(async (path: string, opts: { level: string; standard?: string; include?: string[]; exclude?: string[]; json?: boolean; showIgnored?: boolean; verbose?: boolean; all?: boolean; showManual?: boolean; showReview?: boolean; readability?: boolean; color?: boolean; minScore?: string }) => {
+  .action(async (path: string, opts: { level: string; standard?: string; include?: string[]; exclude?: string[]; json?: boolean; showIgnored?: boolean; verbose?: boolean; all?: boolean; showManual?: boolean; showReview?: boolean; readability?: boolean; color?: boolean; minScore?: string; diff?: string | true; failOn?: string }) => {
     const level = opts.level.toUpperCase() as WcagLevel
     if (!['A', 'AA', 'AAA'].includes(level)) {
       console.error(`Invalid level "${opts.level}". Use A, AA, or AAA.`)
@@ -67,6 +74,11 @@ Supported files: .html .htm .jsx .tsx .vue .svelte .astro
         console.error(`Invalid --min-score "${opts.minScore}". Use a number between 0 and 100.`)
         process.exit(1)
       }
+    }
+
+    if (opts.diff !== undefined || opts.failOn !== undefined) {
+      await runDiffCommand(path, level, opts)
+      return
     }
 
     const displayName = basename(resolve(path))
@@ -201,5 +213,51 @@ program
     }
     console.log()
   })
+
+// `scan --diff`: report only what a change introduced, and gate on it with --fail-on.
+// Exit codes: 0 = no new violation at the threshold (or report only), 1 = the change
+// introduced one, 2 = the check could not run (bad option, missing base, shallow clone).
+async function runDiffCommand(
+  path: string,
+  level: WcagLevel,
+  opts: { json?: boolean; color?: boolean; minScore?: string; diff?: string | true; failOn?: string },
+): Promise<void> {
+  const fail = (message: string): never => {
+    console.error(`\n  Error: ${message}\n`)
+    process.exit(2)
+  }
+  if (opts.diff === undefined) fail('--fail-on only applies with --diff (it gates what a change introduces).')
+  if (opts.minScore !== undefined) fail('--min-score does not apply with --diff: use --fail-on <severity>.')
+  let failOn: Severity | null = null
+  if (opts.failOn !== undefined) {
+    const value = opts.failOn.toLowerCase()
+    if (!isSeverity(value)) fail(`Invalid --fail-on "${opts.failOn}". Use ${SEVERITIES.join(', ')}.`)
+    failOn = value as Severity
+  }
+
+  let base = ''
+  try {
+    base = resolveBaseRef(opts.diff as string | true)
+  } catch (error) {
+    fail(error instanceof Error ? error.message : String(error))
+  }
+
+  const spinner = opts.json ? null : ora({ text: `Scanning changes since ${base}`, indent: 2 }).start()
+  try {
+    const result = await runDiffScan({ base, cwd: resolve(path), level })
+    spinner?.stop()
+    if (opts.json) {
+      console.log(JSON.stringify(result, null, 2))
+    } else {
+      printDiffResult(result, { base, failOn, color: shouldUseColor({ flag: opts.color }) })
+      // Annotations are read from stdout by the Actions runner; never mixed into --json.
+      if (process.env.GITHUB_ACTIONS === 'true') for (const line of formatAnnotations(result, failOn)) console.log(line)
+    }
+    process.exit(computeDiffExitCode(result, failOn))
+  } catch (error) {
+    spinner?.stop()
+    fail(error instanceof Error ? error.message : String(error))
+  }
+}
 
 program.parse()

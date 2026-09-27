@@ -69,7 +69,7 @@ function criterionName(id: string): string | null {
 
 // Clean up scanner-emitted messages: strip trailing rule IDs in parens,
 // inline "Learn more:" URLs, and collapse whitespace so the terminal line stays tidy.
-function cleanMessage(message: string): string {
+export function cleanMessage(message: string): string {
   let m = message
   // Drop "Learn more: https://..." fragments — we already render help_url below
   m = m.replace(/\s*Learn more:\s*https?:\/\/\S+/gi, '')

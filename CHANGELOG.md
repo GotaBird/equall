@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`--diff [base]` and `--fail-on <severity>`: a CI gate on what a change introduces.**
+  `equall scan . --diff origin/main --fail-on serious` scans the changed files and exits `1`
+  only when the change introduces a counted violation at `serious` or above. Existing
+  violations are reported as not blocking, and findings that cannot be confirmed statically
+  or are best practices never block. In a pull request on GitHub Actions, GitLab CI or
+  Azure Pipelines, `--diff` with no value uses the target branch. On GitHub Actions, each new
+  finding becomes an annotation on its file and line. `--json` writes the diff result.
+  Exit code `2` means the check could not run, for example when the base branch is missing
+  from a shallow clone; the message says how to fetch it.
+
 ## [0.3.1] - 2026-09-26
 
 Same content as 0.3.0, which was withdrawn from the npm registry shortly after publication

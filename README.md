@@ -64,6 +64,25 @@ A successful scan always exits `0`. Pass `--min-score <n>` to fail a pipeline wh
 score drops below a threshold. Criteria above your target level (e.g. AAA under the
 default AA target) are advisory and never count against the score.
 
+## In CI: fail only on what a change introduces
+
+```bash
+equall scan . --diff origin/main --fail-on serious
+```
+
+`--diff <base>` scans the files a change touched, at the change and at its merge-base with
+`<base>`, and reports only the violations the change introduced. Existing debt is listed,
+never blocking. In a pull request on GitHub Actions, GitLab CI or Azure Pipelines, `--diff`
+with no value reads the target branch. `--fail-on <severity>` (`critical`, `serious`,
+`moderate`, `minor`) exits `1` when the change introduces a counted violation at that
+severity or above. Findings static analysis cannot confirm, and best practices, never block.
+
+On GitHub Actions, each new finding is annotated on its file and line. The base branch must
+be in the clone: use `actions/checkout` with `fetch-depth: 0`.
+
+Exit codes: `0` no new violation at the threshold, `1` the change introduced one, `2` the check
+could not run (invalid option, base not found, shallow clone).
+
 ## Programmatic use
 
 ```typescript
