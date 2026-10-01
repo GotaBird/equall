@@ -137,7 +137,7 @@ exports[`terminal report snapshot > renders byte-identically: all 1`] = `
       [90m↳[0m [36msrc/page.tsx[0m
 
   [90mThese rules apply to the composed page, not a single component or partial.[0m
-  [90mVerify on the built output:[0m  npx equall scan <build-dir>  [90m(e.g. astro build && npx equall scan dist/)[0m
+  [90mVerify on the built output:[0m  npx equall-cli scan <build-dir>  [90m(e.g. astro build && npx equall-cli scan dist/)[0m
   [90mGuide: https://equallscan.com/docs/verifying-page-level-rules[0m
 
   [1mLow-confidence alt text[0m [90m— 2 present but suspect · a review suggestion, not a WCAG violation[0m
@@ -281,7 +281,7 @@ exports[`terminal report snapshot > renders byte-identically: default 1`] = `
       [90m↳[0m [36msrc/page.tsx[0m
 
   [90mThese rules apply to the composed page, not a single component or partial.[0m
-  [90mVerify on the built output:[0m  npx equall scan <build-dir>  [90m(e.g. astro build && npx equall scan dist/)[0m
+  [90mVerify on the built output:[0m  npx equall-cli scan <build-dir>  [90m(e.g. astro build && npx equall-cli scan dist/)[0m
   [90mGuide: https://equallscan.com/docs/verifying-page-level-rules[0m
 
   [1mLow-confidence alt text[0m [90m— 2 present but suspect · a review suggestion, not a WCAG violation[0m
@@ -439,7 +439,7 @@ exports[`terminal report snapshot > renders byte-identically: everything + wcag2
       [90m↳[0m [36msrc/page.tsx[0m
 
   [90mThese rules apply to the composed page, not a single component or partial.[0m
-  [90mVerify on the built output:[0m  npx equall scan <build-dir>  [90m(e.g. astro build && npx equall scan dist/)[0m
+  [90mVerify on the built output:[0m  npx equall-cli scan <build-dir>  [90m(e.g. astro build && npx equall-cli scan dist/)[0m
   [90mGuide: https://equallscan.com/docs/verifying-page-level-rules[0m
 
   [1mLow-confidence alt text[0m [90m— 2 present but suspect · a review suggestion, not a WCAG violation[0m
@@ -605,7 +605,7 @@ exports[`terminal report snapshot > renders byte-identically: show-ignored 1`] =
       [90m↳[0m [36msrc/page.tsx[0m
 
   [90mThese rules apply to the composed page, not a single component or partial.[0m
-  [90mVerify on the built output:[0m  npx equall scan <build-dir>  [90m(e.g. astro build && npx equall scan dist/)[0m
+  [90mVerify on the built output:[0m  npx equall-cli scan <build-dir>  [90m(e.g. astro build && npx equall-cli scan dist/)[0m
   [90mGuide: https://equallscan.com/docs/verifying-page-level-rules[0m
 
   [1mLow-confidence alt text[0m [90m— 2 present but suspect · a review suggestion, not a WCAG violation[0m
@@ -736,7 +736,7 @@ exports[`terminal report snapshot > renders byte-identically: show-manual 1`] = 
       [90m↳[0m [36msrc/page.tsx[0m
 
   [90mThese rules apply to the composed page, not a single component or partial.[0m
-  [90mVerify on the built output:[0m  npx equall scan <build-dir>  [90m(e.g. astro build && npx equall scan dist/)[0m
+  [90mVerify on the built output:[0m  npx equall-cli scan <build-dir>  [90m(e.g. astro build && npx equall-cli scan dist/)[0m
   [90mGuide: https://equallscan.com/docs/verifying-page-level-rules[0m
 
   [1mLow-confidence alt text[0m [90m— 2 present but suspect · a review suggestion, not a WCAG violation[0m
@@ -919,7 +919,7 @@ exports[`terminal report snapshot > renders byte-identically: verbose 1`] = `
       [90m↳[0m [36msrc/page.tsx[0m
 
   [90mThese rules apply to the composed page, not a single component or partial.[0m
-  [90mVerify on the built output:[0m  npx equall scan <build-dir>  [90m(e.g. astro build && npx equall scan dist/)[0m
+  [90mVerify on the built output:[0m  npx equall-cli scan <build-dir>  [90m(e.g. astro build && npx equall-cli scan dist/)[0m
   [90mGuide: https://equallscan.com/docs/verifying-page-level-rules[0m
 
   [1mLow-confidence alt text[0m [90m— 2 present but suspect · a review suggestion, not a WCAG violation[0m

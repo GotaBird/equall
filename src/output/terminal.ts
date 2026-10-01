@@ -433,7 +433,7 @@ function printNotVerifiable(result: ScanResult, options: PrintOptions): void {
   }
 
   console.log(`  ${GRAY}These rules apply to the composed page, not a single component or partial.${RESET}`)
-  console.log(`  ${GRAY}Verify on the built output:${RESET}  npx equall scan <build-dir>  ${GRAY}(e.g. astro build && npx equall scan dist/)${RESET}`)
+  console.log(`  ${GRAY}Verify on the built output:${RESET}  npx equall-cli scan <build-dir>  ${GRAY}(e.g. astro build && npx equall-cli scan dist/)${RESET}`)
   console.log(`  ${GRAY}Guide: ${POST_BUILD_DOCS_URL}${RESET}`)
   console.log()
 }

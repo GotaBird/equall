@@ -76,6 +76,13 @@ Supported files: .html .htm .jsx .tsx .vue .svelte .astro
       }
     }
 
+    // A path that does not exist cannot be scanned: say so and exit 2 (cannot run), so a typo
+    // in a CI step fails instead of passing on "No scannable files found".
+    if (!existsSync(resolve(path))) {
+      console.error(`\n  Error: path not found: ${path}\n`)
+      process.exit(2)
+    }
+
     if (opts.diff !== undefined || opts.failOn !== undefined) {
       await runDiffCommand(path, level, opts)
       return

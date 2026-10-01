@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **A path that does not exist now exits `2`.** `equall scan <path>` used to print "No
+  scannable files found" and exit `0` when the path did not exist, so a typo in a CI step
+  passed without scanning anything. It now prints `path not found` and exits `2` (the scan
+  could not run), with or without `--diff`. An existing path with no scannable files still
+  exits `0`. **CI impact:** a pipeline pointing at a wrong path now fails; fix the path.
+
+### Fixed
+
+- **The page-level hint now names the right package.** It suggested `npx equall scan
+  <build-dir>`, which only works when equall-cli is installed locally; without it, `npx`
+  looks for a package named `equall`. The hint now reads `npx equall-cli scan <build-dir>`.
+- **`UncheckedFile` is exported** from the package root, so the type of
+  `ScanResult.unchecked` can be imported (`import type { UncheckedFile } from 'equall-cli'`).
+
 ## [0.3.2] - 2026-09-27
 
 ### Added

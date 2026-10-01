@@ -76,4 +76,15 @@ describe('scan exit code (integration)', () => {
   it('exits 1 on an invalid --min-score', () => {
     expect(runCli(['scan', join(dir, 'site'), '--min-score', '999'])).toBe(1)
   }, TIMEOUT)
+
+  it('exits 2 when the path does not exist, with or without --diff', () => {
+    // A typo in a CI path must fail, not pass on "No scannable files found".
+    expect(runCli(['scan', join(dir, 'no-such-dir')])).toBe(2)
+    expect(runCli(['scan', join(dir, 'no-such-dir'), '--diff', 'main'])).toBe(2)
+  }, TIMEOUT)
+
+  it('still exits 0 on an existing path with no scannable files', () => {
+    mkdirSync(join(dir, 'empty'), { recursive: true })
+    expect(runCli(['scan', join(dir, 'empty')])).toBe(0)
+  }, TIMEOUT)
 })
