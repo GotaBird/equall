@@ -9,11 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **A path that does not exist now exits `2`.** `equall scan <path>` used to print "No
-  scannable files found" and exit `0` when the path did not exist, so a typo in a CI step
-  passed without scanning anything. It now prints `path not found` and exits `2` (the scan
-  could not run), with or without `--diff`. An existing path with no scannable files still
-  exits `0`. **CI impact:** a pipeline pointing at a wrong path now fails; fix the path.
+- **A path that does not exist now exits `2`.** `equall scan <path>` used to exit `0` when
+  the path did not exist: it printed "No scannable files found", or with `--json` an empty
+  report scored 100. A typo in a CI step therefore passed without scanning anything. It now
+  prints `path not found` on stderr and exits `2` (the scan could not run). With `--diff` it
+  already exited `2`, but on a misleading git-ref error; the message is now the same. A path
+  that is a file exits `2` with `not a directory` instead of a generic error. An existing
+  folder with no scannable files still exits `0`. **CI impact:** a pipeline pointing at a
+  wrong path now fails; fix the path.
 
 ### Fixed
 
