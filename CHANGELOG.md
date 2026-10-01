@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.3] - 2026-10-01
+
 ### Changed
 
 - **A path that does not exist now exits `2`.** `equall scan <path>` used to exit `0` when
