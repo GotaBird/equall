@@ -39,6 +39,17 @@ function runCli(args: string[]): number {
   }
 }
 
+// Same, keeping the output streams (to assert on error messages).
+function runCliFull(args: string[]): { status: number; stdout: string; stderr: string } {
+  try {
+    const stdout = execFileSync('node', ['--import', 'tsx', CLI, ...args], { stdio: 'pipe', encoding: 'utf8' })
+    return { status: 0, stdout, stderr: '' }
+  } catch (err) {
+    const e = err as { status?: number; stdout?: string; stderr?: string }
+    return { status: e.status ?? -1, stdout: e.stdout ?? '', stderr: e.stderr ?? '' }
+  }
+}
+
 describe('scan exit code (integration)', () => {
   let dir: string
 
@@ -75,5 +86,28 @@ describe('scan exit code (integration)', () => {
 
   it('exits 1 on an invalid --min-score', () => {
     expect(runCli(['scan', join(dir, 'site'), '--min-score', '999'])).toBe(1)
+  }, TIMEOUT)
+
+  it('exits 2 and names the missing path, with or without --diff or --json', () => {
+    // A typo in a CI path must fail, not pass on "No scannable files found". The message is
+    // asserted too: with --diff a missing path used to exit 2 on a misleading git-ref error.
+    const missing = join(dir, 'no-such-dir')
+    for (const extra of [[], ['--diff', 'main'], ['--json']]) {
+      const run = runCliFull(['scan', missing, ...extra])
+      expect(run.status).toBe(2)
+      expect(run.stderr).toContain('path not found')
+      expect(run.stdout).toBe('')
+    }
+  }, TIMEOUT)
+
+  it('exits 2 and says so when the path is a file, not a directory', () => {
+    const run = runCliFull(['scan', join(dir, 'site', 'index.html')])
+    expect(run.status).toBe(2)
+    expect(run.stderr).toContain('not a directory')
+  }, TIMEOUT)
+
+  it('still exits 0 on an existing path with no scannable files', () => {
+    mkdirSync(join(dir, 'empty'), { recursive: true })
+    expect(runCli(['scan', join(dir, 'empty')])).toBe(0)
   }, TIMEOUT)
 })

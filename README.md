@@ -64,7 +64,7 @@ equall --help                      # all commands and options
 ```
 
 A successful scan always exits `0`. Pass `--min-score <n>` to fail when the score drops
-below a threshold. On a repository with existing debt, prefer the diff gate below: it fails
+below a threshold. A path that does not exist, or is a file rather than a folder, exits `2`. On a repository with existing debt, prefer the diff gate below: it fails
 only on what a change introduces. Criteria above your target level (e.g. AAA under the
 default AA target) are advisory and never count against the score.
 

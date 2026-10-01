@@ -31,6 +31,7 @@ export type {
   ConfidenceFlag,
   RouteInfo,
   RouteFramework,
+  UncheckedFile,
   // Inputs / adapter contract
   ScanContext,
   ScanOptions,
