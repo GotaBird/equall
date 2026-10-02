@@ -58,6 +58,7 @@ equall scan . --verbose            # full per-criterion support table
 equall scan . --all                # list everything: all criteria, occurrences and files
 equall scan . --show-review        # also list findings static analysis can't confirm
 equall scan . --json               # machine-readable output for CI / tooling
+equall scan . --json-out r.json    # same JSON written to a file, terminal output kept
 equall scan . --no-color           # plain text (also automatic when output is not a terminal)
 equall scan . --min-score 90       # score gate: exit 1 if the score is below 90
 equall --help                      # all commands and options
@@ -84,6 +85,13 @@ analysis cannot confirm, and best practices, never block.
 
 On GitHub Actions, each new finding is annotated on its file and line. The base branch must
 be in the clone: use `actions/checkout` with `fetch-depth: 0`.
+
+`--json-out <file>` writes the diff result to a file for a later step (an upload, a report)
+while keeping the terminal output, the annotations, the job summary and the exit code. The
+file is what `--json` prints, at a path relative to the working directory (not to the
+scanned path). An empty path, a missing folder or a file that cannot be written exits `2`;
+the file is only written when the scan ran, so check the exit code before reading it. It
+also works on a full scan.
 
 Exit codes: `0` no new violation at the threshold, `1` the change introduced one, `2` the check
 could not run (invalid option, base not found, shallow clone).

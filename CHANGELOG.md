@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Write the JSON report to a file, keeping the normal output.** Pass
+  `--json-out result.json` to get the report as a file for a later step, such as an upload,
+  while the terminal output, the GitHub annotations, the job summary and the exit code stay
+  as they are; `--json` alone prints to stdout and, with `--diff`, turns off the
+  annotations. The file holds exactly what `--json` prints: the diff result with `--diff`,
+  the full report otherwise.
+  - The path is relative to the working directory, not to the scanned path.
+  - An empty path, a missing folder or a file that cannot be written exits `2`.
+  - The file is only written when the scan ran, so a later step must check the exit code
+    before reading it.
+
 ## [0.3.3] - 2026-10-01
 
 ### Changed

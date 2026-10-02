@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-import { resolve, basename } from 'node:path'
-import { appendFileSync, existsSync, statSync } from 'node:fs'
+import { resolve, basename, dirname } from 'node:path'
+import { appendFileSync, existsSync, statSync, writeFileSync } from 'node:fs'
 import { Command } from 'commander'
 import ora from 'ora'
 import { runScan } from './scan.js'
@@ -31,6 +31,7 @@ program
   .option('--include <patterns...>', 'Glob patterns to include')
   .option('--exclude <patterns...>', 'Glob patterns to exclude')
   .option('--json', 'Output results as JSON')
+  .option('--json-out <file>', 'Also write the JSON report to <file>, keeping the terminal output')
   .option('-i, --show-ignored', 'Show ignored issues in output')
   .option('-v, --verbose', 'Expand the full per-criterion support table + all occurrences for best-practice issues')
   .option('-a, --all', 'List everything: all WCAG criteria, all occurrences and all affected files (default: top 8 criteria, 2 of each)')
@@ -46,6 +47,8 @@ Examples:
   equall scan .                        Scan current directory (Level AA)
   equall scan ./public --level A       Scan HTML files, Level A only
   equall scan . --json > report.json   Export JSON report
+  equall scan . --diff --fail-on critical --json-out result.json
+                                       Gate the pull request and save the diff result
   equall scan . --show-manual          List criteria needing manual review
   equall scan . --include "src/**"     Scan only src/ folder
   equall scan . --no-readability       Skip reading-grade (Flesch-Kincaid) checks
@@ -54,7 +57,7 @@ Examples:
 
 Supported files: .html .htm .jsx .tsx .vue .svelte .astro
 `)
-  .action(async (path: string, opts: { level: string; standard?: string; include?: string[]; exclude?: string[]; json?: boolean; showIgnored?: boolean; verbose?: boolean; all?: boolean; showManual?: boolean; showReview?: boolean; readability?: boolean; color?: boolean; minScore?: string; diff?: string | true; failOn?: string }) => {
+  .action(async (path: string, opts: { level: string; standard?: string; include?: string[]; exclude?: string[]; json?: boolean; jsonOut?: string; showIgnored?: boolean; verbose?: boolean; all?: boolean; showManual?: boolean; showReview?: boolean; readability?: boolean; color?: boolean; minScore?: string; diff?: string | true; failOn?: string }) => {
     const level = opts.level.toUpperCase() as WcagLevel
     if (!['A', 'AA', 'AAA'].includes(level)) {
       console.error(`Invalid level "${opts.level}". Use A, AA, or AAA.`)
@@ -75,6 +78,8 @@ Supported files: .html .htm .jsx .tsx .vue .svelte .astro
         process.exit(1)
       }
     }
+
+    if (opts.jsonOut !== undefined) checkJsonOutPath(opts.jsonOut)
 
     // A path that does not exist cannot be scanned: say so and exit 2 (cannot run), so a typo
     // in a CI step fails instead of passing on "No scannable files found". A file is not a
@@ -123,6 +128,7 @@ Supported files: .html .htm .jsx .tsx .vue .svelte .astro
           console.log('\n  No scannable files found (.html, .jsx, .tsx, .vue, .svelte, .astro)')
           console.log('  Check the path or use --include to specify patterns.\n')
         }
+        if (opts.jsonOut !== undefined) writeJsonOut(opts.jsonOut, result)
         process.exit(0)
       }
 
@@ -132,6 +138,7 @@ Supported files: .html .htm .jsx .tsx .vue .svelte .astro
       } else {
         printResult(result, { showIgnored: opts.showIgnored, verbose: opts.verbose, all: opts.all, showManual: opts.showManual, showReview: opts.showReview, targetLevel: level, standard, color: shouldUseColor({ flag: opts.color }) })
       }
+      if (opts.jsonOut !== undefined) writeJsonOut(opts.jsonOut, result)
 
       // A scan that ran successfully exits 0. The score gate is opt-in (--min-score)
       // so interactive runs never look like a failure and CI can choose its threshold.
@@ -226,13 +233,41 @@ program
     console.log()
   })
 
+// `--json-out <file>`: the report --json would print, written to a file as given (relative to
+// the working directory, not to the scanned path) while the terminal output, annotations,
+// job summary and exit code stay as they are. A write failure exits 2: the step asked for
+// the file, so a missing file must not look like a passed check. The path is checked before
+// the scan runs, so an empty value (an unset CI input) or a typo in the folder fails at once
+// instead of after a full scan.
+function checkJsonOutPath(file: string): void {
+  if (file.trim() === '') {
+    console.error('\n  Error: --json-out expects a file path.\n')
+    process.exit(2)
+  }
+  const dir = dirname(resolve(file))
+  if (!existsSync(dir) || !statSync(dir).isDirectory()) {
+    console.error(`\n  Error: could not write ${file}: folder not found (${dir})\n`)
+    process.exit(2)
+  }
+}
+
+function writeJsonOut(file: string, data: unknown): void {
+  try {
+    writeFileSync(file, JSON.stringify(data, null, 2) + '\n')
+  } catch (error) {
+    const msg = error instanceof Error ? error.message : String(error)
+    console.error(`\n  Error: could not write ${file}: ${msg}\n`)
+    process.exit(2)
+  }
+}
+
 // `scan --diff`: report only what a change introduced, and gate on it with --fail-on.
 // Exit codes: 0 = no new violation at the threshold (or report only), 1 = the change
 // introduced one, 2 = the check could not run (bad option, missing base, shallow clone).
 async function runDiffCommand(
   path: string,
   level: WcagLevel,
-  opts: { json?: boolean; color?: boolean; minScore?: string; diff?: string | true; failOn?: string },
+  opts: { json?: boolean; jsonOut?: string; color?: boolean; minScore?: string; diff?: string | true; failOn?: string },
 ): Promise<void> {
   const fail = (message: string): never => {
     console.error(`\n  Error: ${message}\n`)
@@ -274,6 +309,10 @@ async function runDiffCommand(
         // ignore
       }
     }
+    // The file is for a later step (an upload, a report): the same JSON --json prints, written
+    // next to the normal output instead of replacing it. After the summary, so a write failure
+    // (exit 2) still leaves the reviewer the summary to read. Never a silent pass.
+    if (opts.jsonOut !== undefined) writeJsonOut(opts.jsonOut, result)
     process.exit(computeDiffExitCode(result, failOn))
   } catch (error) {
     spinner?.stop()
