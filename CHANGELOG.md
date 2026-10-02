@@ -22,6 +22,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - The file is only written when the scan ran, so a later step must check the exit code
     before reading it.
 
+### Fixed
+
+- **Advisory issues name your real target, not "AAA".** With `--level A`, Level AA
+  issues are beyond the target and were labelled "AAA advisory". The summary now reads
+  `N advisory (beyond A)` and the section `Advisory — beyond your A target, not counted`.
+- **A scanner that fails is named.** The warning read `[scanner] failed`; it now names the
+  engine, for example `[axe-core] failed and did not run`, so you know which checks are
+  missing from the report.
+- **One word for each idea in the terminal output.** Ignored issues say "ignored via
+  equall-ignore" (was "suppressed"), the diff's uncounted findings say "to review or
+  advisory" (was "review-only"), and "No scannable files found" lists `.htm`, which the
+  scan already supported.
+
 ## [0.3.3] - 2026-10-01
 
 ### Changed
