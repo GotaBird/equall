@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { resolve, basename } from 'node:path'
+import { resolve, basename, dirname } from 'node:path'
 import { appendFileSync, existsSync, statSync, writeFileSync } from 'node:fs'
 import { Command } from 'commander'
 import ora from 'ora'
@@ -79,6 +79,8 @@ Supported files: .html .htm .jsx .tsx .vue .svelte .astro
       }
     }
 
+    if (opts.jsonOut !== undefined) checkJsonOutPath(opts.jsonOut)
+
     // A path that does not exist cannot be scanned: say so and exit 2 (cannot run), so a typo
     // in a CI step fails instead of passing on "No scannable files found". A file is not a
     // project root either; name it instead of failing deeper with a generic error.
@@ -126,7 +128,7 @@ Supported files: .html .htm .jsx .tsx .vue .svelte .astro
           console.log('\n  No scannable files found (.html, .jsx, .tsx, .vue, .svelte, .astro)')
           console.log('  Check the path or use --include to specify patterns.\n')
         }
-        if (opts.jsonOut) writeJsonOut(opts.jsonOut, result)
+        if (opts.jsonOut !== undefined) writeJsonOut(opts.jsonOut, result)
         process.exit(0)
       }
 
@@ -136,7 +138,7 @@ Supported files: .html .htm .jsx .tsx .vue .svelte .astro
       } else {
         printResult(result, { showIgnored: opts.showIgnored, verbose: opts.verbose, all: opts.all, showManual: opts.showManual, showReview: opts.showReview, targetLevel: level, standard, color: shouldUseColor({ flag: opts.color }) })
       }
-      if (opts.jsonOut) writeJsonOut(opts.jsonOut, result)
+      if (opts.jsonOut !== undefined) writeJsonOut(opts.jsonOut, result)
 
       // A scan that ran successfully exits 0. The score gate is opt-in (--min-score)
       // so interactive runs never look like a failure and CI can choose its threshold.
@@ -234,7 +236,21 @@ program
 // `--json-out <file>`: the report --json would print, written to a file as given (relative to
 // the working directory, not to the scanned path) while the terminal output, annotations,
 // job summary and exit code stay as they are. A write failure exits 2: the step asked for
-// the file, so a missing file must not look like a passed check.
+// the file, so a missing file must not look like a passed check. The path is checked before
+// the scan runs, so an empty value (an unset CI input) or a typo in the folder fails at once
+// instead of after a full scan.
+function checkJsonOutPath(file: string): void {
+  if (file.trim() === '') {
+    console.error('\n  Error: --json-out expects a file path.\n')
+    process.exit(2)
+  }
+  const dir = dirname(resolve(file))
+  if (!existsSync(dir) || !statSync(dir).isDirectory()) {
+    console.error(`\n  Error: could not write --json-out file ${file}: folder not found: ${dir}\n`)
+    process.exit(2)
+  }
+}
+
 function writeJsonOut(file: string, data: unknown): void {
   try {
     writeFileSync(file, JSON.stringify(data, null, 2) + '\n')
@@ -284,10 +300,6 @@ async function runDiffCommand(
       // Annotations are read from stdout by the Actions runner; never mixed into --json.
       if (process.env.GITHUB_ACTIONS === 'true') for (const line of formatAnnotations(result, failOn)) console.log(line)
     }
-    // The file is for a later step (an upload, a report): the same JSON --json prints, written
-    // next to the normal output instead of replacing it. A file that cannot be written is a
-    // failed check (exit 2), never a silent pass.
-    if (opts.jsonOut) writeJsonOut(opts.jsonOut, result)
     // The job summary lists every finding (annotations are capped per step). Best effort: a
     // summary that cannot be written never changes the check's result.
     if (process.env.GITHUB_STEP_SUMMARY) {
@@ -297,6 +309,10 @@ async function runDiffCommand(
         // ignore
       }
     }
+    // The file is for a later step (an upload, a report): the same JSON --json prints, written
+    // next to the normal output instead of replacing it. After the summary, so a write failure
+    // (exit 2) still leaves the reviewer the summary to read. Never a silent pass.
+    if (opts.jsonOut !== undefined) writeJsonOut(opts.jsonOut, result)
     process.exit(computeDiffExitCode(result, failOn))
   } catch (error) {
     spinner?.stop()

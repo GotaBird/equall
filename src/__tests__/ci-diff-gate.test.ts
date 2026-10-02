@@ -191,18 +191,20 @@ describe('scan --diff (integration)', () => {
     // The Action needs both: the annotations on the PR and the result for a later upload step.
     const out = join(dir, 'result.json')
     const summary = join(dir, '..', `summary-out-${Date.now()}.md`)
-    const r = cli(['scan', '.', '--diff', 'main', '--fail-on', 'serious', '--json-out', out], dir, { GITHUB_ACTIONS: 'true', GITHUB_STEP_SUMMARY: summary })
-    expect(r.code).toBe(1)
-    expect(r.out).toMatch(/^::error file=index\.html,title=Equall/m)
-    expect(r.out).toContain('Introduced by this change')
-    expect(readFileSync(summary, 'utf-8')).toMatch(/### Equall: changes since main/)
-    const file = JSON.parse(readFileSync(out, 'utf-8'))
-    expect(file.summary.new_count).toBe(1)
-    expect(file.new_issues[0].scanner_rule_id).toBe('link-name')
-    // The file is exactly what --json prints.
-    const printed = cli(['scan', '.', '--diff', 'main', '--json'], dir).out
-    expect(JSON.parse(printed)).toEqual(file)
-    rmSync(summary, { force: true })
+    try {
+      const r = cli(['scan', '.', '--diff', 'main', '--fail-on', 'serious', '--json-out', out], dir, { GITHUB_ACTIONS: 'true', GITHUB_STEP_SUMMARY: summary })
+      expect(r.code).toBe(1)
+      expect(r.out).toMatch(/^::error file=index\.html,title=Equall/m)
+      expect(r.out).toContain('Introduced by this change')
+      expect(readFileSync(summary, 'utf-8')).toMatch(/### Equall: changes since main/)
+      const file = readFileSync(out, 'utf-8')
+      expect(JSON.parse(file).summary.new_count).toBe(1)
+      expect(JSON.parse(file).new_issues[0].scanner_rule_id).toBe('link-name')
+      // The file is byte for byte what --json prints.
+      expect(file).toBe(cli(['scan', '.', '--diff', 'main', '--json'], dir).out)
+    } finally {
+      rmSync(summary, { force: true })
+    }
   }, 120_000)
 
   it('--json-out exits 2 when the file cannot be written', () => {

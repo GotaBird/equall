@@ -102,10 +102,21 @@ describe('scan exit code (integration)', () => {
     }
     expect(JSON.parse(readFileSync(out, 'utf8'))).toEqual(JSON.parse(readFileSync(printed, 'utf8')))
     // Without --json the terminal output stays, the file is still written and the gate still applies.
+    rmSync(out, { force: true }) // a stale file from the run above must not make this pass
     const plain = runCliFull(['scan', join(dir, 'site'), '--json-out', out, '--min-score', '100'])
     expect(plain.status).toBe(1)
     expect(plain.stdout).toContain('Automated verdicts only')
     expect(JSON.parse(readFileSync(out, 'utf8')).issues.length).toBeGreaterThan(0)
+  }, TIMEOUT * 2)
+
+  it('--json-out rejects an empty path and a missing folder before scanning', () => {
+    // An unset CI input gives `--json-out ""`: that must not pass as a check with no file.
+    const empty = runCliFull(['scan', join(dir, 'site'), '--json-out', ''])
+    expect(empty.status).toBe(2)
+    expect(empty.stderr).toMatch(/--json-out expects a file path/)
+    const missing = runCliFull(['scan', join(dir, 'site'), '--json-out', join(dir, 'no-such-dir', 'r.json')])
+    expect(missing.status).toBe(2)
+    expect(missing.stderr).toMatch(/folder not found/)
   }, TIMEOUT * 2)
 
   it('exits 2 and names the missing path, with or without --diff or --json', () => {
