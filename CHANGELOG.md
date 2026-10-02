@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`--json-out <file>` writes the JSON report to a file without replacing the normal
+  output.** `--json` prints the report to stdout and, with `--diff`, turns off the GitHub
+  annotations and the job summary. A CI step that needs both — the annotations on the pull
+  request and the result for a later step, such as an upload — can now pass
+  `--json-out result.json`: the terminal output, the annotations, the job summary and the
+  exit code are unchanged, and the file holds exactly what `--json` would print (the diff
+  result with `--diff`, the full report otherwise). A file that cannot be written exits `2`.
+
 ## [0.3.3] - 2026-10-01
 
 ### Changed

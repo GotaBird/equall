@@ -186,6 +186,30 @@ describe('scan --diff (integration)', () => {
     expect(json.summary.new_count).toBe(1)
     expect(r.out).not.toContain('::error')
   }, 60_000)
+
+  it('--json-out writes the diff result to a file and keeps the gate, annotations and summary', () => {
+    // The Action needs both: the annotations on the PR and the result for a later upload step.
+    const out = join(dir, 'result.json')
+    const summary = join(dir, '..', `summary-out-${Date.now()}.md`)
+    const r = cli(['scan', '.', '--diff', 'main', '--fail-on', 'serious', '--json-out', out], dir, { GITHUB_ACTIONS: 'true', GITHUB_STEP_SUMMARY: summary })
+    expect(r.code).toBe(1)
+    expect(r.out).toMatch(/^::error file=index\.html,title=Equall/m)
+    expect(r.out).toContain('Introduced by this change')
+    expect(readFileSync(summary, 'utf-8')).toMatch(/### Equall: changes since main/)
+    const file = JSON.parse(readFileSync(out, 'utf-8'))
+    expect(file.summary.new_count).toBe(1)
+    expect(file.new_issues[0].scanner_rule_id).toBe('link-name')
+    // The file is exactly what --json prints.
+    const printed = cli(['scan', '.', '--diff', 'main', '--json'], dir).out
+    expect(JSON.parse(printed)).toEqual(file)
+    rmSync(summary, { force: true })
+  }, 120_000)
+
+  it('--json-out exits 2 when the file cannot be written', () => {
+    const r = cli(['scan', '.', '--diff', 'main', '--json-out', join(dir, 'no-such-dir', 'r.json')], dir)
+    expect(r.code).toBe(2)
+    expect(r.err).toMatch(/could not write --json-out file/)
+  }, 60_000)
 })
 
 describe('diff scan scope and blind spots', () => {

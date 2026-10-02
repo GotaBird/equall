@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { execFileSync } from 'node:child_process'
-import { mkdtempSync, rmSync, writeFileSync, mkdirSync } from 'node:fs'
+import { mkdtempSync, rmSync, writeFileSync, mkdirSync, readFileSync, openSync, closeSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -87,6 +87,26 @@ describe('scan exit code (integration)', () => {
   it('exits 1 on an invalid --min-score', () => {
     expect(runCli(['scan', join(dir, 'site'), '--min-score', '999'])).toBe(1)
   }, TIMEOUT)
+
+  it('--json-out writes the full report to a file, identical to --json, with the exit code unchanged', () => {
+    const out = join(dir, 'report.json')
+    // stdout goes to a file, not a pipe: a 20 KB JSON report through a pipe is cut at the
+    // first chunk when the child exits (asynchronous pipe writes on macOS), which is a
+    // test-harness artefact, not what the comparison is about.
+    const printed = join(dir, 'printed.json')
+    const fd = openSync(printed, 'w')
+    try {
+      execFileSync('node', ['--import', 'tsx', CLI, 'scan', join(dir, 'site'), '--json', '--json-out', out], { stdio: ['ignore', fd, 'pipe'] })
+    } finally {
+      closeSync(fd)
+    }
+    expect(JSON.parse(readFileSync(out, 'utf8'))).toEqual(JSON.parse(readFileSync(printed, 'utf8')))
+    // Without --json the terminal output stays, the file is still written and the gate still applies.
+    const plain = runCliFull(['scan', join(dir, 'site'), '--json-out', out, '--min-score', '100'])
+    expect(plain.status).toBe(1)
+    expect(plain.stdout).toContain('Automated verdicts only')
+    expect(JSON.parse(readFileSync(out, 'utf8')).issues.length).toBeGreaterThan(0)
+  }, TIMEOUT * 2)
 
   it('exits 2 and names the missing path, with or without --diff or --json', () => {
     // A typo in a CI path must fail, not pass on "No scannable files found". The message is
