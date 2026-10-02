@@ -125,7 +125,7 @@ Supported files: .html .htm .jsx .tsx .vue .svelte .astro
           printJson(result)
           console.error(`✓ JSON report written (${result.issues.length} issues)`)
         } else {
-          console.log('\n  No scannable files found (.html, .jsx, .tsx, .vue, .svelte, .astro)')
+          console.log('\n  No scannable files found (.html, .htm, .jsx, .tsx, .vue, .svelte, .astro)')
           console.log('  Check the path or use --include to specify patterns.\n')
         }
         if (opts.jsonOut !== undefined) writeJsonOut(opts.jsonOut, result)

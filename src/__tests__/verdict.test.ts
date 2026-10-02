@@ -77,6 +77,18 @@ describe('honest verdict', () => {
     expect(out).not.toMatch(BANNED)
   })
 
+  it('names the real target for advisory issues, never "AAA" under a Level A target', () => {
+    // Under --level A an AA failure is beyond the target: it is advisory, but it is not AAA.
+    const out = render(
+      [makeIssue(), makeIssue({ wcag_level: 'AA', wcag_criteria: ['1.4.3'], scanner_rule_id: 'color-contrast' })],
+      ['1.1.1', '1.4.3'],
+      'A'
+    )
+    expect(out).toContain('1 advisory (beyond A)')
+    expect(out).toContain('Advisory — beyond your A target, not counted')
+    expect(out).not.toMatch(/AAA/)
+  })
+
   it('the not-evaluated count equals criteria_total minus verified', () => {
     // 3 verified out of 55 (AA total, WCAG 2.2) → 52 not evaluated.
     const out = render([], ['1.1.1', '2.4.4', '1.3.1'])

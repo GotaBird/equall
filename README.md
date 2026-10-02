@@ -2,7 +2,7 @@
 
 > **Open-source accessibility scoring for dev teams.**
 
-Equall aggregates `axe-core`, `eslint-plugin-jsx-a11y`, `text-readability`, and more into a single WCAG score — and delivers an honest, per-criterion conformance verdict.
+Equall aggregates `axe-core`, `eslint-plugin-jsx-a11y`, `text-readability`, and more into a single WCAG score and a per-criterion verdict.
 
 **One command. Real score. No config.**
 
@@ -24,6 +24,7 @@ npx equall-cli scan .
 
   WCAG 2.2 Support Summary — AA target · automated basis only
   ✓ Supports (automated) 14   ✕ Does not support 4   ○ Not evaluated 37
+  Automated verdicts only — a full statement needs manual + assistive-tech testing. Run --verbose for the per-criterion table.
   What each verdict means → https://equallscan.com/docs/verdicts
 ```
 
@@ -31,12 +32,12 @@ npx equall-cli scan .
 
 Accessibility tools today usually fall into two camps: dev tools that show violations without context (axe, Lighthouse), and enterprise platforms that cost $75K+/year (Deque, Siteimprove). Nothing in between.
 
-Equall sits in that gap. It wraps existing open-source scanners and adds what they're missing: a **per-criterion conformance verdict** you can actually act on, and a **score** to track your trend over time.
+Equall sits in that gap. It wraps existing open-source scanners and adds what they're missing: a **per-criterion verdict** you can act on, and a **score** to track your trend over time.
 
-- **Aggregator, not a reinventor** — wraps axe-core, eslint-plugin-jsx-a11y, readability, and more. We don't rewrite the rules; we unify and de-duplicate their results.
-- **Framework-aware** — scans HTML, JSX/TSX, Vue, Svelte, and **Astro**. `.astro` is scanned full multi-engine (axe-core + jsx-a11y via `astro-eslint-parser` + readability), not axe alone.
+- **Aggregator, not a reinventor** — wraps axe-core, eslint-plugin-jsx-a11y, readability, and more. We don't rewrite the rules; we unify and deduplicate their results.
+- **Framework-aware** — scans HTML, JSX/TSX, Vue, Svelte, and **Astro**. `.astro` runs through several engines (axe-core, jsx-a11y via `astro-eslint-parser`, readability), not axe alone.
 - **Per-criterion verdicts** — for every WCAG success criterion of your target level: `Supports (automated)`, `Does not support`, or `Not evaluated`. It's the backbone of the report; the [verdict reference](https://equallscan.com/docs/verdicts) says exactly what each claims — and what it doesn't.
-- **Score is a trend, not a grade** — a 0–100 number to watch move over time. It motivates; it certifies nothing. No fake "100% Meets WCAG" badges here.
+- **Score is a trend, not a grade** — a 0–100 number to watch move over time. It certifies nothing.
 - **Speaks the legal standard** — `--standard wcag21` renders the WCAG 2.1 AA view cited by the EU Web Accessibility Directive / EN 301 549; `wcag22` is the default. Same scan, same score — only the criteria set changes.
 - **Honest about coverage** — automation covers a subset; the rest is `Not evaluated` (needs a rendered check or manual review). Page-level rules (landmarks, skip link, `<html lang>`) are reported as "not verifiable on this scan" when you scan components or partials — not as false violations.
 - **Counts only what it can stand behind** — on component code (JSX/TSX, Vue, Svelte, Astro), a finding static analysis cannot confirm (the name comes from props, a spread or a sub-component) is listed for review, not counted in the score or the verdicts. `--show-review` lists them.
@@ -65,8 +66,9 @@ equall --help                      # all commands and options
 ```
 
 A successful scan always exits `0`. Pass `--min-score <n>` to fail when the score drops
-below a threshold. A path that does not exist, or is a file rather than a folder, exits `2`. On a repository with existing debt, prefer the diff gate below: it fails
-only on what a change introduces. Criteria above your target level (e.g. AAA under the
+below a threshold. A path that does not exist, or is a file rather than a folder, exits `2`.
+On a repository with existing debt, prefer the diff gate below: it fails only on what a
+change introduces. Criteria above your target level (e.g. AAA under the
 default AA target) are advisory and never count against the score.
 
 ## In CI: fail only on what a change introduces

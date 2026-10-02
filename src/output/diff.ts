@@ -39,7 +39,7 @@ export function printDiffResult(result: DiffScanResult, options: PrintDiffOption
 
   const uncounted = [...result.new_review_only, ...result.new_advisory]
   if (uncounted.length > 0) {
-    console.log(`  ${BOLD}Also introduced, not counted${RESET} ${GRAY}— review-only or advisory${RESET}`)
+    console.log(`  ${BOLD}Also introduced, not counted${RESET} ${GRAY}— to review or advisory${RESET}`)
     for (const i of uncounted) printIssue(i, `${GRAY}○${RESET}`)
     console.log()
   }

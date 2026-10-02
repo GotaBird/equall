@@ -5,11 +5,11 @@ exports[`terminal report snapshot > renders byte-identically: all 1`] = `
 [1m  ◆ EQUALL — Accessibility Score[0m
 
   [1mSummary[0m
-  24 files scanned  ·  [1m15[0m WCAG violations  ·  [90m5 best-practice recommendations[0m  ·  [90m3 AAA advisory[0m  ·  [90m6 page-level (needs rendered page)[0m
+  24 files scanned  ·  [1m15[0m WCAG violations  ·  [90m5 best-practice recommendations[0m  ·  [90m3 advisory (beyond AA)[0m  ·  [90m6 page-level (needs rendered page)[0m
   [31m[1m■[0m [31m13 critical[0m   [33m[1m▲[0m [33m1 serious[0m   [36m●[0m [36m5 moderate[0m   [90m○[0m [90m1 minor[0m
   [90mcritical/serious = fix before shipping · moderate/minor = fix in next iteration[0m
   [90m3 routes detected · next-app 2 · html 1[0m
-  [90m1 issue suppressed via equall-ignore[0m
+  [90m1 issue ignored via equall-ignore[0m
 
   [1mWCAG Violations[0m [90m— automated failures at your AA target, fix these first[0m
 
@@ -97,7 +97,7 @@ exports[`terminal report snapshot > renders byte-identically: all 1`] = `
       Violation of 3.3.2
       [90mLearn more: https://example.test/help[0m
 
-  [1mAdvisory[0m [90m— beyond your AA target (WCAG AAA), advisory only[0m
+  [1mAdvisory[0m [90m— beyond your AA target, not counted[0m
 
   [90m◇[0m [1mWCAG 3.1.5[0m [1mReading Level[0m [90mLevel AAA[0m  [90m(3 occurrences)[0m
     [90m↳[0m [36mcontent/page-1.md:3[0m
@@ -179,11 +179,11 @@ exports[`terminal report snapshot > renders byte-identically: default 1`] = `
 [1m  ◆ EQUALL — Accessibility Score[0m
 
   [1mSummary[0m
-  24 files scanned  ·  [1m15[0m WCAG violations  ·  [90m5 best-practice recommendations[0m  ·  [90m3 AAA advisory[0m  ·  [90m6 page-level (needs rendered page)[0m
+  24 files scanned  ·  [1m15[0m WCAG violations  ·  [90m5 best-practice recommendations[0m  ·  [90m3 advisory (beyond AA)[0m  ·  [90m6 page-level (needs rendered page)[0m
   [31m[1m■[0m [31m13 critical[0m   [33m[1m▲[0m [33m1 serious[0m   [36m●[0m [36m5 moderate[0m   [90m○[0m [90m1 minor[0m
   [90mcritical/serious = fix before shipping · moderate/minor = fix in next iteration[0m
   [90m3 routes detected · next-app 2 · html 1[0m
-  [90m1 issue suppressed via equall-ignore[0m
+  [90m1 issue ignored via equall-ignore[0m
 
   [1mWCAG Violations[0m [90m— automated failures at your AA target, fix these first[0m
 
@@ -246,7 +246,7 @@ exports[`terminal report snapshot > renders byte-identically: default 1`] = `
 
   [90m↳ 3 more WCAG criteria not shown (3 occurrences, incl. 1 critical, 1 serious) · run with --all to list every criterion[0m
 
-  [1mAdvisory[0m [90m— beyond your AA target (WCAG AAA), advisory only[0m
+  [1mAdvisory[0m [90m— beyond your AA target, not counted[0m
 
   [90m◇[0m [1mWCAG 3.1.5[0m [1mReading Level[0m [90mLevel AAA[0m  [90m(3 occurrences)[0m
     [90m↳[0m [36mcontent/page-1.md:3[0m
@@ -307,11 +307,11 @@ exports[`terminal report snapshot > renders byte-identically: everything + wcag2
 [1m  ◆ EQUALL — Accessibility Score[0m
 
   [1mSummary[0m
-  24 files scanned  ·  [1m15[0m WCAG violations  ·  [90m5 best-practice recommendations[0m  ·  [90m3 AAA advisory[0m  ·  [90m6 page-level (needs rendered page)[0m
+  24 files scanned  ·  [1m15[0m WCAG violations  ·  [90m5 best-practice recommendations[0m  ·  [90m3 advisory (beyond A)[0m  ·  [90m6 page-level (needs rendered page)[0m
   [31m[1m■[0m [31m13 critical[0m   [33m[1m▲[0m [33m1 serious[0m   [36m●[0m [36m5 moderate[0m   [90m○[0m [90m1 minor[0m
   [90mcritical/serious = fix before shipping · moderate/minor = fix in next iteration[0m
   [90m3 routes detected · next-app 2 · html 1[0m
-  [90m1 issue suppressed via equall-ignore[0m
+  [90m1 issue ignored via equall-ignore[0m
 
   [1mWCAG Violations[0m [90m— automated failures at your A target, fix these first[0m
 
@@ -399,7 +399,7 @@ exports[`terminal report snapshot > renders byte-identically: everything + wcag2
       Violation of 3.3.2
       [90mLearn more: https://example.test/help[0m
 
-  [1mAdvisory[0m [90m— beyond your A target (WCAG AAA), advisory only[0m
+  [1mAdvisory[0m [90m— beyond your A target, not counted[0m
 
   [90m◇[0m [1mWCAG 3.1.5[0m [1mReading Level[0m [90mLevel AAA[0m  [90m(3 occurrences)[0m
     [90m↳[0m [36mcontent/page-1.md:3[0m
@@ -503,11 +503,11 @@ exports[`terminal report snapshot > renders byte-identically: show-ignored 1`] =
 [1m  ◆ EQUALL — Accessibility Score[0m
 
   [1mSummary[0m
-  24 files scanned  ·  [1m15[0m WCAG violations  ·  [90m5 best-practice recommendations[0m  ·  [90m3 AAA advisory[0m  ·  [90m6 page-level (needs rendered page)[0m
+  24 files scanned  ·  [1m15[0m WCAG violations  ·  [90m5 best-practice recommendations[0m  ·  [90m3 advisory (beyond AA)[0m  ·  [90m6 page-level (needs rendered page)[0m
   [31m[1m■[0m [31m13 critical[0m   [33m[1m▲[0m [33m1 serious[0m   [36m●[0m [36m5 moderate[0m   [90m○[0m [90m1 minor[0m
   [90mcritical/serious = fix before shipping · moderate/minor = fix in next iteration[0m
   [90m3 routes detected · next-app 2 · html 1[0m
-  [90m1 issue suppressed via equall-ignore[0m
+  [90m1 issue ignored via equall-ignore[0m
 
   [1mWCAG Violations[0m [90m— automated failures at your AA target, fix these first[0m
 
@@ -570,7 +570,7 @@ exports[`terminal report snapshot > renders byte-identically: show-ignored 1`] =
 
   [90m↳ 3 more WCAG criteria not shown (3 occurrences, incl. 1 critical, 1 serious) · run with --all to list every criterion[0m
 
-  [1mAdvisory[0m [90m— beyond your AA target (WCAG AAA), advisory only[0m
+  [1mAdvisory[0m [90m— beyond your AA target, not counted[0m
 
   [90m◇[0m [1mWCAG 3.1.5[0m [1mReading Level[0m [90mLevel AAA[0m  [90m(3 occurrences)[0m
     [90m↳[0m [36mcontent/page-1.md:3[0m
@@ -634,11 +634,11 @@ exports[`terminal report snapshot > renders byte-identically: show-manual 1`] = 
 [1m  ◆ EQUALL — Accessibility Score[0m
 
   [1mSummary[0m
-  24 files scanned  ·  [1m15[0m WCAG violations  ·  [90m5 best-practice recommendations[0m  ·  [90m3 AAA advisory[0m  ·  [90m6 page-level (needs rendered page)[0m
+  24 files scanned  ·  [1m15[0m WCAG violations  ·  [90m5 best-practice recommendations[0m  ·  [90m3 advisory (beyond AA)[0m  ·  [90m6 page-level (needs rendered page)[0m
   [31m[1m■[0m [31m13 critical[0m   [33m[1m▲[0m [33m1 serious[0m   [36m●[0m [36m5 moderate[0m   [90m○[0m [90m1 minor[0m
   [90mcritical/serious = fix before shipping · moderate/minor = fix in next iteration[0m
   [90m3 routes detected · next-app 2 · html 1[0m
-  [90m1 issue suppressed via equall-ignore[0m
+  [90m1 issue ignored via equall-ignore[0m
 
   [1mWCAG Violations[0m [90m— automated failures at your AA target, fix these first[0m
 
@@ -701,7 +701,7 @@ exports[`terminal report snapshot > renders byte-identically: show-manual 1`] = 
 
   [90m↳ 3 more WCAG criteria not shown (3 occurrences, incl. 1 critical, 1 serious) · run with --all to list every criterion[0m
 
-  [1mAdvisory[0m [90m— beyond your AA target (WCAG AAA), advisory only[0m
+  [1mAdvisory[0m [90m— beyond your AA target, not counted[0m
 
   [90m◇[0m [1mWCAG 3.1.5[0m [1mReading Level[0m [90mLevel AAA[0m  [90m(3 occurrences)[0m
     [90m↳[0m [36mcontent/page-1.md:3[0m
@@ -814,11 +814,11 @@ exports[`terminal report snapshot > renders byte-identically: verbose 1`] = `
 [1m  ◆ EQUALL — Accessibility Score[0m
 
   [1mSummary[0m
-  24 files scanned  ·  [1m15[0m WCAG violations  ·  [90m5 best-practice recommendations[0m  ·  [90m3 AAA advisory[0m  ·  [90m6 page-level (needs rendered page)[0m
+  24 files scanned  ·  [1m15[0m WCAG violations  ·  [90m5 best-practice recommendations[0m  ·  [90m3 advisory (beyond AA)[0m  ·  [90m6 page-level (needs rendered page)[0m
   [31m[1m■[0m [31m13 critical[0m   [33m[1m▲[0m [33m1 serious[0m   [36m●[0m [36m5 moderate[0m   [90m○[0m [90m1 minor[0m
   [90mcritical/serious = fix before shipping · moderate/minor = fix in next iteration[0m
   [90m3 routes detected · next-app 2 · html 1[0m
-  [90m1 issue suppressed via equall-ignore[0m
+  [90m1 issue ignored via equall-ignore[0m
 
   [1mWCAG Violations[0m [90m— automated failures at your AA target, fix these first[0m
 
@@ -881,7 +881,7 @@ exports[`terminal report snapshot > renders byte-identically: verbose 1`] = `
 
   [90m↳ 3 more WCAG criteria not shown (3 occurrences, incl. 1 critical, 1 serious) · run with --all to list every criterion[0m
 
-  [1mAdvisory[0m [90m— beyond your AA target (WCAG AAA), advisory only[0m
+  [1mAdvisory[0m [90m— beyond your AA target, not counted[0m
 
   [90m◇[0m [1mWCAG 3.1.5[0m [1mReading Level[0m [90mLevel AAA[0m  [90m(3 occurrences)[0m
     [90m↳[0m [36mcontent/page-1.md:3[0m

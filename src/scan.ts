@@ -150,8 +150,9 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
       })
     } else {
       const err = result.reason instanceof Error ? result.reason.message : String(result.reason)
-      diagnostics.push(`[scanner] failed: ${err.slice(0, 120)}`)
-      failedScanners.add(scanners[scannerResults.indexOf(result)].name)
+      const name = scanners[scannerResults.indexOf(result)].name
+      diagnostics.push(`[${name}] failed and did not run: ${err.slice(0, 120)}`)
+      failedScanners.add(name)
     }
   }
 

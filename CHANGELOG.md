@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.4] - 2026-10-02
+
 ### Added
 
 - **Write the JSON report to a file, keeping the normal output.** Pass
@@ -19,6 +21,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - An empty path, a missing folder or a file that cannot be written exits `2`.
   - The file is only written when the scan ran, so a later step must check the exit code
     before reading it.
+
+### Fixed
+
+- **Advisory issues now name your target level, not "AAA".** With `--level A`, Level AA
+  issues were labelled "AAA advisory". The summary now reads `N advisory (beyond <target>)`
+  and the section `Advisory — beyond your <target> target, not counted`.
+- **A failing scanner is now named in the warning.** `[scanner] failed` becomes, for
+  example, `[axe-core] failed and did not run: <error>`, so you know which checks are
+  missing from the report. The same text is in `diagnostics` in the JSON report.
+- Ignored issues now read "ignored via equall-ignore" (was "suppressed via equall-ignore").
+- With `--diff`, uncounted new findings now read "to review or advisory" (was "review-only
+  or advisory").
+- "No scannable files found" now lists `.htm`, which the scan already supported.
 
 ## [0.3.3] - 2026-10-01
 

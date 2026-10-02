@@ -241,7 +241,7 @@ function printSummary(result: ScanResult, parts: ReportIssues, options: PrintOpt
   console.log(`  ${BOLD}Summary${RESET}`)
   const wcagIssuesCount = parts.wcag.length
   const bpIssuesCount = parts.bestPractice.length
-  const advisorySuffix = advisoryCount > 0 ? `  ·  ${GRAY}${advisoryCount} AAA advisory${RESET}` : ''
+  const advisorySuffix = advisoryCount > 0 ? `  ·  ${GRAY}${advisoryCount} advisory (beyond ${options.targetLevel ?? 'AA'})${RESET}` : ''
   // Page-level rules reclassified on fragment scans — surfaced even in a skim.
   const reclassifiedCount = (result.coverage?.reclassified ?? []).reduce((n, r) => n + r.count, 0)
   const reclassifiedSuffix = reclassifiedCount > 0 ? `  ·  ${GRAY}${reclassifiedCount} page-level (needs rendered page)${RESET}` : ''
@@ -273,7 +273,7 @@ function printSummary(result: ScanResult, parts: ReportIssues, options: PrintOpt
     console.log(`  ${GRAY}${n} ${plural(n, 'finding')} not counted — static analysis can't confirm ${plural(n, 'it', 'them')} · ${hint}${RESET}`)
   }
   if (summary.ignored_count > 0) {
-    console.log(`  ${GRAY}${summary.ignored_count} ${plural(summary.ignored_count, 'issue')} suppressed via equall-ignore${RESET}`)
+    console.log(`  ${GRAY}${summary.ignored_count} ${plural(summary.ignored_count, 'issue')} ignored via equall-ignore${RESET}`)
   }
 
   console.log()
@@ -338,7 +338,7 @@ function printViolations(issues: EquallIssue[], target: WcagLevel, options: Prin
 // or the score, and are never framed as "must fix".
 function printAdvisory(issues: EquallIssue[], target: WcagLevel, options: PrintOptions): void {
   if (issues.length === 0) return
-  console.log(`  ${BOLD}Advisory${RESET} ${GRAY}— beyond your ${target} target (WCAG AAA), advisory only${RESET}`)
+  console.log(`  ${BOLD}Advisory${RESET} ${GRAY}— beyond your ${target} target, not counted${RESET}`)
   console.log()
 
   for (const [criterion, group] of sortedGroups(issues)) {
