@@ -210,7 +210,7 @@ describe('scan --diff (integration)', () => {
   it('--json-out exits 2 when the file cannot be written', () => {
     const r = cli(['scan', '.', '--diff', 'main', '--json-out', join(dir, 'no-such-dir', 'r.json')], dir)
     expect(r.code).toBe(2)
-    expect(r.err).toMatch(/could not write --json-out file/)
+    expect(r.err).toMatch(/could not write .*folder not found/)
   }, 60_000)
 })
 

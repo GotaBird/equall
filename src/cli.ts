@@ -31,7 +31,7 @@ program
   .option('--include <patterns...>', 'Glob patterns to include')
   .option('--exclude <patterns...>', 'Glob patterns to exclude')
   .option('--json', 'Output results as JSON')
-  .option('--json-out <file>', 'Also write the JSON report to <file>, keeping the normal output, annotations, job summary and exit code (with --diff: the diff result)')
+  .option('--json-out <file>', 'Also write the JSON report to <file>, keeping the terminal output')
   .option('-i, --show-ignored', 'Show ignored issues in output')
   .option('-v, --verbose', 'Expand the full per-criterion support table + all occurrences for best-practice issues')
   .option('-a, --all', 'List everything: all WCAG criteria, all occurrences and all affected files (default: top 8 criteria, 2 of each)')
@@ -48,7 +48,7 @@ Examples:
   equall scan ./public --level A       Scan HTML files, Level A only
   equall scan . --json > report.json   Export JSON report
   equall scan . --diff --fail-on critical --json-out result.json
-                                       Gate the pull request and keep the diff result for a later step
+                                       Gate the pull request and save the diff result
   equall scan . --show-manual          List criteria needing manual review
   equall scan . --include "src/**"     Scan only src/ folder
   equall scan . --no-readability       Skip reading-grade (Flesch-Kincaid) checks
@@ -246,7 +246,7 @@ function checkJsonOutPath(file: string): void {
   }
   const dir = dirname(resolve(file))
   if (!existsSync(dir) || !statSync(dir).isDirectory()) {
-    console.error(`\n  Error: could not write --json-out file ${file}: folder not found: ${dir}\n`)
+    console.error(`\n  Error: could not write ${file}: folder not found (${dir})\n`)
     process.exit(2)
   }
 }
@@ -256,7 +256,7 @@ function writeJsonOut(file: string, data: unknown): void {
     writeFileSync(file, JSON.stringify(data, null, 2) + '\n')
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error)
-    console.error(`\n  Error: could not write --json-out file ${file}: ${msg}\n`)
+    console.error(`\n  Error: could not write ${file}: ${msg}\n`)
     process.exit(2)
   }
 }
