@@ -7,7 +7,7 @@ import ora from 'ora'
 import { runScan } from './scan.js'
 import { printResult, printJson } from './output/terminal.js'
 import { BOLD, GRAY, RESET, GREEN, YELLOW, setColorEnabled, shouldUseColor } from './output/color.js'
-import { findIgnores, removeIgnore, clearAllIgnores, addIgnore, addIgnoreFile } from './ignores.js'
+import { findIgnores, removeIgnore, clearAllIgnores, addIgnore, addIgnoreFile, checkLineIgnore } from './ignores.js'
 import { computeExitCode } from './exit-code.js'
 import { runDiffScan } from './diff-scan.js'
 import { printDiffResult } from './output/diff.js'
@@ -190,13 +190,28 @@ program
 
     // Add an ignore
     if (target && target.includes(':')) {
+      // Line-level comments do not apply to axe-core findings: refuse instead of adding a
+      // comment that silently does nothing, and say how to skip them.
+      const coverage = await checkLineIgnore(rootPath, target, ruleId)
+      const targetFile = target.slice(0, target.lastIndexOf(':'))
+      if (coverage && coverage.axeRules.length > 0 && coverage.otherCount === 0) {
+        console.error(`\n  ${YELLOW}Not added.${RESET} The findings at ${target} come from axe-core (${coverage.axeRules.join(', ')}),`)
+        console.error(`  and line-level ignore comments do not apply to axe-core findings yet.`)
+        console.error(`  ${GRAY}To skip them, ignore the whole file:${RESET} equall ignore ${targetFile}\n`)
+        process.exit(1)
+      }
       const result = await addIgnore(rootPath, target, ruleId)
       if (!result) {
         console.error(`\n  Could not add ignore at ${target}. Check that the file and line exist.\n`)
         process.exit(1)
       }
       console.log(`\n  ${GREEN}Added${RESET} ${result.file}:${result.line}`)
-      console.log(`  ${GRAY}${result.comment.trim()}${RESET}\n`)
+      console.log(`  ${GRAY}${result.comment.trim()}${RESET}`)
+      if (coverage && coverage.axeRules.length > 0) {
+        console.log(`  ${YELLOW}Note:${RESET} it does not cover the axe-core findings on that line (${coverage.axeRules.join(', ')}).`)
+        console.log(`  ${GRAY}Line-level ignore comments do not apply to axe-core findings yet; ignore the whole file to skip them.${RESET}`)
+      }
+      console.log()
       return
     }
 

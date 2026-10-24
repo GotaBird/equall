@@ -1,8 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { mkdtemp, writeFile, readFile, rm, mkdir } from 'node:fs/promises'
-import { join } from 'node:path'
+import { join, dirname } from 'node:path'
 import { tmpdir } from 'node:os'
-import { addIgnore, addIgnoreFile } from '../ignores.js'
+import { execFileSync } from 'node:child_process'
+import { fileURLToPath } from 'node:url'
+import { addIgnore, addIgnoreFile, checkLineIgnore, lineIgnoreCoverage } from '../ignores.js'
+import type { EquallIssue } from '../types.js'
 
 let tempDir: string
 
@@ -134,4 +137,48 @@ describe('addIgnoreFile', () => {
     const content = await readFile(join(tempDir, 'comp.tsx'), 'utf-8')
     expect(content).toBe('// equall-ignore-file\nconst x = 1\nconst y = 2')
   })
+})
+
+// ---------------------------------------------------------------------------
+// Line-level ignores and axe-core findings
+// ---------------------------------------------------------------------------
+describe('line ignores on axe-core findings', () => {
+  const finding = (scanner: string, rule: string, line: number): EquallIssue => ({
+    scanner, scanner_rule_id: rule, wcag_criteria: ['1.1.1'], wcag_level: 'A', pour: 'perceivable',
+    file_path: 'page.html', line, column: 1, html_snippet: null, severity: 'critical',
+    message: 'm', help_url: null, suggestion: null,
+  })
+
+  it('reports which findings at the line a comment would and would not cover', () => {
+    const issues = [finding('axe-core', 'image-alt', 2), finding('eslint-jsx-a11y', 'jsx-a11y/alt-text', 2), finding('axe-core', 'label', 3)]
+    expect(lineIgnoreCoverage(issues, 'page.html', 2)).toEqual({ axeRules: ['image-alt'], otherCount: 1 })
+    expect(lineIgnoreCoverage(issues, 'page.html', 3)).toEqual({ axeRules: ['label'], otherCount: 0 })
+    expect(lineIgnoreCoverage(issues, 'page.html', 2, 'image-alt')).toEqual({ axeRules: ['image-alt'], otherCount: 0 })
+    expect(lineIgnoreCoverage(issues, 'page.html', 9)).toEqual({ axeRules: [], otherCount: 0 })
+  })
+
+  it('finds the axe-core finding on a real file', async () => {
+    await writeFixture('page.html', '<main>\n<img src="a.png">\n</main>\n')
+    expect(await checkLineIgnore(tempDir, 'page.html:2')).toEqual({ axeRules: ['image-alt'], otherCount: 0 })
+    expect(await checkLineIgnore(tempDir, 'missing.html:2')).toBeNull()
+  })
+
+  it('the CLI refuses with exit 1 and leaves the file untouched when only axe-core findings are on the line', async () => {
+    const content = '<main>\n<img src="a.png">\n</main>\n'
+    await writeFixture('page.html', content)
+    const cli = join(dirname(fileURLToPath(import.meta.url)), '..', 'cli.ts')
+    let status = 0
+    let stderr = ''
+    try {
+      execFileSync('node', ['--import', 'tsx', cli, 'ignore', 'page.html:2', '-p', tempDir], { stdio: 'pipe', encoding: 'utf8' })
+    } catch (err) {
+      const e = err as { status?: number; stderr?: string }
+      status = e.status ?? -1
+      stderr = e.stderr ?? ''
+    }
+    expect(status).toBe(1)
+    expect(stderr).toContain('do not apply to axe-core findings')
+    expect(stderr).toContain('equall ignore page.html')
+    expect(await readFile(join(tempDir, 'page.html'), 'utf-8')).toBe(content)
+  }, 60_000)
 })

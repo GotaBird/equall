@@ -1,6 +1,8 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { globby } from 'globby'
+import { scanBuffer } from './scan.js'
+import type { EquallIssue } from './types.js'
 
 export interface IgnoreEntry {
   file_path: string
@@ -217,4 +219,37 @@ export async function clearAllIgnores(rootPath: string): Promise<IgnoreEntry[]> 
   }
 
   return ignores
+}
+
+// What a line-level ignore comment at `line` would cover. axe-core findings are left out of
+// line-level ignores (their source line is derived, see scan.ts applyIgnoreComments), so a
+// comment above a line whose only findings come from axe-core would do nothing.
+export interface LineIgnoreCoverage {
+  axeRules: string[]   // rule ids of the axe-core findings at that line (the comment skips them)
+  otherCount: number   // findings from other engines at that line (the comment applies to them)
+}
+
+export function lineIgnoreCoverage(issues: EquallIssue[], filePath: string, line: number, ruleId?: string): LineIgnoreCoverage {
+  const atLine = issues.filter((i) => i.file_path === filePath && i.line === line && !i.ignored && (!ruleId || i.scanner_rule_id === ruleId))
+  const axe = atLine.filter((i) => i.scanner === 'axe-core')
+  return { axeRules: [...new Set(axe.map((i) => i.scanner_rule_id))].sort(), otherCount: atLine.length - axe.length }
+}
+
+// Scan the target file of `file:line` and report what an ignore comment there would cover.
+// Null when the target cannot be read (addIgnore reports that case itself).
+export async function checkLineIgnore(rootPath: string, target: string, ruleId?: string): Promise<LineIgnoreCoverage | null> {
+  const colonIdx = target.lastIndexOf(':')
+  if (colonIdx <= 0) return null
+  const targetFile = target.slice(0, colonIdx)
+  const targetLine = parseInt(target.slice(colonIdx + 1), 10)
+  if (isNaN(targetLine) || targetLine < 1) return null
+  let content: string
+  try {
+    content = await readFile(resolve(rootPath, targetFile), 'utf-8')
+  } catch {
+    return null
+  }
+  const result = await scanBuffer(content, targetFile)
+  const filePath = result.issues[0]?.file_path ?? targetFile
+  return lineIgnoreCoverage(result.issues, filePath, targetLine, ruleId)
 }

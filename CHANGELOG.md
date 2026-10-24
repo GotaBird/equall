@@ -19,6 +19,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Scores, counts and fingerprints are unchanged. axe-core findings are still grouped as
     before (by markup, not by line), and an `equall-ignore-next-line` comment still does not
     apply to them (`equall-ignore-file` does).
+  - The terminal now lists axe-core occurrences one per line (`file:line:column`) where it
+    used to fold those of one file under a single entry; the occurrence counts are the same.
+  - With `--diff`, when a change adds a copy of a violation that already existed, the copy on
+    the added line is the one reported as new, not the unchanged original. If the new copy
+    cannot be tied to an added line, it is reported without a line.
+
+### Changed
+
+- **`equall ignore <file>:<line>` refuses a line whose findings all come from axe-core.**
+  Line-level ignore comments do not apply to axe-core findings yet, so the command used to
+  add a comment that did nothing. It now exits `1`, leaves the file untouched and suggests
+  ignoring the whole file (`equall ignore <file>`). On a line that also has findings from
+  another engine, the comment is added with a note naming the axe-core findings it skips.
 
 ## [0.3.4] - 2026-10-02
 
