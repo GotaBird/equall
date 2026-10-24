@@ -197,6 +197,37 @@ describe('runDiffScan — what counts as new', () => {
     expect(result.summary.legacy_count).toBe(1)
   })
 
+  it('names the pasted copy, not the original, when an identical violation is added above it', async () => {
+    await write('index.html', cleanDoc('      <p>gap</p>\n      <img src="b.png">'))
+    await commit('base: one image without alt')
+
+    await write('index.html', cleanDoc('      <img src="b.png">\n      <p>gap</p>\n      <img src="b.png">'))
+    await commit('paste a copy above')
+
+    const result = await runDiffScan({ base: 'HEAD~1', head: 'HEAD', cwd: dir })
+
+    expect(result.summary.new_count).toBe(1)
+    expect(result.summary.legacy_count).toBe(1)
+    expect(result.new_issues[0].line).toBe(7)
+    expect(result.legacy_issues[0].line).toBe(9)
+  })
+
+  it('clears the line of a new copy that sits on no added line, instead of naming an unchanged one', async () => {
+    await write('index.html', cleanDoc('      <input type="text">\n      <label>Name\n      <input type="text">\n      </label>'))
+    await commit('base: one unlabelled input, one labelled')
+
+    // Only deletions: the second input loses its label without its own line changing.
+    await write('index.html', cleanDoc('      <input type="text">\n      <input type="text">'))
+    await commit('drop the label')
+
+    const result = await runDiffScan({ base: 'HEAD~1', head: 'HEAD', cwd: dir })
+
+    expect(result.summary.new_count).toBe(1)
+    expect(result.summary.legacy_count).toBe(1)
+    expect(result.new_issues[0].line).toBeNull()
+    expect(result.legacy_issues[0].line).toBe(7)
+  })
+
   it('reports one defect seen by two engines once, whether or not the merge fired at base', async () => {
     // At base the merge fires (one jsx-a11y alt-text, one axe image-alt). At head there are
     // two of each, so a whole-file merge would not fire and the axe twin would read as new.
