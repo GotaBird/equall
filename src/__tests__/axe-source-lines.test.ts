@@ -120,6 +120,45 @@ const snippet = '<img src="card.png">'
   })
 })
 
+describe('axe-core source lines — never a wrong line', () => {
+  it('never takes a tag written inside a quoted attribute value for the element', async () => {
+    const astro = `<main>\n<div data-tpl='<img src="x.png">'></div>\n\n<img src="x.png">\n</main>`
+    const [img] = byRule(await scan('src/A.astro', 'astro', astro), 'image-alt')
+    expect(img.line).toBe(4)
+  })
+
+  it('returns null rather than guess when a value holds a named entity it cannot compare', async () => {
+    const astro = `<main>\n<div data-tpl='<img src="\u00a9.png">'></div>\n\n<img src="&copy;.png">\n</main>`
+    const [img] = byRule(await scan('src/A.astro', 'astro', astro), 'image-alt')
+    expect(img.line).toBeNull()
+  })
+
+  it('ignores tags inside <template> content (not elements of the scanned document)', async () => {
+    const astro = `<main>\n<template><img src="t.png"></template>\n\n<img src="t.png">\n</main>`
+    const [img] = byRule(await scan('src/B.astro', 'astro', astro), 'image-alt')
+    expect(img.line).toBe(4)
+  })
+
+  it('ignores <textarea> raw text and keeps the first of duplicate attributes', async () => {
+    const svelte = `<main>\n<textarea><img src="x.png"></textarea>\n<img src="x.png" src="y.png">\n</main>`
+    const [img] = byRule(await scan('src/C.svelte', 'svelte', svelte), 'image-alt')
+    expect(img.line).toBe(3)
+    expect(img.column).toBe(1)
+  })
+
+  it('does not count a byte-order mark as a column', async () => {
+    const [img] = byRule(await scan('bom.html', 'html', '\ufeff<img src="a.png">\n'), 'image-alt')
+    expect(img.line).toBe(1)
+    expect(img.column).toBe(1)
+  })
+
+  it('treats a lone carriage return as a line break', async () => {
+    const [img] = byRule(await scan('cr.html', 'html', '<p>a</p>\r<p>b</p>\r<img src="a.png">'), 'image-alt')
+    expect(img.line).toBe(3)
+    expect(img.column).toBe(1)
+  })
+})
+
 describe('source-location helpers', () => {
   it('offsetToLocation is 1-based', () => {
     expect(offsetToLocation('ab\ncd', 0)).toEqual({ line: 1, column: 1 })

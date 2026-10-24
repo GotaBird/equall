@@ -11,7 +11,7 @@ import type {
   FileType,
 } from '../types.js'
 import { extractHtml, wrapFragment, DYNAMIC_MARKER_PREFIX, COMPONENT_MARKER, FRAGMENT_PREFIX } from '../utils/html-extract.js'
-import { elementSignature, locateHtmlElement, locateInComponentSource, type SourceLocation } from '../utils/source-location.js'
+import { ComponentSource, LineIndex, domSignatureCounts, elementSignature, locateHtmlElement, type SourceLocation } from '../utils/source-location.js'
 
 // axe-core compiled once per process, then run in each document's own VM context.
 let axeScript: Script | undefined
@@ -269,25 +269,33 @@ export class AxeScanner implements ScannerAdapter {
           values: runTags,
         },
         resultTypes: ['violations'],
+        // Hand back each reported element itself (next to its selector), so locating it in
+        // the source needs no selector lookup per finding.
+        elementRef: true,
       })
 
       const issues: EquallIssue[] = []
 
-      // Where each reported element sits in the source file (null when not certain).
-      const locate = (node: { target?: unknown[] }): SourceLocation | null => {
+      // Where each reported element sits in the source file (null when not certain). The
+      // per-file and per-document indexes are built on the first finding, once.
+      const prefixLength = fullHtml === html ? 0 : FRAGMENT_PREFIX.length
+      let lineIndex: LineIndex | undefined
+      let componentIndex: ComponentSource | undefined
+      let domCounts: Map<string, number> | undefined
+      const locate = (node: { target?: unknown[]; element?: unknown }): SourceLocation | null => {
         try {
-          const selector = node.target?.[0]
           // Shadow DOM / iframe targets are arrays: not resolvable to a source tag.
-          const el = typeof selector === 'string' ? document.querySelector(selector) : null
-          if (!el) return null
+          if (typeof node.target?.[0] !== 'string') return null
+          const el = node.element as Element | undefined
+          if (!el || el.ownerDocument !== document) return null
           if (!componentSource) {
-            const prefixLength = fullHtml === html ? 0 : FRAGMENT_PREFIX.length
-            return locateHtmlElement(dom.nodeLocation(el)?.startOffset, el.localName, source, prefixLength)
+            lineIndex ??= new LineIndex(source)
+            return locateHtmlElement(dom.nodeLocation(el)?.startOffset, el.localName, source, prefixLength, lineIndex)
           }
+          componentIndex ??= new ComponentSource(source, fileType)
+          domCounts ??= domSignatureCounts(document)
           const signature = elementSignature(el)
-          const domMatches = Array.from(document.getElementsByTagName(el.localName))
-            .filter((other) => elementSignature(other) === signature).length
-          return locateInComponentSource(source, fileType, el.localName, signature, domMatches)
+          return componentIndex.locate(el.localName, signature, domCounts.get(`${el.localName}\u0000${signature}`) ?? 0)
         } catch {
           return null // a location is a convenience: never fail a finding over it
         }
