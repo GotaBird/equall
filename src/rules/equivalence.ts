@@ -4,7 +4,7 @@ import { fingerprint } from '../utils/fingerprint.js'
 // Cross-engine rule equivalence — the dedup layer's knowledge of which rules assert the
 // SAME requirement on the SAME element across engines. Aggregating engines means the same
 // missing `alt` arrives twice: once as eslint `jsx-a11y/alt-text` (with a source line),
-// once as axe `image-alt` (with a DOM snippet, no line). Counting it twice inflates every
+// once as axe `image-alt` (with a DOM snippet). Counting it twice inflates every
 // number a consumer sees; this table lets the merge pass collapse the pair into one issue
 // that credits both engines.
 //
@@ -21,7 +21,7 @@ import { fingerprint } from '../utils/fingerprint.js'
 //   `img-redundant-alt` vs axe `image-redundant-alt` (advisory, low duplication value).
 
 export interface EquivalentRulePair {
-  // scanner_rule_id as emitted by eslint-jsx-a11y (plugin-prefixed) — the line-bearing side
+  // scanner_rule_id as emitted by eslint-jsx-a11y (plugin-prefixed) — always the survivor
   eslint: string
   // axe-core rule ids asserting the same requirement on the same element
   axe: string[]
@@ -79,7 +79,10 @@ export const RULE_EQUIVALENCE: EquivalentRulePair[] = [
 
 // Merge cross-engine duplicates: when both sides of an equivalence pair fired in the same
 // file and the match is UNAMBIGUOUS (exactly one finding on each side), keep the
-// line-bearing eslint issue and credit both engines on it (`scanners`).
+// eslint issue and credit both engines on it (`scanners`). The survivor is chosen by engine,
+// never by which side has a line: axe findings can carry a source line too (derived when it
+// is certain), and the eslint side must stay the survivor so its fields — and fingerprint —
+// are unchanged.
 //
 // Deliberately conservative: with multiple occurrences on either side there is no reliable
 // way to pair findings — axe snippets come from the extracted/neutralized HTML and cannot

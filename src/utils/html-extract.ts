@@ -146,11 +146,16 @@ export function isDocumentUnit(content: string, type: string): boolean {
 // they are reclassified as "not verifiable on this scan" (honest) rather than a masked pass.
 export function wrapFragment(html: string): string {
   if (html.includes('<html')) return html
-  return `
+  return `${FRAGMENT_PREFIX}${html}${FRAGMENT_SUFFIX}`
+}
+
+// The text wrapFragment places around a fragment. Exported so a location in the wrapped
+// document can be mapped back to the fragment (subtract FRAGMENT_PREFIX.length).
+export const FRAGMENT_PREFIX = `
     <!DOCTYPE html>
     <html>
       <head></head>
-      <body>${html}</body>
+      <body>`
+const FRAGMENT_SUFFIX = `</body>
     </html>
   `
-}

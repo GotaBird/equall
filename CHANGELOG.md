@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **axe-core findings now carry the source line when it can be determined.** The terminal
+  report, `--diff`, the GitHub annotations and the JSON report (`line`, `column`) can point
+  at the offending element instead of only the file.
+  - On `.html` files the line comes from the parser and is exact.
+  - On Astro, Svelte, Vue, JSX and TSX files the element is searched in the source by its
+    tag and static attributes; the line is set only when exactly one tag matches, and stays
+    `null` otherwise (identical elements, attributes only known at runtime).
+  - Scores, counts and fingerprints are unchanged. axe-core findings are still grouped as
+    before (by markup, not by line), and an `equall-ignore-next-line` comment still does not
+    apply to them (`equall-ignore-file` does).
+
 ## [0.3.4] - 2026-10-02
 
 ### Added

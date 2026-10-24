@@ -10,7 +10,8 @@ import type {
   WcagLevel,
   FileType,
 } from '../types.js'
-import { extractHtml, wrapFragment, DYNAMIC_MARKER_PREFIX, COMPONENT_MARKER } from '../utils/html-extract.js'
+import { extractHtml, wrapFragment, DYNAMIC_MARKER_PREFIX, COMPONENT_MARKER, FRAGMENT_PREFIX } from '../utils/html-extract.js'
+import { elementSignature, locateHtmlElement, locateInComponentSource, type SourceLocation } from '../utils/source-location.js'
 
 // axe-core compiled once per process, then run in each document's own VM context.
 let axeScript: Script | undefined
@@ -189,7 +190,7 @@ export class AxeScanner implements ScannerAdapter {
         const html = extractHtml(file.content, file.type, { markUnverifiable: componentSource })
         if (!html.trim()) continue
 
-        const issues = await this.scanHtml(html, file.path, runTags, componentSource)
+        const issues = await this.scanHtml(html, file.path, runTags, componentSource, file.content, file.type)
         allIssues.push(...issues)
       } catch (error) {
         // Skip files that fail — never crash the whole scan, never pass silently: the file
@@ -207,7 +208,9 @@ export class AxeScanner implements ScannerAdapter {
     html: string,
     filePath: string,
     runTags: string[],
-    componentSource = false
+    componentSource = false,
+    source = html,
+    fileType: string = 'html',
   ): Promise<EquallIssue[]> {
     // Wrap fragment in a basic HTML document if needed
     const fullHtml = wrapFragment(html)
@@ -224,6 +227,9 @@ export class AxeScanner implements ScannerAdapter {
       runScripts: 'outside-only',
       pretendToBeVisual: true,
       virtualConsole: new VirtualConsole(),
+      // Plain .html is parsed as written: keep the parser's node locations so findings can
+      // point at their source line (see locateFinding).
+      includeNodeLocations: !componentSource,
     })
 
     try {
@@ -267,6 +273,26 @@ export class AxeScanner implements ScannerAdapter {
 
       const issues: EquallIssue[] = []
 
+      // Where each reported element sits in the source file (null when not certain).
+      const locate = (node: { target?: unknown[] }): SourceLocation | null => {
+        try {
+          const selector = node.target?.[0]
+          // Shadow DOM / iframe targets are arrays: not resolvable to a source tag.
+          const el = typeof selector === 'string' ? document.querySelector(selector) : null
+          if (!el) return null
+          if (!componentSource) {
+            const prefixLength = fullHtml === html ? 0 : FRAGMENT_PREFIX.length
+            return locateHtmlElement(dom.nodeLocation(el)?.startOffset, el.localName, source, prefixLength)
+          }
+          const signature = elementSignature(el)
+          const domMatches = Array.from(document.getElementsByTagName(el.localName))
+            .filter((other) => elementSignature(other) === signature).length
+          return locateInComponentSource(source, fileType, el.localName, signature, domMatches)
+        } catch {
+          return null // a location is a convenience: never fail a finding over it
+        }
+      }
+
       for (const violation of results.violations) {
         const { criteria, level, pour } = parseWcagTags(violation.tags)
         const derivedPour = pour ?? (criteria[0] ? pourFromCriterion(criteria[0]) : null)
@@ -275,6 +301,7 @@ export class AxeScanner implements ScannerAdapter {
           const reviewReason = componentSource
             ? componentReviewReason(violation.id, node, document, unverifiable)
             : null
+          const location = locate(node)
           issues.push({
             scanner: 'axe-core',
             scanner_rule_id: violation.id,
@@ -282,8 +309,11 @@ export class AxeScanner implements ScannerAdapter {
             wcag_level: level,
             pour: derivedPour,
             file_path: filePath,
-            line: null,     // axe-core doesn't provide line numbers on static HTML
-            column: null,
+            // axe reports DOM nodes, not source positions: the line is derived from the
+            // source when it can be determined with certainty, null otherwise. Display
+            // metadata only: the fingerprint and the dedup key never read it.
+            line: location?.line ?? null,
+            column: location?.column ?? null,
             html_snippet: node.html?.slice(0, 200) ?? null,
             severity: mapSeverity(violation.impact),
             message: `${violation.help} (${violation.id})`,

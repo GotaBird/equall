@@ -302,8 +302,11 @@ export function applyIgnoreComments(
       continue
     }
 
-    // Line-level ignore (only if issue has a line number)
-    if (issue.line != null && issue.line > 1) {
+    // Line-level ignore (only if issue has a line number). axe-core findings are left out
+    // on purpose: their source line is derived and only set when certain, so an ignore
+    // comment's effect would depend on whether the line could be found. Their handling is
+    // unchanged (file-level ignores still apply).
+    if (issue.line != null && issue.line > 1 && issue.scanner !== 'axe-core') {
       const lines = fileContentMap.get(issue.file_path)
       if (lines) {
         const prevLine = lines[issue.line - 2] ?? '' // -2 because lines are 0-indexed in array
@@ -344,8 +347,11 @@ export function deduplicateIssues(issues: EquallIssue[]): EquallIssue[] {
     // Sort criteria so ["4.1.2", "2.4.4"] and ["2.4.4", "4.1.2"] produce the same key
     const sortedCriteria = [...issue.wcag_criteria].sort().join(',')
 
-    // Location: prefer line+column (ESLint), fall back to scanner_rule_id (axe-core has no lines)
-    const location = issue.line != null
+    // Location: line+column for line-reporting engines (ESLint). axe-core findings always
+    // key on their markup snippet, even when they carry a source line: the line is derived
+    // display metadata (see utils/source-location.ts), and keying on it would split findings
+    // this dedup has always folded together — changing counts and scores.
+    const location = issue.line != null && issue.scanner !== 'axe-core'
       ? `L${issue.line}:${issue.column ?? 0}`
       : issue.html_snippet?.slice(0, 80) ?? 'no-loc'
 
