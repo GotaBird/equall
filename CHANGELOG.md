@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.5] - 2026-10-25
+
 ### Added
 
 - **axe-core findings now carry the source line when it can be determined.** The terminal
