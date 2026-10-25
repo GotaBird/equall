@@ -121,21 +121,81 @@ async function showFile(cwd: string, sha: string, path: string): Promise<string 
   }
 }
 
+// Line ranges added at HEAD for one file, from a zero-context diff: `@@ -a,b +c,d @@` adds
+// lines c..c+d-1 (d defaults to 1, d = 0 is a pure deletion). Null when git cannot say.
+async function addedLines(cwd: string, fromSha: string, toSha: string, path: string): Promise<Array<[number, number]> | null> {
+  try {
+    // `:(top,literal)` — the path is relative to the repository root (as name-status prints
+    // it), whatever the working directory, and never read as a glob.
+    const out = await git(cwd, ['diff', '-U0', '--no-renames', '--no-color', fromSha, toSha, '--', `:(top,literal)${path}`])
+    const ranges: Array<[number, number]> = []
+    for (const m of out.matchAll(/^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@/gm)) {
+      const start = Number(m[1])
+      const count = m[2] === undefined ? 1 : Number(m[2])
+      if (count > 0) ranges.push([start, start + count - 1])
+    }
+    return ranges
+  } catch {
+    return null
+  }
+}
+
+const inRanges = (line: number | null, ranges: Array<[number, number]> | null): boolean =>
+  line != null && ranges != null && ranges.some(([a, b]) => line >= a && line <= b)
+
 // Split head occurrences into new / legacy by counting them per fingerprint. Set membership
-// is not enough: a copy-pasted violation has the same fingerprint as the original, so the
-// first N occurrences at head match the N at base and every extra one is new.
-function classifyByCount(headIssues: EquallIssue[], baseIssues: EquallIssue[]): Set<EquallIssue> {
-  const remaining = new Map<string, number>()
+// is not enough: a copy-pasted violation has the same fingerprint as the original, so N
+// occurrences at head match the N at base and every extra one is new. Which of the identical
+// occurrences is the new one is decided by the diff: an occurrence on an added line is
+// preferred, so a copy pasted ABOVE the original is reported at the pasted line. When the
+// extra cannot be tied to an added line, its line is cleared rather than pointing at a copy
+// that did not change. The counts never depend on lines; only which occurrence is named does.
+async function classifyByCount(
+  headIssues: EquallIssue[],
+  baseIssues: EquallIssue[],
+  added: () => Promise<Array<[number, number]> | null>,
+): Promise<{ isNew: Set<EquallIssue>; issues: EquallIssue[] }> {
+  const baseCount = new Map<string, number>()
   for (const issue of baseIssues) {
-    if (issue.fingerprint) remaining.set(issue.fingerprint, (remaining.get(issue.fingerprint) ?? 0) + 1)
+    if (issue.fingerprint) baseCount.set(issue.fingerprint, (baseCount.get(issue.fingerprint) ?? 0) + 1)
   }
-  const isNew = new Set<EquallIssue>()
+  const groups = new Map<string, EquallIssue[]>()
   for (const issue of headIssues) {
-    const left = issue.fingerprint ? remaining.get(issue.fingerprint) ?? 0 : 0
-    if (left > 0) remaining.set(issue.fingerprint as string, left - 1)
-    else isNew.add(issue)
+    if (!issue.fingerprint) continue
+    const list = groups.get(issue.fingerprint)
+    if (list) list.push(issue)
+    else groups.set(issue.fingerprint, [issue])
   }
-  return isNew
+
+  const isNew = new Set<EquallIssue>()
+  const replaced = new Map<EquallIssue, EquallIssue>()
+  let ranges: Array<[number, number]> | null | undefined
+  for (const issue of headIssues) if (!issue.fingerprint) isNew.add(issue)
+  for (const [fp, group] of groups) {
+    const base = baseCount.get(fp) ?? 0
+    const extra = group.length - base
+    if (extra <= 0) continue
+    // Nothing at base: every occurrence is new and keeps its own line.
+    if (base === 0) {
+      for (const issue of group) isNew.add(issue)
+      continue
+    }
+    ranges = ranges === undefined ? await added() : ranges
+    const onAdded = group.filter((i) => inRanges(i.line, ranges ?? null))
+    const rest = group.filter((i) => !onAdded.includes(i))
+    // Same order as before when the diff does not help: the last occurrences are the new ones.
+    const chosen = [...onAdded.slice(0, extra), ...rest.slice(rest.length - Math.max(0, extra - onAdded.length))]
+    for (const issue of chosen) {
+      if (issue.line != null && !inRanges(issue.line, ranges ?? null)) {
+        replaced.set(issue, { ...issue, line: null, column: null })
+      }
+      isNew.add(issue)
+    }
+  }
+
+  if (replaced.size === 0) return { isNew, issues: headIssues }
+  const issues = headIssues.map((i) => replaced.get(i) ?? i)
+  return { isNew: new Set([...isNew].map((i) => replaced.get(i) ?? i)), issues }
 }
 
 // Fold the classified occurrences the way a full scan does (cross-engine merge, then dedup),
@@ -216,7 +276,8 @@ export async function runDiffScan(options: DiffScanOptions): Promise<DiffScanRes
     const baseContent = file.status === 'A' ? null : await showFile(cwd, mergeBase, file.path)
     const baseIssues = baseContent == null ? [] : active((await scanBuffer(baseContent, file.path, scanOptions)).issues)
 
-    const classified = foldClassified(headIssues, classifyByCount(headIssues, baseIssues))
+    const { isNew, issues } = await classifyByCount(headIssues, baseIssues, () => addedLines(cwd, mergeBase, headSha, file.path))
+    const classified = foldClassified(issues, isNew)
     legacyIssues.push(...classified.legacyIssues)
     for (const issue of classified.newIssues) {
       if (issue.review_only) newReviewOnly.push(issue)

@@ -162,7 +162,7 @@ describe('scan --diff (integration)', () => {
     git('update-ref', 'refs/remotes/origin/main', 'main')
     const r = cli(['scan', '.', '--diff', '--fail-on', 'serious'], dir, { GITHUB_ACTIONS: 'true', GITHUB_BASE_REF: 'main' })
     expect(r.code).toBe(1)
-    expect(r.out).toMatch(/^::error file=index\.html,title=Equall/m)
+    expect(r.out).toMatch(/^::error file=index\.html,line=1,col=103,title=Equall/m)
     expect(r.out).not.toMatch(/^::.*old\.png/m)
   }, 60_000)
 
@@ -194,7 +194,7 @@ describe('scan --diff (integration)', () => {
     try {
       const r = cli(['scan', '.', '--diff', 'main', '--fail-on', 'serious', '--json-out', out], dir, { GITHUB_ACTIONS: 'true', GITHUB_STEP_SUMMARY: summary })
       expect(r.code).toBe(1)
-      expect(r.out).toMatch(/^::error file=index\.html,title=Equall/m)
+      expect(r.out).toMatch(/^::error file=index\.html,line=1,col=103,title=Equall/m)
       expect(r.out).toContain('Introduced by this change')
       expect(readFileSync(summary, 'utf-8')).toMatch(/### Equall: changes since main/)
       const file = readFileSync(out, 'utf-8')

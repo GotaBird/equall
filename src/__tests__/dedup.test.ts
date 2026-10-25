@@ -24,7 +24,7 @@ function makeIssue(overrides: Partial<EquallIssue> = {}): EquallIssue {
 describe('deduplicateIssues', () => {
   it('removes exact duplicates (same file, criteria, line)', () => {
     const issues = [
-      makeIssue({ scanner: 'axe-core' }),
+      makeIssue({ scanner: 'eslint-jsx-a11y' }),
       makeIssue({ scanner: 'htmlcs' }),
     ]
     const result = deduplicateIssues(issues)

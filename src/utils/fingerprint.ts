@@ -13,8 +13,9 @@ export const ONE_LEVEL_BRACE_EXPR = '\\{(?:[^{}]|\\{[^{}]*\\})*\\}'
 // the decision registry (T2.1) can match the *same* issue across commits:
 //   - a Prettier reformat (whitespace / quote style / line breaks) must NOT change it,
 //   - a CSS class change on the offending element must NOT change it,
-//   - it must NEVER depend on line/column (axe returns line: null, and any added
-//     import shifts every line — every violation would look "new").
+//   - it must NEVER depend on line/column (an axe finding only carries a line when it can
+//     be located in the source, and any added import shifts every line — every violation
+//     would look "new").
 //
 // Identity = hash of: file_path + scanner_rule_id + sorted WCAG criteria + normalized snippet.
 // For eslint issues the "snippet" is the offending source token captured by the scanner
