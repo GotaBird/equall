@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **CI**: the GitHub Action installs the latest `0.3.x` by default, so CI gates move to this
+- **CI**: the GitHub Action installs the latest `0.3.x` by default, so CI checks move to this
   version automatically. Pin `version: 0.3.5` to keep the previous behavior.
 - A Vue file the parser cannot read (for example a syntax error in `<script>`) is read with
   the previous extraction and is now listed in `unchecked` (`parse_error`), with a
@@ -49,7 +49,7 @@ No finding is re-identified: a defect reported before keeps its fingerprint, bec
 markup handed to the scanners is the source as written except where one of the fixes above
 applies. Measured before release on a public open-source Vue application (264 `.vue` files):
 60 fingerprints kept, 6 retired (all false positives), 39 new (previously unchecked markup),
-0 re-identified; on non-Vue projects, every fingerprint and score is unchanged. The score of a Vue project can therefore move either way. Diff-aware gates
+0 re-identified; on non-Vue projects, every fingerprint and score is unchanged. The score of a Vue project can therefore move either way. Diff-aware checks
 (`--diff`) compare base and head with the same engine version, so they stay consistent.
 
 ### Known limitations
