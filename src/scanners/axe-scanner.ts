@@ -10,6 +10,7 @@ import type {
   WcagLevel,
   FileType,
 } from '../types.js'
+import { SOURCE_OFFSET_MARKER } from '../utils/vue-template.js'
 import { extractHtml, wrapFragment, DYNAMIC_MARKER_PREFIX, COMPONENT_MARKER, FRAGMENT_PREFIX } from '../utils/html-extract.js'
 import { ComponentSource, LineIndex, domSignatureCounts, elementSignature, locateHtmlElement, type SourceLocation } from '../utils/source-location.js'
 
@@ -239,12 +240,18 @@ export class AxeScanner implements ScannerAdapter {
       // every marker so the DOM axe inspects (and so every snippet and fingerprint) is exactly
       // the unmarked extraction.
       const unverifiable = new Set<Element>()
+      // Vue: each element's exact offset in the source, read from the parser's marker.
+      const sourceOffsets = new WeakMap<Element, number>()
       if (componentSource) {
         for (const el of Array.from(document.querySelectorAll('*'))) {
           // <slot>: the content (and so the accessible name) is supplied by the caller.
           if (isUnverifiableElement(el) || el.querySelector('slot')) unverifiable.add(el)
           for (const a of Array.from(el.attributes)) {
-            if (a.name === COMPONENT_MARKER || a.name.startsWith(DYNAMIC_MARKER_PREFIX)) el.removeAttribute(a.name)
+            if (a.name === SOURCE_OFFSET_MARKER) {
+              const offset = Number(a.value)
+              if (Number.isInteger(offset) && offset >= 0) sourceOffsets.set(el, offset)
+              el.removeAttribute(a.name)
+            } else if (a.name === COMPONENT_MARKER || a.name.startsWith(DYNAMIC_MARKER_PREFIX)) el.removeAttribute(a.name)
           }
         }
       }
@@ -291,6 +298,11 @@ export class AxeScanner implements ScannerAdapter {
           if (!componentSource) {
             lineIndex ??= new LineIndex(source)
             return locateHtmlElement(dom.nodeLocation(el)?.startOffset, el.localName, source, prefixLength, lineIndex)
+          }
+          const offset = sourceOffsets.get(el)
+          if (offset !== undefined) {
+            lineIndex ??= new LineIndex(source)
+            return lineIndex.locate(offset)
           }
           componentIndex ??= new ComponentSource(source, fileType)
           domCounts ??= domSignatureCounts(document)

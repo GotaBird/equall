@@ -1,4 +1,5 @@
 import { ONE_LEVEL_BRACE_EXPR } from './fingerprint.js'
+import { extractVueTemplate } from './vue-template.js'
 
 // A dynamic attribute value in attribute position: `attrName={ …expr… }`. The `=` is glued
 // to the attribute name (no surrounding space) so prose like `<p>cost = {price}</p>` is NOT
@@ -68,6 +69,9 @@ export interface ExtractOptions {
   // Leave markers on elements whose static markup is incomplete (a neutralized dynamic
   // attribute, a PascalCase component tag) so the caller can flag findings on them.
   markUnverifiable?: boolean
+  // Prose-only text: template interpolations (`{{ … }}`) are blanked, for reading-level
+  // grading. Applies to Vue only (read from the parser's syntax tree); a no-op for other types.
+  prose?: boolean
 }
 
 // Extract scannable HTML from various file types
@@ -77,6 +81,10 @@ export function extractHtml(content: string, type: string, options: ExtractOptio
   const neutralize = (html: string) => neutralizeAttributeExpressions(mark ? markComponentTags(html) : html, mark)
 
   if (type === 'vue') {
+    // Official parser first (see vue-template.ts). When it cannot read the file, fall back to
+    // the first-template regex; the scan reports such a file as not fully checked.
+    const template = extractVueTemplate(content, { prose: options.prose === true, markSource: mark })
+    if (template !== null) return neutralize(template)
     const templateMatch = content.match(/<template[^>]*>([\s\S]*?)<\/template>/)
     return neutralize(templateMatch?.[1] ?? '')
   }

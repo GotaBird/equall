@@ -70,7 +70,8 @@ export class ReadabilityScanner implements ScannerAdapter {
 
     for (const file of scannableFiles) {
       try {
-        const html = extractHtml(file.content, file.type)
+        // prose: grade the text people read, not template interpolations ({{ t('key') }}).
+        const html = extractHtml(file.content, file.type, { prose: true })
         if (!html.trim()) continue
 
         const $ = cheerio.load(html)
