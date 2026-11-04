@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.6] - 2026-11-04
+
 ### Changed
 
 - **CI**: the GitHub Action installs the latest `0.3.x` by default, so CI checks move to this
