@@ -11,61 +11,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **CI**: the GitHub Action installs the latest `0.3.x` by default, so CI checks move to this
-  version automatically. Pin `version: 0.3.5` to keep the previous behavior.
-- A Vue file the parser cannot read (for example a syntax error in `<script>`) is read with
-  the previous extraction and is now listed in `unchecked` (`parse_error`), with a
-  diagnostic, instead of being presented as fully checked.
+- **The GitHub Action now installs 0.3.6.** It follows the latest `0.3.x`; pin
+  `version: 0.3.5` to stay on the previous release.
+- **Vue files the parser cannot read are now listed in `unchecked`** (`parse_error`), with a
+  diagnostic. They are still scanned, with a fallback extraction.
 
 ### Fixed
 
-- **Vue files are now read with the official Vue parser (`vue-eslint-parser`) instead of a
-  regular expression.** The template is still handed to the scanners as written; three
-  defects of the previous extraction are gone:
-  - **A nested `<template>` no longer cuts the rest of the component out of the scan.** The
-    previous extraction stopped at the first `</template>`, so everything after a
-    `<template v-if>`, `<template v-for>` or `<template #slot>` was silently not checked.
-    Those parts are now scanned, and their findings appear.
-  - **A self-closing element that hides its content no longer hides the text after it.**
-    `<button><Icon aria-hidden="true" /> Save</button>` was reported as a button without a
-    name (critical), because the HTML parser does not treat a custom self-closing tag as
-    closed and put "Save" inside the hidden icon.
-  - **The reading level is graded on the text people read, not on template interpolations.**
-    A template made of translation calls (`{{ $t('…') }}`, `{{ __('…') }}`) was graded as
-    prose and reported with absurd grade levels; interpolations are now left out, and a file
-    with too little remaining text is not graded.
-- **axe-core findings on Vue files now carry their exact source line**, read from the
-  parser, including on elements that previously could not be located (identical tags).
+- **Vue templates are now read with the official parser (`vue-eslint-parser`).**
+  - Markup after a nested `<template>` (`v-if`, `v-for`, `#slot`) is now scanned.
+  - `<button><Icon aria-hidden="true" /> Save</button>` is no longer reported as a button
+    without a name.
+  - Reading level skips interpolations (`{{ $t('…') }}`); a file with too little remaining
+    text is not graded.
+- **axe-core findings on Vue files now carry their exact source line**, also when the same
+  tag appears several times.
 
 ### Fingerprint impact (Vue files only)
 
-Nothing changes for any other file type: Astro, Svelte, JSX, TSX and HTML scans are identical
-(same findings, same fingerprints, same score).
-
-On Vue files, fingerprints change in two ways only:
-- **Retired**: false positives that are gone (the reading level on interpolations, the
-  missing button name behind a self-closing hidden element).
-- **New**: findings in markup that was not checked before (after a nested `<template>`).
-
-No finding is re-identified: a defect reported before keeps its fingerprint, because the
-markup handed to the scanners is the source as written except where one of the fixes above
-applies. Measured before release on a public open-source Vue application (264 `.vue` files):
-60 fingerprints kept, 6 retired (all false positives), 39 new (previously unchecked markup),
-0 re-identified; on non-Vue projects, every fingerprint and score is unchanged. The score of a Vue project can therefore move either way. Diff-aware checks
-(`--diff`) compare base and head with the same engine version, so they stay consistent.
+- **Other file types are unchanged**: Astro, Svelte, JSX, TSX and HTML scans give the same
+  findings, fingerprints and score.
+- **On Vue files, findings are retired or new, never re-identified.** Retired: the false
+  positives fixed above. New: findings in markup not checked before. Measured on a public
+  Vue application (264 `.vue` files): 60 kept, 6 retired, 39 new, 0 re-identified.
+- **Vue scores can rise or fall**: retired false positives raise them, newly checked markup
+  can lower them. `--diff` is unaffected: it scans base and head with the same engine.
 
 ### Known limitations
 
-- A self-closing raw-text element written in a Vue template (for example `<textarea />`) is
-  still read by the HTML parser as extending over all the markup after it, so that markup is
-  not checked by axe-core. The scan now says so in a diagnostic; writing the end tag
-  (`<textarea></textarea>`) has it checked.
-- Other self-closing elements are handed to axe-core as written, so the content after them
-  can still be read as their children (for example `<MyIcon /> <li>…</li>`).
-- The reading level of Astro files is still graded on their text expressions (`{t('…')}`).
-- The scan is static: styles are not applied, so an input hidden by a CSS class (for
-  example `class="hidden"`) is still checked.
-- Scanning Vue projects takes longer, mostly because more of their markup is now checked.
+- A self-closing `<textarea />` in a Vue template hides the markup after it from axe-core;
+  the scan reports it in a diagnostic. Write `<textarea></textarea>`.
+- Other self-closing elements reach axe-core as written, and the content after them can be
+  read as their children (`<MyIcon /> <li>…</li>`). Write the end tag.
+- Astro text expressions (`{t('…')}`) are still graded for reading level.
+- Styles are not applied: an input hidden by a CSS class is still checked.
+- Vue scans take longer.
 
 ## [0.3.5] - 2026-10-25
 
