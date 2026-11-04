@@ -17,8 +17,9 @@ export default defineConfig({
   // Keep the eslint-family parsers external (loaded from node_modules at runtime):
   // bundling them breaks interop between the parser and the external eslint/ts-eslint.
   // astro-eslint-parser (+ its @astrojs/compiler dep) must stay external for the same
-  // reason — otherwise .astro linting fails silently (T1.8).
-  noExternal: [/^(?!(jsdom|eslint|@eslint|eslint-plugin-jsx-a11y|@typescript-eslint|esquery|espree|astro-eslint-parser|@astrojs))/],
+  // reason — otherwise .astro linting fails silently (T1.8). vue-eslint-parser (Vue template
+  // extraction) is kept external for the same reason.
+  noExternal: [/^(?!(jsdom|eslint|@eslint|eslint-plugin-jsx-a11y|@typescript-eslint|esquery|espree|astro-eslint-parser|@astrojs|vue-eslint-parser))/],
   platform: 'node',
   banner: { js: esmShims },
   esbuildOptions(options) {

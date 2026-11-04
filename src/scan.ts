@@ -8,6 +8,7 @@ import { computeConfidenceFlags } from './confidence/index.js'
 import { getCriteriaForStandardLevel } from './wcag-catalog.js'
 import { fingerprint } from './utils/fingerprint.js'
 import { isDocumentUnit } from './utils/html-extract.js'
+import { clearVueTemplateCache, vueTemplateParseFailed, vueRawTextSwallow } from './utils/vue-template.js'
 import { partitionPageLevelIssues, summarizeReclassified } from './rules/page-level.js'
 import { mergeCrossEngineDuplicates } from './rules/equivalence.js'
 import { detectRoutes, type RouteDetection } from './routes.js'
@@ -156,6 +157,20 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
     }
   }
 
+  // 4b. Vue files the template parser could not read were extracted by the first-template
+  // fallback, which can miss part of the markup: never present them as fully checked.
+  const vueReaders = scannersUsed.map((s) => s.name).filter((name) => scanners.find((sc) => sc.name === name)?.fileTypes.includes('vue'))
+  for (const file of files) {
+    if (file.type !== 'vue' || !vueTemplateParseFailed(file.content)) continue
+    for (const scanner of vueReaders) unchecked.push({ scanner, file_path: file.path, reason: 'parse_error' })
+    diagnostics.push(`[vue] ${file.path}: the template could not be parsed; it was read with a fallback that may miss part of the markup`)
+  }
+  for (const file of files) {
+    if (file.type === 'vue' && vueReaders.includes('axe-core') && vueRawTextSwallow(file.content)) {
+      diagnostics.push(`[vue] ${file.path}: a self-closing raw-text element (e.g. <textarea />) makes the markup after it unreadable to axe-core; write its end tag to have it checked`)
+    }
+  }
+
   // 5. Merge cross-engine duplicates (rule-equivalence table, conservative 1:1 —
   // see rules/equivalence.ts), then deduplicate within engines (same file + same
   // rule + same line = one issue). Both run before fingerprinting, so surviving
@@ -247,6 +262,9 @@ export async function runScan(options: RunScanOptions = {}): Promise<ScanResult>
   // when the tree had no supported routing. Never routed into the score, verdicts, or
   // coverage.
   if (detection) result.routes = detection.routes
+
+  // Parsed Vue templates are only shared within one scan: a long-lived host keeps none.
+  clearVueTemplateCache()
 
   return result
 }
