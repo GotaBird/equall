@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **`--working-tree` checks uncommitted changes**: `equall scan . --diff main --working-tree`
+  compares the base with the files on disk. Modified, staged and untracked files are
+  scanned; deleted files are ignored.
+- **The JSON diff result carries `"working_tree": true`** when the flag is set. Without the
+  flag, the output is unchanged.
+- **Caveat**: binary files, and markup files with binary content, are listed under
+  `not_testable`.
+
 ## [0.3.6] - 2026-11-04
 
 ### Changed

@@ -26,7 +26,8 @@ export function printDiffResult(result: DiffScanResult, options: PrintDiffOption
   const gating = new Set(gatingIssues(result, options.failOn))
 
   console.log()
-  console.log(`${BOLD}  ◆ EQUALL — Changes since ${options.base}${RESET} ${GRAY}(merge-base ${result.merge_base.slice(0, 7)})${RESET}`)
+  const scope = result.working_tree ? ', working tree' : ''
+  console.log(`${BOLD}  ◆ EQUALL — Changes since ${options.base}${RESET} ${GRAY}(merge-base ${result.merge_base.slice(0, 7)}${scope})${RESET}`)
   console.log()
   console.log(`  ${formatDiffGuardrail(result)}`)
   console.log()

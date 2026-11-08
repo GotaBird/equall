@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
-import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises'
+import { mkdtemp, mkdir, writeFile, rm, appendFile } from 'node:fs/promises'
 import { join, dirname } from 'node:path'
 import { tmpdir } from 'node:os'
 import { runDiffScan, formatDiffGuardrail } from '../diff-scan.js'
@@ -285,6 +285,106 @@ describe('runDiffScan — what counts as new', () => {
 
     expect(result.summary.new_count).toBe(0)
     expect(result.new_advisory.map((i) => i.scanner_rule_id)).toContain('heading-order')
+  })
+})
+
+describe('runDiffScan — working tree', () => {
+  // Base: one page with a pre-existing violation that stays untouched, plus the pages the
+  // dirty tree then modifies, stages and deletes, and a binary asset.
+  async function seedBase(): Promise<void> {
+    await write('untouched.html', cleanDoc('      <img src="legacy.png">'))
+    await write('modified.html', cleanDoc('      <p>Modified</p>'))
+    await write('staged.html', cleanDoc('      <p>Staged</p>'))
+    await write('deleted.html', cleanDoc('      <img src="gone.png">'))
+    await writeFile(join(dir, 'logo.png'), Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x00, 0x01]))
+    await commit('base')
+  }
+
+  async function dirtyTree(): Promise<void> {
+    await write('modified.html', cleanDoc('      <p>Modified</p>\n      <img src="m.png">'))
+    await write('staged.html', cleanDoc('      <p>Staged</p>\n      <button></button>'))
+    await run(['add', 'staged.html'])
+    await write('untracked.html', cleanDoc('      <a href="/next"></a>'))
+    await rm(join(dir, 'deleted.html'))
+    await writeFile(join(dir, 'logo.png'), Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x00, 0x02]))
+  }
+
+  it('reports only what the modified, staged and untracked files introduce, with lines', async () => {
+    await seedBase()
+    await dirtyTree()
+
+    const result = await runDiffScan({ base: 'HEAD', workingTree: true, cwd: dir })
+
+    expect(result.working_tree).toBe(true)
+    expect(result.new_issues.map((i) => `${i.file_path}:${i.line} ${i.scanner_rule_id}`).sort()).toEqual([
+      'modified.html:8 image-alt',
+      'staged.html:8 button-name',
+      'untracked.html:7 link-name',
+    ])
+    // The untouched page's violation and the deleted page are not part of the change.
+    const all = [...result.new_issues, ...result.new_review_only, ...result.new_advisory, ...result.legacy_issues]
+    expect(all.some((i) => i.file_path === 'untouched.html' || i.file_path === 'deleted.html')).toBe(false)
+    expect(result.not_testable).toEqual(['logo.png'])
+    expect(result.summary.files_scanned).toBe(3)
+  })
+
+  it('finds nothing in the working tree of a clean checkout, and nothing without the flag', async () => {
+    await seedBase()
+    expect((await runDiffScan({ base: 'HEAD', workingTree: true, cwd: dir })).summary.files_changed).toBe(0)
+
+    await dirtyTree()
+    const committedOnly = await runDiffScan({ base: 'HEAD', cwd: dir })
+    expect(committedOnly.summary.files_changed).toBe(0)
+    expect(committedOnly.working_tree).toBeUndefined()
+    expect('working_tree' in committedOnly).toBe(false)
+  })
+
+  it('compares the working tree with the merge-base, so committed changes since base count too', async () => {
+    await seedBase()
+    await write('modified.html', cleanDoc('      <p>Modified</p>\n      <img src="m.png">'))
+    await commit('commit a violation')
+    await write('untracked.html', cleanDoc('      <a href="/next"></a>'))
+
+    const result = await runDiffScan({ base: 'HEAD~1', workingTree: true, cwd: dir })
+
+    expect(result.new_issues.map((i) => i.file_path).sort()).toEqual(['modified.html', 'untracked.html'])
+  })
+
+  it('skips untracked files that .gitignore excludes', async () => {
+    await seedBase()
+    await appendFile(join(dir, '.git', 'info', 'exclude'), 'ignored.html\n')
+    await write('ignored.html', cleanDoc('      <img src="i.png">'))
+
+    const result = await runDiffScan({ base: 'HEAD', workingTree: true, cwd: dir })
+
+    expect(result.summary.files_changed).toBe(0)
+  })
+
+  it('lists a markup file with binary content as not statically testable', async () => {
+    await seedBase()
+    await writeFile(join(dir, 'blob.html'), Buffer.from('<p>\u0000binary</p>'))
+
+    const result = await runDiffScan({ base: 'HEAD', workingTree: true, cwd: dir })
+
+    expect(result.not_testable).toEqual(['blob.html'])
+    expect(result.summary.files_scanned).toBe(0)
+  })
+
+  it('keeps paths relative to the repository root when run from a subdirectory', async () => {
+    await write('site/index.html', cleanDoc('      <p>Home</p>'))
+    await write('other/page.html', cleanDoc('      <p>Other</p>'))
+    await commit('base')
+    await write('site/new.html', cleanDoc('      <img src="n.png">'))
+    await write('other/new.html', cleanDoc('      <img src="o.png">'))
+
+    const result = await runDiffScan({ base: 'HEAD', workingTree: true, cwd: join(dir, 'site') })
+
+    expect(result.new_issues.map((i) => i.file_path)).toEqual(['site/new.html'])
+  })
+
+  it('refuses a head ref together with the working tree', async () => {
+    await seedBase()
+    await expect(runDiffScan({ base: 'HEAD', head: 'HEAD', workingTree: true, cwd: dir })).rejects.toThrow(/cannot both/)
   })
 })
 
