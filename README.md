@@ -95,6 +95,17 @@ scanned path). An empty path, a missing folder or a file that cannot be written 
 the file is only written when the scan ran, so check the exit code before reading it. It
 also works on a full scan.
 
+### Before committing: check the working tree
+
+```bash
+equall scan . --diff main --working-tree
+```
+
+`--working-tree` compares `<base>` with the files on disk instead of the last commit:
+modified and staged files are read as they are, untracked files count as added (files
+`.gitignore` excludes are skipped), deleted files are ignored. The JSON result carries
+`"working_tree": true`. `--fail-on` and the exit codes work the same way.
+
 Exit codes: `0` no new violation at the threshold, `1` the change introduced one, `2` the check
 could not run (invalid option, base not found, shallow clone).
 

@@ -214,6 +214,49 @@ describe('scan --diff (integration)', () => {
   }, 60_000)
 })
 
+describe('scan --diff --working-tree (integration)', () => {
+  let dir: string
+  const git = (...args: string[]) => execFileSync('git', args, { cwd: dir, stdio: 'pipe' })
+  const page = (body: string) =>
+    `<!DOCTYPE html><html lang="en"><head><title>T</title></head><body><main><h1>Hi</h1>${body}</main></body></html>\n`
+
+  beforeAll(() => {
+    dir = mkdtempSync(join(tmpdir(), 'equall-ci-wt-'))
+    git('init', '-q', '-b', 'main')
+    git('config', 'user.email', 'test@equall.dev')
+    git('config', 'user.name', 'Equall Test')
+    git('config', 'commit.gpgsign', 'false')
+    writeFileSync(join(dir, 'index.html'), page('<img src="old.png">'))
+    git('add', '-A'); git('commit', '-q', '-m', 'base: legacy image without alt')
+    // Uncommitted: an empty link (serious) in a new, untracked page.
+    writeFileSync(join(dir, 'next.html'), page('<a href="/next"></a>'))
+  })
+  afterAll(() => rmSync(dir, { recursive: true, force: true }))
+
+  it('gates the uncommitted change', () => {
+    const r = cli(['scan', '.', '--diff', 'main', '--working-tree', '--fail-on', 'serious'], dir)
+    expect(r.code).toBe(1)
+    expect(r.out).toContain('working tree')
+    expect(r.out).toContain('next.html')
+    expect(r.out).toContain('link-name')
+  }, 60_000)
+
+  it('marks the JSON result and leaves the committed-only result unchanged', () => {
+    const wt = JSON.parse(cli(['scan', '.', '--diff', 'main', '--working-tree', '--json'], dir).out)
+    expect(wt.working_tree).toBe(true)
+    expect(wt.summary.new_count).toBe(1)
+    const committed = JSON.parse(cli(['scan', '.', '--diff', 'main', '--json'], dir).out)
+    expect('working_tree' in committed).toBe(false)
+    expect(committed.summary.files_changed).toBe(0)
+  }, 60_000)
+
+  it('exits 2 when --working-tree comes without --diff', () => {
+    const r = cli(['scan', '.', '--working-tree'], dir)
+    expect(r.code).toBe(2)
+    expect(r.err).toMatch(/--working-tree only applies with --diff/)
+  }, 60_000)
+})
+
 describe('diff scan scope and blind spots', () => {
   let dir: string
   const git = (...args: string[]) => execFileSync('git', args, { cwd: dir, stdio: 'pipe' })

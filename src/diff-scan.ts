@@ -1,4 +1,6 @@
 import { execFile } from 'node:child_process'
+import { readFile } from 'node:fs/promises'
+import { join } from 'node:path'
 import { promisify } from 'node:util'
 import { scanBuffer, deduplicateIssues } from './scan.js'
 import { fileTypeForPath, isDefaultExcluded } from './discover.js'
@@ -15,6 +17,9 @@ const SCANNABLE = new Set(['html', 'jsx', 'tsx', 'vue', 'svelte', 'astro'])
 export interface DiffScanOptions {
   base: string                 // Git ref to diff against (UNTRUSTED → validated)
   head?: string                // Git ref for the new state (default 'HEAD')
+  // Compare base with the working tree instead of a commit: modified and staged files are
+  // read from disk, untracked files (not ignored) count as added. Cannot be combined with `head`.
+  workingTree?: boolean
   cwd?: string                 // Repo root (default process.cwd())
   level?: WcagLevel            // WCAG target, forwarded to scanBuffer (default 'AA')
 }
@@ -24,8 +29,10 @@ export interface DiffScanOptions {
 // changed files we could not statically assess — never claim "clean" on blind spots.
 export interface DiffScanResult {
   base: string                 // Resolved base commit SHA
-  head: string                 // Resolved head commit SHA
+  head: string                 // Resolved head commit SHA (with working_tree: the commit the tree is on)
   merge_base: string           // merge-base(base, head) — the three-dot anchor
+  // Present (true) only when the head side was the working tree, not the `head` commit.
+  working_tree?: true
   // Counted WCAG violations the diff introduced, within the target level: the ones a gate
   // acts on. Review-only, best-practice and above-target findings have their own lists.
   new_issues: EquallIssue[]
@@ -97,12 +104,14 @@ interface ChangedFile {
   path: string
 }
 
-// List files changed between two commits (rename detection off, so a move is a
-// delete + add — moved code is intentionally treated as "new", not tracked).
-async function changedFiles(cwd: string, fromSha: string, toSha: string): Promise<ChangedFile[]> {
+// List files changed between two commits, or between a commit and the working tree when
+// `toSha` is null (rename detection off, so a move is a delete + add — moved code is
+// intentionally treated as "new", not tracked).
+async function changedFiles(cwd: string, fromSha: string, toSha: string | null): Promise<ChangedFile[]> {
   // The '.' pathspec limits the diff to the scanned directory (git resolves it against cwd);
   // paths stay relative to the repository root, as annotations need them.
-  const out = await git(cwd, ['diff', '--name-status', '--no-renames', '-z', fromSha, toSha, '--', '.'])
+  const range = toSha == null ? [fromSha] : [fromSha, toSha]
+  const out = await git(cwd, ['diff', '--name-status', '--no-renames', '-z', ...range, '--', '.'])
   const tokens = out.split('\0').filter((t) => t.length > 0)
   const files: ChangedFile[] = []
   for (let i = 0; i + 1 < tokens.length; i += 2) {
@@ -123,11 +132,13 @@ async function showFile(cwd: string, sha: string, path: string): Promise<string 
 
 // Line ranges added at HEAD for one file, from a zero-context diff: `@@ -a,b +c,d @@` adds
 // lines c..c+d-1 (d defaults to 1, d = 0 is a pure deletion). Null when git cannot say.
-async function addedLines(cwd: string, fromSha: string, toSha: string, path: string): Promise<Array<[number, number]> | null> {
+// `toSha` null compares with the working tree.
+async function addedLines(cwd: string, fromSha: string, toSha: string | null, path: string): Promise<Array<[number, number]> | null> {
   try {
     // `:(top,literal)` — the path is relative to the repository root (as name-status prints
     // it), whatever the working directory, and never read as a glob.
-    const out = await git(cwd, ['diff', '-U0', '--no-renames', '--no-color', fromSha, toSha, '--', `:(top,literal)${path}`])
+    const range = toSha == null ? [fromSha] : [fromSha, toSha]
+    const out = await git(cwd, ['diff', '-U0', '--no-renames', '--no-color', ...range, '--', `:(top,literal)${path}`])
     const ranges: Array<[number, number]> = []
     for (const m of out.matchAll(/^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@/gm)) {
       const start = Number(m[1])
@@ -137,6 +148,49 @@ async function addedLines(cwd: string, fromSha: string, toSha: string, path: str
     return ranges
   } catch {
     return null
+  }
+}
+
+// Where the head side of the diff comes from: a commit (default) or the working tree.
+// Same contract for both: the changed files (paths relative to the repository root), the
+// content of one of them on the head side (null when unreadable), and its added lines.
+interface HeadSource {
+  changed(mergeBase: string): Promise<ChangedFile[]>
+  read(path: string): Promise<string | null>
+  added(mergeBase: string, path: string): Promise<Array<[number, number]> | null>
+}
+
+function commitHead(cwd: string, headSha: string): HeadSource {
+  return {
+    changed: (mergeBase) => changedFiles(cwd, mergeBase, headSha),
+    read: (path) => showFile(cwd, headSha, path),
+    added: (mergeBase, path) => addedLines(cwd, mergeBase, headSha, path),
+  }
+}
+
+// The working tree against the merge-base: `git diff <merge-base>` covers staged and unstaged
+// edits and deletions; untracked files that .gitignore does not exclude are added files.
+async function workingTreeHead(cwd: string): Promise<HeadSource> {
+  const root = (await git(cwd, ['rev-parse', '--show-toplevel'])).trim()
+  return {
+    changed: async (mergeBase) => {
+      const tracked = await changedFiles(cwd, mergeBase, null)
+      // --full-name: paths relative to the repository root, like the diff above.
+      const out = await git(cwd, ['ls-files', '--others', '--exclude-standard', '--full-name', '-z', '--', '.'])
+      const untracked = out.split('\0').filter((p) => p.length > 0).map((path) => ({ status: 'A', path }))
+      return [...tracked, ...untracked]
+    },
+    read: async (path) => {
+      let content: string
+      try {
+        content = await readFile(join(root, path), 'utf-8')
+      } catch {
+        return null // a directory (submodule), a broken link, or removed since the listing
+      }
+      // A NUL byte means binary content under a markup extension: not statically testable.
+      return content.includes('\0') ? null : content
+    },
+    added: (mergeBase, path) => addedLines(cwd, mergeBase, null, path),
   }
 }
 
@@ -210,7 +264,8 @@ function foldClassified(headIssues: EquallIssue[], isNew: Set<EquallIssue>): { n
   }
 }
 
-// Diff-aware "only-new" scan (T1.2): scan each changed scannable file at HEAD and at
+// Diff-aware "only-new" scan (T1.2): scan each changed scannable file on the head side (the
+// HEAD commit, or the working tree with `workingTree`) and at
 // the merge-base, then classify each HEAD violation against the base occurrences of the
 // same fingerprint. Identity is the fingerprint (never the line), so a pure reformat keeps
 // the same identity and produces zero false "new".
@@ -218,6 +273,9 @@ export async function runDiffScan(options: DiffScanOptions): Promise<DiffScanRes
   const cwd = options.cwd ?? process.cwd()
   const level = options.level ?? 'AA'
 
+  if (options.workingTree && options.head !== undefined) {
+    throw new Error('A head ref and the working tree cannot both be the head side of the diff.')
+  }
   const baseSha = await resolveCommit(cwd, options.base)
   const headSha = await resolveCommit(cwd, options.head ?? 'HEAD')
   // A shallow clone has no common ancestor to find: say so instead of failing on git's error.
@@ -231,7 +289,8 @@ export async function runDiffScan(options: DiffScanOptions): Promise<DiffScanRes
     )
   }
 
-  const changed = await changedFiles(cwd, mergeBase, headSha)
+  const head = options.workingTree ? await workingTreeHead(cwd) : commitHead(cwd, headSha)
+  const changed = await head.changed(mergeBase)
 
   const newIssues: EquallIssue[] = []
   const newReviewOnly: EquallIssue[] = []
@@ -261,7 +320,7 @@ export async function runDiffScan(options: DiffScanOptions): Promise<DiffScanRes
       continue
     }
 
-    const headContent = await showFile(cwd, headSha, file.path)
+    const headContent = await head.read(file.path)
     if (headContent == null) {
       // Present in the name-status diff but unreadable at HEAD (e.g. submodule) — be honest.
       notTestable.push(file.path)
@@ -276,7 +335,7 @@ export async function runDiffScan(options: DiffScanOptions): Promise<DiffScanRes
     const baseContent = file.status === 'A' ? null : await showFile(cwd, mergeBase, file.path)
     const baseIssues = baseContent == null ? [] : active((await scanBuffer(baseContent, file.path, scanOptions)).issues)
 
-    const { isNew, issues } = await classifyByCount(headIssues, baseIssues, () => addedLines(cwd, mergeBase, headSha, file.path))
+    const { isNew, issues } = await classifyByCount(headIssues, baseIssues, () => head.added(mergeBase, file.path))
     const classified = foldClassified(issues, isNew)
     legacyIssues.push(...classified.legacyIssues)
     for (const issue of classified.newIssues) {
@@ -291,6 +350,7 @@ export async function runDiffScan(options: DiffScanOptions): Promise<DiffScanRes
     base: baseSha,
     head: headSha,
     merge_base: mergeBase,
+    ...(options.workingTree ? { working_tree: true as const } : {}),
     new_issues: newIssues,
     new_review_only: newReviewOnly,
     new_advisory: newAdvisory,

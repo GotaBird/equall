@@ -42,6 +42,7 @@ program
   .option('--min-score <n>', 'CI gate: exit 1 if the score is below <n> (0-100). Omit to always exit 0 on a successful scan')
   .option('--diff [base]', 'Report only what changed since <base> (a git ref). With no value, the pull request target branch is read from GitHub Actions, GitLab CI or Azure Pipelines')
   .option('--fail-on <severity>', 'With --diff: exit 1 if the change introduces a violation at <severity> or above (critical, serious, moderate, minor)')
+  .option('--working-tree', 'With --diff: compare <base> with the working tree (modified, staged and untracked files) instead of the last commit')
   .addHelpText('after', `
 Examples:
   equall scan .                        Scan current directory (Level AA)
@@ -54,10 +55,12 @@ Examples:
   equall scan . --no-readability       Skip reading-grade (Flesch-Kincaid) checks
   equall scan . --diff origin/main --fail-on serious
                                        CI: fail only on violations the change introduces
+  equall scan . --diff main --working-tree
+                                       Check uncommitted changes before committing
 
 Supported files: .html .htm .jsx .tsx .vue .svelte .astro
 `)
-  .action(async (path: string, opts: { level: string; standard?: string; include?: string[]; exclude?: string[]; json?: boolean; jsonOut?: string; showIgnored?: boolean; verbose?: boolean; all?: boolean; showManual?: boolean; showReview?: boolean; readability?: boolean; color?: boolean; minScore?: string; diff?: string | true; failOn?: string }) => {
+  .action(async (path: string, opts: { level: string; standard?: string; include?: string[]; exclude?: string[]; json?: boolean; jsonOut?: string; showIgnored?: boolean; verbose?: boolean; all?: boolean; showManual?: boolean; showReview?: boolean; readability?: boolean; color?: boolean; minScore?: string; diff?: string | true; failOn?: string; workingTree?: boolean }) => {
     const level = opts.level.toUpperCase() as WcagLevel
     if (!['A', 'AA', 'AAA'].includes(level)) {
       console.error(`Invalid level "${opts.level}". Use A, AA, or AAA.`)
@@ -93,7 +96,7 @@ Supported files: .html .htm .jsx .tsx .vue .svelte .astro
       process.exit(2)
     }
 
-    if (opts.diff !== undefined || opts.failOn !== undefined) {
+    if (opts.diff !== undefined || opts.failOn !== undefined || opts.workingTree) {
       await runDiffCommand(path, level, opts)
       return
     }
@@ -282,12 +285,13 @@ function writeJsonOut(file: string, data: unknown): void {
 async function runDiffCommand(
   path: string,
   level: WcagLevel,
-  opts: { json?: boolean; jsonOut?: string; color?: boolean; minScore?: string; diff?: string | true; failOn?: string },
+  opts: { json?: boolean; jsonOut?: string; color?: boolean; minScore?: string; diff?: string | true; failOn?: string; workingTree?: boolean },
 ): Promise<void> {
   const fail = (message: string): never => {
     console.error(`\n  Error: ${message}\n`)
     process.exit(2)
   }
+  if (opts.diff === undefined && opts.workingTree) fail('--working-tree only applies with --diff (it sets the head side of the comparison).')
   if (opts.diff === undefined) fail('--fail-on only applies with --diff (it gates what a change introduces).')
   if (opts.minScore !== undefined) fail('--min-score does not apply with --diff: use --fail-on <severity>.')
   let failOn: Severity | null = null
@@ -304,9 +308,10 @@ async function runDiffCommand(
     fail(error instanceof Error ? error.message : String(error))
   }
 
-  const spinner = opts.json ? null : ora({ text: `Scanning changes since ${base}`, indent: 2 }).start()
+  const scope = opts.workingTree ? ' (working tree)' : ''
+  const spinner = opts.json ? null : ora({ text: `Scanning changes since ${base}${scope}`, indent: 2 }).start()
   try {
-    const result = await runDiffScan({ base, cwd: resolve(path), level })
+    const result = await runDiffScan({ base, cwd: resolve(path), level, ...(opts.workingTree ? { workingTree: true } : {}) })
     spinner?.stop()
     if (opts.json) {
       console.log(JSON.stringify(result, null, 2))
