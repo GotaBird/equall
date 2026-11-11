@@ -16,9 +16,20 @@ import type {
 const jsxA11y = (jsxA11yModule as any).default ?? jsxA11yModule
 const astroParser = (astroParserModule as any).default ?? astroParserModule
 
+// A rule's mapping. `criteria: []` makes it a best-practice rule (not a WCAG violation).
+// `severity` overrides the ESLint-level mapping; `suggestion` and `helpUrl` replace the
+// generic fix hint and the plugin's rule page.
+interface RuleMapping {
+  criteria: string[]
+  pour: PourPrinciple | null
+  severity?: Severity
+  suggestion?: string
+  helpUrl?: string
+}
+
 // Mapping eslint-plugin-jsx-a11y rules → WCAG criteria + POUR
 // Source: https://github.com/jsx-eslint/eslint-plugin-jsx-a11y#supported-rules
-const RULE_WCAG_MAP: Record<string, { criteria: string[]; pour: PourPrinciple }> = {
+const RULE_WCAG_MAP: Record<string, RuleMapping> = {
   'jsx-a11y/alt-text':                    { criteria: ['1.1.1'], pour: 'perceivable' },
   'jsx-a11y/anchor-has-content':          { criteria: ['2.4.4', '4.1.2'], pour: 'operable' },
   'jsx-a11y/anchor-is-valid':             { criteria: ['2.4.4'], pour: 'operable' },
@@ -45,13 +56,34 @@ const RULE_WCAG_MAP: Record<string, { criteria: string[]; pour: PourPrinciple }>
   'jsx-a11y/no-noninteractive-element-interactions': { criteria: ['2.1.1'], pour: 'operable' },
   'jsx-a11y/no-noninteractive-element-to-interactive-role': { criteria: ['4.1.2'], pour: 'robust' },
   'jsx-a11y/no-noninteractive-tabindex':  { criteria: ['2.4.3'], pour: 'operable' },
-  'jsx-a11y/no-redundant-roles':          { criteria: ['4.1.2'], pour: 'robust' },
+  // A role equal to the element's implicit role leaves name, role and value correct, so it
+  // is not a 4.1.2 failure: reported as a minor best practice.
+  'jsx-a11y/no-redundant-roles': {
+    criteria: [],
+    pour: null,
+    severity: 'minor',
+    suggestion:
+      "This role repeats the element's implicit role, so it adds nothing and can have unintended " +
+      'effects (for example when the element changes later). Remove it. Exception: keep ' +
+      'role="list" on a list whose markers are removed with list-style: none; Equall does not ' +
+      'report that case.',
+    helpUrl: 'https://www.w3.org/TR/html-aria/#docconformance',
+  },
   'jsx-a11y/no-static-element-interactions': { criteria: ['2.1.1'], pour: 'operable' },
   'jsx-a11y/prefer-tag-over-role':        { criteria: ['4.1.2'], pour: 'robust' },
   'jsx-a11y/role-has-required-aria-props': { criteria: ['4.1.2'], pour: 'robust' },
   'jsx-a11y/role-supports-aria-props':    { criteria: ['4.1.2'], pour: 'robust' },
   'jsx-a11y/scope':                       { criteria: ['1.3.1'], pour: 'perceivable' },
   'jsx-a11y/tabindex-no-positive':        { criteria: ['2.4.3'], pour: 'operable' },
+}
+
+// Rule options, passed after the 'error' level. no-redundant-roles allows the list roles
+// restated on lists: role="list" on ul/ol and role="listitem" on li restore the list
+// semantics Safari/VoiceOver drops when list-style: none is set
+// (https://www.scottohara.me/blog/2019/01/12/lists-and-safari.html). The plugin looks the
+// option up per element, so elements without a key keep its default (nav → navigation).
+const RULE_OPTIONS: Record<string, unknown[]> = {
+  'jsx-a11y/no-redundant-roles': [{ ul: ['list'], ol: ['list'], li: ['listitem'] }],
 }
 
 // Map ESLint severity to Equall severity
@@ -134,7 +166,7 @@ export class EslintJsxA11yScanner implements ScannerAdapter {
 
     // jsx-a11y rules, shared by the JSX and Astro config blocks.
     const a11yRules = Object.fromEntries(
-      Object.keys(RULE_WCAG_MAP).map((rule) => [rule, 'error'])
+      Object.keys(RULE_WCAG_MAP).map((rule) => [rule, ['error', ...(RULE_OPTIONS[rule] ?? [])]])
     ) as Linter.RulesRecord
 
     // Build flat config with jsx-a11y recommended rules
@@ -222,10 +254,11 @@ export class EslintJsxA11yScanner implements ScannerAdapter {
           // Split criteria by WCAG level so each issue has a single level
           const aCriteria = criteria.filter(c => !AA_CRITERIA.has(c))
           const aaCriteria = criteria.filter(c => AA_CRITERIA.has(c))
-          const groups: { criteria: string[]; level: WcagLevel }[] = []
+          const groups: { criteria: string[]; level: WcagLevel | null }[] = []
           if (aCriteria.length > 0) groups.push({ criteria: aCriteria, level: 'A' })
           if (aaCriteria.length > 0) groups.push({ criteria: aaCriteria, level: 'AA' })
-          if (groups.length === 0) groups.push({ criteria, level: 'A' })
+          // Best-practice rule (no criteria): no WCAG level, as for axe best practices.
+          if (groups.length === 0) groups.push({ criteria, level: null })
 
           for (const group of groups) {
             allIssues.push({
@@ -238,10 +271,10 @@ export class EslintJsxA11yScanner implements ScannerAdapter {
               line: msg.line ?? null,
               column: msg.column ?? null,
               html_snippet: tokenContext,
-              severity: mapSeverity(msg.severity),
+              severity: wcagMapping?.severity ?? mapSeverity(msg.severity),
               message: `${msg.message} (${msg.ruleId})`,
-              help_url: `https://github.com/jsx-eslint/eslint-plugin-jsx-a11y/blob/main/docs/rules/${msg.ruleId.replace('jsx-a11y/', '')}.md`,
-              suggestion: msg.fix ? 'Auto-fixable' : null,
+              help_url: wcagMapping?.helpUrl ?? `https://github.com/jsx-eslint/eslint-plugin-jsx-a11y/blob/main/docs/rules/${msg.ruleId.replace('jsx-a11y/', '')}.md`,
+              suggestion: wcagMapping?.suggestion ?? (msg.fix ? 'Auto-fixable' : null),
             })
           }
         }
