@@ -67,7 +67,7 @@ const RULE_WCAG_MAP: Record<string, RuleMapping> = {
       'effects (for example when the element changes later). Remove it. Exception: keep ' +
       'role="list" on a list whose markers are removed with list-style: none; Equall does not ' +
       'report that case.',
-    helpUrl: 'https://www.w3.org/TR/html-aria/#docconformance',
+    helpUrl: 'https://www.w3.org/TR/html-aria/#avoid-specifying-redundant-roles',
   },
   'jsx-a11y/no-static-element-interactions': { criteria: ['2.1.1'], pour: 'operable' },
   'jsx-a11y/prefer-tag-over-role':        { criteria: ['4.1.2'], pour: 'robust' },
