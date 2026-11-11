@@ -1,6 +1,15 @@
 import { describe, it, expect } from 'vitest'
+import { execFile } from 'node:child_process'
+import { promisify } from 'node:util'
+import { mkdtemp, writeFile, rm } from 'node:fs/promises'
+import { join } from 'node:path'
+import { tmpdir } from 'node:os'
 import { scanBuffer } from '../scan.js'
+import { runDiffScan } from '../diff-scan.js'
+import { computeDiffExitCode } from '../ci/diff-gate.js'
 import type { EquallIssue, ScanResult } from '../types.js'
+
+const execFileAsync = promisify(execFile)
 
 // jsx-a11y/no-redundant-roles: a role equal to the element's implicit role is a minor best
 // practice, not a 4.1.2 failure, and the list roles restated on lists (the Safari/VoiceOver
@@ -43,7 +52,7 @@ describe('no-redundant-roles', () => {
       expect(issue.wcag_level).toBeNull()
       expect(issue.pour).toBeNull()
       expect(issue.severity).toBe('minor')
-      expect(issue.help_url).toBe('https://www.w3.org/TR/html-aria/#docconformance')
+      expect(issue.help_url).toBe('https://www.w3.org/TR/html-aria/#avoid-specifying-redundant-roles')
       expect(issue.suggestion).toMatch(/repeats the element's implicit role/)
     }
   })
@@ -80,5 +89,30 @@ const title = 'x'
     expect(result.score).toBe(99.0)
     const c412 = result.criterion_conformance?.find((c) => c.criterion === '4.1.2')
     expect(c412?.verdict).not.toBe('fail')
+  })
+
+  it('lands in new_advisory on a diff scan and never gates', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'equall-redundant-'))
+    const git = (args: string[]) => execFileAsync('git', args, { cwd: dir })
+    try {
+      await git(['init', '-q'])
+      await git(['config', 'user.email', 'test@equall.dev'])
+      await git(['config', 'user.name', 'Equall Test'])
+      await git(['config', 'commit.gpgsign', 'false'])
+      await writeFile(join(dir, 'C.jsx'), component(`      <button type="button">Go</button>`), 'utf-8')
+      await git(['add', '-A'])
+      await git(['commit', '-q', '-m', 'base'])
+      await writeFile(join(dir, 'C.jsx'), component(`      <button role="button" type="button">Go</button>`), 'utf-8')
+      await git(['add', '-A'])
+      await git(['commit', '-q', '-m', 'head'])
+
+      const result = await runDiffScan({ base: 'HEAD~1', head: 'HEAD', cwd: dir })
+
+      expect(result.new_advisory.filter((i) => i.scanner_rule_id === RULE)).toHaveLength(1)
+      expect(result.new_issues).toEqual([])
+      expect(computeDiffExitCode(result, 'minor')).toBe(0)
+    } finally {
+      await rm(dir, { recursive: true, force: true })
+    }
   })
 })
