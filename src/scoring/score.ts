@@ -115,7 +115,7 @@ function computeSummary(issues: EquallIssue[], filesScanned: number, exercised: 
 // per-criterion cap, no opportunity denominator. Model 1's file scaling let the
 // score rise by adding clean files (and structurally punished single-buffer
 // scans), and its 15-point cap froze the score while fixes landed inside a
-// saturated criterion. Model 2 guarantees instead:
+// saturated criterion. Models 2 and 3 guarantee instead:
 //   fix-sensitivity  — resolving ANY single scored issue strictly raises the
 //                      score (each contributes w/rank > 0); best-practice and
 //                      beyond-target findings are not scored (charter inv. 3);
