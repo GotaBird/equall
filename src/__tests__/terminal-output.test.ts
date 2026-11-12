@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { printResult } from '../output/terminal.js'
+import { scanBuffer } from '../scan.js'
 import type { EquallIssue, ScanResult, Severity } from '../types.js'
 
 // Terminal truncation: the default output caps WCAG Violations at 8 criteria and
@@ -67,6 +68,49 @@ function render(result: ScanResult, all?: boolean): string {
   }
   return lines.join('\n').replace(ANSI, '')
 }
+
+// The severity breakdown and its "fix before shipping" legend cover the scored findings
+// only. A best practice never weighs on the score, so it is never counted there: it is
+// listed in its own section.
+describe('severity breakdown excludes best practices', () => {
+  const SEVERITY_LINE = (c: number, s: number, m: number, n: number) =>
+    new RegExp(`${c} critical\\s+\\S ${s} serious\\s+\\S ${m} moderate\\s+\\S ${n} minor`)
+
+  it('real pipeline: a page whose only finding is a best practice prints zero in every severity count', async () => {
+    // h1 → h3 skips a heading level: axe `heading-order`, a best practice with no WCAG criterion.
+    const page = `<!DOCTYPE html>
+<html lang="en">
+  <head><title>Fixture</title></head>
+  <body>
+    <main>
+      <h1>Fixture page</h1>
+      <p>Intro</p>
+      <h3>Details</h3>
+    </main>
+  </body>
+</html>`
+    const out = render(await scanBuffer(page, 'index.html'))
+    expect(out).toContain('0 WCAG violations  ·  1 best-practice recommendation')
+    expect(out).toMatch(SEVERITY_LINE(0, 0, 0, 0))
+    // Still reported, under its own section, after the summary.
+    const section = out.indexOf('Best-Practice Recommendations')
+    expect(section).toBeGreaterThan(out.indexOf('fix before shipping'))
+    expect(out.slice(section)).toContain('heading-order')
+  }, 30000)
+
+  it('beside WCAG findings, a serious best practice is not counted as serious', () => {
+    const result = fixture()
+    result.issues = [
+      issue('1.1.1', 'critical', 'src/a.html'),
+      issue('2.4.4', 'minor', 'src/b.html'),
+      { ...issue('x', 'serious', 'src/c.html'), scanner_rule_id: 'region', wcag_criteria: [], wcag_level: null },
+    ]
+    const out = render(result)
+    expect(out).toContain('2 WCAG violations  ·  1 best-practice recommendation')
+    expect(out).toMatch(SEVERITY_LINE(1, 0, 0, 1))
+    expect(out.slice(out.indexOf('Best-Practice Recommendations'))).toContain('region')
+  })
+})
 
 describe('terminal truncation (--all)', () => {
   it('default: shows 2 of 12 occurrences and announces the cut with --all', () => {

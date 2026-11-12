@@ -232,11 +232,12 @@ export function printResult(result: ScanResult, options: PrintOptions = {}): voi
 
 function printSummary(result: ScanResult, parts: ReportIssues, options: PrintOptions): void {
   const { summary } = result
-  // Every count here is over COUNTED issues only — the ones the score and the verdict
-  // are computed from. Ignored and review-only issues are announced on their own lines, so
-  // the summary never announces more violations than the report lists.
-  // Beyond-target criteria (advisory) don't penalize the score and aren't counted among
-  // conformance violations.
+  // Every count here is over COUNTED issues only (not ignored, not review-only). Ignored
+  // and review-only issues are announced on their own lines, so the summary never announces
+  // more violations than the report lists.
+  // The WCAG violation count and the severity breakdown cover the scored findings: WCAG
+  // failures within the target. Best practices and beyond-target criteria (advisory) each
+  // get their own count; neither weighs on the score nor counts as a conformance violation.
   const advisoryCount = parts.advisory.length
 
   console.log(`  ${BOLD}Summary${RESET}`)
@@ -248,10 +249,12 @@ function printSummary(result: ScanResult, parts: ReportIssues, options: PrintOpt
   const reclassifiedSuffix = reclassifiedCount > 0 ? `  ·  ${GRAY}${reclassifiedCount} page-level (needs rendered page)${RESET}` : ''
   console.log(`  ${summary.files_scanned} ${plural(summary.files_scanned, 'file')} scanned  ·  ${BOLD}${wcagIssuesCount}${RESET} WCAG ${plural(wcagIssuesCount, 'violation')}  ·  ${GRAY}${bpIssuesCount} best-practice ${plural(bpIssuesCount, 'recommendation')}${RESET}${advisorySuffix}${reclassifiedSuffix}`)
 
-  // Severity breakdown over conformance-scope issues only (advisory AAA excluded),
-  // with a one-line legend so "critical/serious/moderate/minor" isn't just a color soup
+  // Severity breakdown over the scored findings only: WCAG failures within the target.
+  // Best practices and advisory AAA are excluded, so the "fix before shipping" legend
+  // never points at a recommendation that does not weigh on the score. A one-line legend
+  // keeps "critical/serious/moderate/minor" from being just a color soup.
   const sevCounts: Record<Severity, number> = { critical: 0, serious: 0, moderate: 0, minor: 0 }
-  for (const i of [...parts.wcag, ...parts.bestPractice]) sevCounts[i.severity]++
+  for (const i of parts.wcag) sevCounts[i.severity]++
   console.log(
     `  ${severityIcon('critical')} ${RED}${sevCounts.critical} critical${RESET}   ` +
     `${severityIcon('serious')} ${YELLOW}${sevCounts.serious} serious${RESET}   ` +

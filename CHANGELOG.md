@@ -13,10 +13,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   WCAG criterion (for example axe `region` and `heading-order`) stay in the report, the
   best-practice recommendations section, the diff's advisory list and CI notices, but carry
   no weight. Scores rise or stay the same on projects that had best-practice findings and
-  are unchanged elsewhere. Scores from `score_model` 2 and 3 are not comparable: rescan both sides of a
-  before/after. `--min-score` thresholds are now checked against the new score, so a gate
-  that failed only because of best-practice findings now passes. Issues, fingerprints,
-  conformance verdicts, coverage and the diff gate are unchanged by this change.
+  are unchanged elsewhere. Scores from `score_model` 2 and 3 are not comparable: rescan both
+  sides of a before/after. `--min-score` thresholds are now checked against the new score,
+  so a gate that failed only because of best-practice findings now passes. The terminal's
+  severity counts no longer include best-practice findings (the JSON `summary.by_severity`
+  still counts them). Issues, fingerprints, conformance verdicts, coverage and the diff gate
+  are unchanged by this change.
 - **Redundant ARIA roles are best-practice recommendations, no longer WCAG 4.1.2
   violations.** `jsx-a11y/no-redundant-roles` (a role equal to the element's implicit
   role, such as `<button role="button">`) is reported as a minor best practice with an
