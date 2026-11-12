@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Redundant ARIA roles are best-practice recommendations, no longer WCAG 4.1.2
+  violations.** `jsx-a11y/no-redundant-roles` (a role equal to the element's implicit
+  role, such as `<button role="button">`) is reported as a minor best practice with an
+  explanation and a link to the W3C guidance ("Avoid specifying redundant roles", ARIA in
+  HTML). It no longer fails 4.1.2. It is no longer counted among the 4.1.2 issues but
+  scored as its own minor best practice, so a project's score usually rises and can, in rare
+  cases, move slightly down (a file that already had many heavier 4.1.2 failures).
+- **`role="list"` on `ul`/`ol` and `role="listitem"` on `li` are no longer reported.**
+  This is the workaround for Safari/VoiceOver dropping list semantics under
+  `list-style: none` (https://www.scottohara.me/blog/2019/01/12/lists-and-safari.html).
+- **Fingerprints**: the remaining redundant-role findings get a new fingerprint (their WCAG
+  criteria changed from `4.1.2` to none); the list-role findings disappear. Consumers that
+  track issues by fingerprint see one finding gone and one new per occurrence.
+
 ## [0.3.7] - 2026-11-08
 
 ### Added

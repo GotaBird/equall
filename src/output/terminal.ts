@@ -24,6 +24,7 @@ const BP_HINTS: Record<string, string> = {
   'landmark-banner-is-top-level': 'Banner landmarks should not be nested',
   'landmark-contentinfo-is-top-level': 'Contentinfo landmarks should not be nested',
   'skip-link': 'Skip links let keyboard users jump past repeated content',
+  'jsx-a11y/no-redundant-roles': "The role repeats the element's implicit role: unnecessary, remove it",
 }
 
 
