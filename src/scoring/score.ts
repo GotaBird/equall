@@ -19,9 +19,10 @@ const SEVERITY_WEIGHT: Record<Severity, number> = {
 
 // Scoring-model version stamped on every ScanResult. Bump ONLY when the
 // scoring formula or its input semantics change, so two outputs from different
-// releases are comparable — model 2 replaces the capped/file-scaled model 1
-// with rank-damped severity summing (see computeScore).
-const SCORE_MODEL = 2
+// releases are comparable — model 2 replaced the capped/file-scaled model 1
+// with rank-damped severity summing (see computeScore); model 3 is model 2
+// with best-practice findings (no WCAG criterion) out of the penalty.
+const SCORE_MODEL = 3
 
 // Asymptotic decay rate, recalibrated for model 2 against a fixed dogfood
 // corpus (minimizing score movement vs model 1 on repos where model 1 was
@@ -34,7 +35,8 @@ const LEVEL_RANK: Record<WcagLevel, number> = { A: 1, AA: 2, AAA: 3 }
 // An issue is "beyond target" — advisory, not a conformance failure — when its
 // WCAG level outranks the conformance target (e.g. a AAA criterion under an AA
 // target). Such issues must not penalize the score or be framed as "must fix".
-// Issues without a level (best-practice) are always in scope.
+// Issues without a level (best-practice) are never beyond target; they are kept
+// out of the score by computeScore, not here.
 export function isBeyondTarget(issue: EquallIssue, targetLevel: WcagLevel): boolean {
   if (!issue.wcag_level) return false
   return LEVEL_RANK[issue.wcag_level] > LEVEL_RANK[targetLevel]
@@ -107,14 +109,16 @@ function computeSummary(issues: EquallIssue[], filesScanned: number, exercised: 
   }
 }
 
-// Scoring model 2 — rank-damped severity summing. The penalty is a function of
-// the (deduplicated, non-ignored) issue multiset ONLY: no file count, no
+// Scoring model 3 — rank-damped severity summing over WCAG failures. The
+// penalty is a function of the (deduplicated, non-ignored) multiset of
+// WCAG-mapped issues within the target ONLY: no file count, no
 // per-criterion cap, no opportunity denominator. Model 1's file scaling let the
 // score rise by adding clean files (and structurally punished single-buffer
 // scans), and its 15-point cap froze the score while fixes landed inside a
 // saturated criterion. Model 2 guarantees instead:
-//   fix-sensitivity  — resolving ANY single issue strictly raises the score
-//                      (each issue contributes w/rank > 0);
+//   fix-sensitivity  — resolving ANY single scored issue strictly raises the
+//                      score (each contributes w/rank > 0); best-practice and
+//                      beyond-target findings are not scored (charter inv. 3);
 //   padding-resistance — adding files/elements/engines that surface no issue
 //                      cannot move the score (nothing else is an input);
 //   mono-file fairness — a single-buffer scan and the same issues inside a
@@ -125,20 +129,20 @@ function computeSummary(issues: EquallIssue[], filesScanned: number, exercised: 
 // critical-dominated criterion moves the score by its minor weight, not the
 // group's maximum.
 function computeScore(issues: EquallIssue[], targetLevel: WcagLevel): number {
-  // Beyond-target criteria (e.g. AAA under an AA target) are advisory, not
-  // conformance failures — they must not drag the conformance score down.
-  const scoped = issues.filter(issue => !isBeyondTarget(issue, targetLevel))
+  // Only WCAG failures within the target score. Best-practice findings (no
+  // WCAG criterion) are recommendations, and beyond-target criteria (e.g. AAA
+  // under an AA target) are advisory: both stay in the report, neither drags
+  // the score down (score charter, invariant 3).
+  const scoped = issues.filter(
+    issue => issue.wcag_criteria.length > 0 && !isBeyondTarget(issue, targetLevel)
+  )
   if (scoped.length === 0) return 100
 
-  // Group issue weights by WCAG criterion (unmapped issues still penalize,
-  // keyed per rule so distinct best-practice rules don't damp each other).
+  // Group issue weights by WCAG criterion.
   const weightsByCriterion = new Map<string, number[]>()
   for (const issue of scoped) {
     const weight = SEVERITY_WEIGHT[issue.severity]
-    const keys = issue.wcag_criteria.length > 0
-      ? issue.wcag_criteria
-      : [`_${issue.scanner}:${issue.scanner_rule_id}`]
-    for (const key of keys) {
+    for (const key of issue.wcag_criteria) {
       const weights = weightsByCriterion.get(key) ?? []
       weights.push(weight)
       weightsByCriterion.set(key, weights)

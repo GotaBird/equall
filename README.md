@@ -69,7 +69,8 @@ A successful scan always exits `0`. Pass `--min-score <n>` to fail when the scor
 below a threshold. A path that does not exist, or is a file rather than a folder, exits `2`.
 On a repository with existing debt, prefer the diff gate below: it fails only on what a
 change introduces. Criteria above your target level (e.g. AAA under the
-default AA target) are advisory and never count against the score.
+default AA target) are advisory and never count against the score; best-practice
+recommendations (no WCAG criterion) are reported but never count either.
 
 ## In CI: fail only on what a change introduces
 
