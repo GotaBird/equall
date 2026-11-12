@@ -1,5 +1,6 @@
 import { ONE_LEVEL_BRACE_EXPR } from './fingerprint.js'
 import { extractVueTemplate } from './vue-template.js'
+import { neutralizeCommentMarkup } from './js-comments.js'
 
 // A dynamic attribute value in attribute position: `attrName={ …expr… }`. The `=` is glued
 // to the attribute name (no surrounding space) so prose like `<p>cost = {price}</p>` is NOT
@@ -92,11 +93,16 @@ export function extractHtml(content: string, type: string, options: ExtractOptio
   // For JSX/TSX: extract return statement content (simplified)
   // This is a best-effort extraction — complex JSX may not parse perfectly
   if (type === 'jsx' || type === 'tsx') {
-    const returnMatch = content.match(/return\s*\(\s*([\s\S]*?)\s*\)\s*[;\n}]/)
-    if (returnMatch) return neutralize(mapJsxAttributeNames(returnMatch[1]))
-    // Try single-line return
-    const singleReturn = content.match(/return\s+(<[\s\S]*?>[\s\S]*?<\/[\s\S]*?>)/)
-    return neutralize(mapJsxAttributeNames(singleReturn?.[1] ?? ''))
+    // The markup is located on the file as written, then taken from a copy where no
+    // comment can open an element (`// no <img src> here` would otherwise reach the HTML
+    // parser as an <img>). The copy has the same offsets, and where the markup starts and
+    // ends does not depend on it.
+    const returnMatch = /return\s*\(\s*([\s\S]*?)\s*\)\s*[;\n}]/d.exec(content)
+      // Try single-line return
+      ?? /return\s+(<[\s\S]*?>[\s\S]*?<\/[\s\S]*?>)/d.exec(content)
+    const span = returnMatch?.indices?.[1]
+    if (!span) return neutralize('')
+    return neutralize(mapJsxAttributeNames(neutralizeCommentMarkup(content, type).slice(span[0], span[1])))
   }
 
   if (type === 'svelte') {

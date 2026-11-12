@@ -32,6 +32,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   criteria changed from `4.1.2` to none); the list-role findings disappear. Consumers that
   track issues by fingerprint see one finding gone and one new per occurrence.
 
+### Fixed
+
+- **HTML-like text in a code comment is no longer reported as an element (`.jsx`, `.tsx`).**
+  A comment such as `// no image resource to put in an <img src>` next to the JSX was read
+  as an `<img>` without alternative text and reported by axe-core (`image-alt`, on the
+  comment's line). A `<` inside a comment (`//`, `/* */` and `{/* */}`) can no longer open
+  an element. These false findings disappear, with their fingerprints.
+- **What else can move in a file that had such a comment**: a real finding the phantom
+  element was hiding can now appear (for example an unlabelled `<input>` after a comment
+  naming a `<label>`), which lowers the score and shows as new in a diff; a finding on an
+  element that contains such a comment gets a new fingerprint; a finding that was reported
+  once without a line, because a comment named the same tag as the real element, is now
+  reported on its line. Files with no `<` inside a comment are unaffected.
+
 ## [0.3.7] - 2026-11-08
 
 ### Added
