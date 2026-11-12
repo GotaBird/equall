@@ -362,6 +362,42 @@ function printAdvisory(issues: EquallIssue[], target: WcagLevel, options: PrintO
   }
 }
 
+const EXPLANATION_INDENT = '      '
+const EXPLANATION_WIDTH = 88
+
+// Break a sentence-long explanation into indented lines of readable width.
+function wrapText(text: string, indent: string, width: number): string[] {
+  const lines: string[] = []
+  let current = ''
+  for (const word of text.split(/\s+/).filter(Boolean)) {
+    if (current && current.length + 1 + word.length > width) {
+      lines.push(indent + current)
+      current = word
+    } else {
+      current = current ? `${current} ${word}` : word
+    }
+  }
+  if (current) lines.push(indent + current)
+  return lines
+}
+
+// What a best-practice rule means, printed once under the rule. In order:
+// 1. the explanation the scanner attached to the rule (`suggestion`), the same text the
+//    JSON carries. axe-core is the exception: its `suggestion` is a per-element failure
+//    summary ("Fix any of the following: …"), not an explanation of the rule;
+// 2. the short hint from BP_HINTS;
+// 3. for an axe-core rule with no hint, its failure summary, which is better than nothing;
+// 4. a pointer to the documentation.
+function bestPracticeExplanation(ruleId: string, issues: EquallIssue[]): string[] {
+  const ruleSuggestion = issues.find(issue => issue.scanner !== 'axe-core' && issue.suggestion)?.suggestion
+  if (ruleSuggestion) return wrapText(ruleSuggestion, EXPLANATION_INDENT, EXPLANATION_WIDTH)
+  const hint = BP_HINTS[ruleId]
+  if (hint) return [`${EXPLANATION_INDENT}${hint}`]
+  const summary = issues.find(issue => issue.suggestion)?.suggestion
+  if (summary) return formatSuggestion(summary, EXPLANATION_INDENT)
+  return [`${EXPLANATION_INDENT}See the rule documentation for context.`]
+}
+
 // Best Practices — recommendations, NOT WCAG violations. Kept visually quieter.
 function printBestPractices(issues: EquallIssue[], options: PrintOptions): void {
   if (issues.length === 0) return
@@ -370,12 +406,14 @@ function printBestPractices(issues: EquallIssue[], options: PrintOptions): void 
 
   for (const [ruleId, group] of sortedGroups(issues)) {
     const topSeverity = group.issues[0].severity
-    const hint = BP_HINTS[ruleId] ?? 'See the rule documentation for context.'
     console.log(
       `  ${severityIcon(topSeverity)} ${BOLD}${ruleId}${RESET}  ` +
       `${GRAY}${group.issues.length} ${plural(group.issues.length, 'occurrence')}${RESET}`
     )
-    console.log(`      ${hint}`)
+    for (const line of bestPracticeExplanation(ruleId, group.issues)) console.log(line)
+    // The rule's documentation link, as the JSON carries it (once per rule).
+    const helpUrl = group.issues.find(issue => issue.help_url)?.help_url
+    if (helpUrl) console.log(`      ${GRAY}Learn more: ${helpUrl}${RESET}`)
 
     // Affected files, one line per file (deduped by path)
     const seen = new Set<string>()

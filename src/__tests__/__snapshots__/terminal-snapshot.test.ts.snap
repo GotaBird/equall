@@ -114,6 +114,7 @@ exports[`terminal report snapshot > renders byte-identically: all 1`] = `
 
   [36m●[0m [1mregion[0m  [90m4 occurrences[0m
       Landmarks help screen reader users navigate page sections
+      [90mLearn more: https://example.test/help[0m
       [90m↳[0m [36msrc/layout-1.tsx:3[0m
       [90m↳[0m [36msrc/layout-2.tsx:3[0m
       [90m↳[0m [36msrc/layout-3.tsx:3[0m
@@ -121,6 +122,7 @@ exports[`terminal report snapshot > renders byte-identically: all 1`] = `
 
   [90m○[0m [1mcustom-rule[0m  [90m1 occurrence[0m
       See the rule documentation for context.
+      [90mLearn more: https://example.test/help[0m
       [90m↳[0m [36msrc/misc.tsx:3[0m
 
   [1mNot verifiable on this scan[0m [90m— 2 page-level rules on fragment files[0m
@@ -261,12 +263,14 @@ exports[`terminal report snapshot > renders byte-identically: default 1`] = `
 
   [36m●[0m [1mregion[0m  [90m4 occurrences[0m
       Landmarks help screen reader users navigate page sections
+      [90mLearn more: https://example.test/help[0m
       [90m↳[0m [36msrc/layout-1.tsx:3[0m
       [90m↳[0m [36msrc/layout-2.tsx:3[0m
       [90m↳ and 2 more files · run with --all to list them[0m
 
   [90m○[0m [1mcustom-rule[0m  [90m1 occurrence[0m
       See the rule documentation for context.
+      [90mLearn more: https://example.test/help[0m
       [90m↳[0m [36msrc/misc.tsx:3[0m
 
   [1mNot verifiable on this scan[0m [90m— 2 page-level rules on fragment files[0m
@@ -416,6 +420,7 @@ exports[`terminal report snapshot > renders byte-identically: everything + wcag2
 
   [36m●[0m [1mregion[0m  [90m4 occurrences[0m
       Landmarks help screen reader users navigate page sections
+      [90mLearn more: https://example.test/help[0m
       [90m↳[0m [36msrc/layout-1.tsx:3[0m
       [90m↳[0m [36msrc/layout-2.tsx:3[0m
       [90m↳[0m [36msrc/layout-3.tsx:3[0m
@@ -423,6 +428,7 @@ exports[`terminal report snapshot > renders byte-identically: everything + wcag2
 
   [90m○[0m [1mcustom-rule[0m  [90m1 occurrence[0m
       See the rule documentation for context.
+      [90mLearn more: https://example.test/help[0m
       [90m↳[0m [36msrc/misc.tsx:3[0m
 
   [1mNot verifiable on this scan[0m [90m— 2 page-level rules on fragment files[0m
@@ -585,12 +591,14 @@ exports[`terminal report snapshot > renders byte-identically: show-ignored 1`] =
 
   [36m●[0m [1mregion[0m  [90m4 occurrences[0m
       Landmarks help screen reader users navigate page sections
+      [90mLearn more: https://example.test/help[0m
       [90m↳[0m [36msrc/layout-1.tsx:3[0m
       [90m↳[0m [36msrc/layout-2.tsx:3[0m
       [90m↳ and 2 more files · run with --all to list them[0m
 
   [90m○[0m [1mcustom-rule[0m  [90m1 occurrence[0m
       See the rule documentation for context.
+      [90mLearn more: https://example.test/help[0m
       [90m↳[0m [36msrc/misc.tsx:3[0m
 
   [1mNot verifiable on this scan[0m [90m— 2 page-level rules on fragment files[0m
@@ -716,12 +724,14 @@ exports[`terminal report snapshot > renders byte-identically: show-manual 1`] = 
 
   [36m●[0m [1mregion[0m  [90m4 occurrences[0m
       Landmarks help screen reader users navigate page sections
+      [90mLearn more: https://example.test/help[0m
       [90m↳[0m [36msrc/layout-1.tsx:3[0m
       [90m↳[0m [36msrc/layout-2.tsx:3[0m
       [90m↳ and 2 more files · run with --all to list them[0m
 
   [90m○[0m [1mcustom-rule[0m  [90m1 occurrence[0m
       See the rule documentation for context.
+      [90mLearn more: https://example.test/help[0m
       [90m↳[0m [36msrc/misc.tsx:3[0m
 
   [1mNot verifiable on this scan[0m [90m— 2 page-level rules on fragment files[0m
@@ -896,6 +906,7 @@ exports[`terminal report snapshot > renders byte-identically: verbose 1`] = `
 
   [36m●[0m [1mregion[0m  [90m4 occurrences[0m
       Landmarks help screen reader users navigate page sections
+      [90mLearn more: https://example.test/help[0m
       [90m↳[0m [36msrc/layout-1.tsx:3[0m
       [90m↳[0m [36msrc/layout-2.tsx:3[0m
       [90m↳[0m [36msrc/layout-3.tsx:3[0m
@@ -903,6 +914,7 @@ exports[`terminal report snapshot > renders byte-identically: verbose 1`] = `
 
   [90m○[0m [1mcustom-rule[0m  [90m1 occurrence[0m
       See the rule documentation for context.
+      [90mLearn more: https://example.test/help[0m
       [90m↳[0m [36msrc/misc.tsx:3[0m
 
   [1mNot verifiable on this scan[0m [90m— 2 page-level rules on fragment files[0m

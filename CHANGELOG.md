@@ -25,6 +25,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   explanation and a link to the W3C guidance ("Avoid specifying redundant roles", ARIA in
   HTML). It no longer fails 4.1.2 and, as a best practice, does not weigh on the score,
   so a project's score rises or stays the same.
+- **The terminal's best-practice section prints each rule's explanation and documentation
+  link.** Under a rule, the report now shows the explanation the JSON carries as
+  `suggestion` when the rule has one (for example the redundant-role explanation), the
+  short built-in hint otherwise, then a `Learn more:` line with the rule's `help_url`. axe-core
+  rules keep their built-in hint; an axe-core rule with no hint prints its failure summary
+  instead of "See the rule documentation". The JSON output is unchanged.
 - **`role="list"` on `ul`/`ol` and `role="listitem"` on `li` are no longer reported.**
   This is the workaround for Safari/VoiceOver dropping list semantics under
   `list-style: none` (https://www.scottohara.me/blog/2019/01/12/lists-and-safari.html).
