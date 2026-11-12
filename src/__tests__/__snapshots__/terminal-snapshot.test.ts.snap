@@ -6,7 +6,7 @@ exports[`terminal report snapshot > renders byte-identically: all 1`] = `
 
   [1mSummary[0m
   24 files scanned  ·  [1m15[0m WCAG violations  ·  [90m5 best-practice recommendations[0m  ·  [90m3 advisory (beyond AA)[0m  ·  [90m6 page-level (needs rendered page)[0m
-  [31m[1m■[0m [31m13 critical[0m   [33m[1m▲[0m [33m1 serious[0m   [36m●[0m [36m5 moderate[0m   [90m○[0m [90m1 minor[0m
+  [31m[1m■[0m [31m13 critical[0m   [33m[1m▲[0m [33m1 serious[0m   [36m●[0m [36m1 moderate[0m   [90m○[0m [90m0 minor[0m
   [90mcritical/serious = fix before shipping · moderate/minor = fix in next iteration[0m
   [90m3 routes detected · next-app 2 · html 1[0m
   [90m1 issue ignored via equall-ignore[0m
@@ -180,7 +180,7 @@ exports[`terminal report snapshot > renders byte-identically: default 1`] = `
 
   [1mSummary[0m
   24 files scanned  ·  [1m15[0m WCAG violations  ·  [90m5 best-practice recommendations[0m  ·  [90m3 advisory (beyond AA)[0m  ·  [90m6 page-level (needs rendered page)[0m
-  [31m[1m■[0m [31m13 critical[0m   [33m[1m▲[0m [33m1 serious[0m   [36m●[0m [36m5 moderate[0m   [90m○[0m [90m1 minor[0m
+  [31m[1m■[0m [31m13 critical[0m   [33m[1m▲[0m [33m1 serious[0m   [36m●[0m [36m1 moderate[0m   [90m○[0m [90m0 minor[0m
   [90mcritical/serious = fix before shipping · moderate/minor = fix in next iteration[0m
   [90m3 routes detected · next-app 2 · html 1[0m
   [90m1 issue ignored via equall-ignore[0m
@@ -308,7 +308,7 @@ exports[`terminal report snapshot > renders byte-identically: everything + wcag2
 
   [1mSummary[0m
   24 files scanned  ·  [1m15[0m WCAG violations  ·  [90m5 best-practice recommendations[0m  ·  [90m3 advisory (beyond A)[0m  ·  [90m6 page-level (needs rendered page)[0m
-  [31m[1m■[0m [31m13 critical[0m   [33m[1m▲[0m [33m1 serious[0m   [36m●[0m [36m5 moderate[0m   [90m○[0m [90m1 minor[0m
+  [31m[1m■[0m [31m13 critical[0m   [33m[1m▲[0m [33m1 serious[0m   [36m●[0m [36m1 moderate[0m   [90m○[0m [90m0 minor[0m
   [90mcritical/serious = fix before shipping · moderate/minor = fix in next iteration[0m
   [90m3 routes detected · next-app 2 · html 1[0m
   [90m1 issue ignored via equall-ignore[0m
@@ -504,7 +504,7 @@ exports[`terminal report snapshot > renders byte-identically: show-ignored 1`] =
 
   [1mSummary[0m
   24 files scanned  ·  [1m15[0m WCAG violations  ·  [90m5 best-practice recommendations[0m  ·  [90m3 advisory (beyond AA)[0m  ·  [90m6 page-level (needs rendered page)[0m
-  [31m[1m■[0m [31m13 critical[0m   [33m[1m▲[0m [33m1 serious[0m   [36m●[0m [36m5 moderate[0m   [90m○[0m [90m1 minor[0m
+  [31m[1m■[0m [31m13 critical[0m   [33m[1m▲[0m [33m1 serious[0m   [36m●[0m [36m1 moderate[0m   [90m○[0m [90m0 minor[0m
   [90mcritical/serious = fix before shipping · moderate/minor = fix in next iteration[0m
   [90m3 routes detected · next-app 2 · html 1[0m
   [90m1 issue ignored via equall-ignore[0m
@@ -635,7 +635,7 @@ exports[`terminal report snapshot > renders byte-identically: show-manual 1`] = 
 
   [1mSummary[0m
   24 files scanned  ·  [1m15[0m WCAG violations  ·  [90m5 best-practice recommendations[0m  ·  [90m3 advisory (beyond AA)[0m  ·  [90m6 page-level (needs rendered page)[0m
-  [31m[1m■[0m [31m13 critical[0m   [33m[1m▲[0m [33m1 serious[0m   [36m●[0m [36m5 moderate[0m   [90m○[0m [90m1 minor[0m
+  [31m[1m■[0m [31m13 critical[0m   [33m[1m▲[0m [33m1 serious[0m   [36m●[0m [36m1 moderate[0m   [90m○[0m [90m0 minor[0m
   [90mcritical/serious = fix before shipping · moderate/minor = fix in next iteration[0m
   [90m3 routes detected · next-app 2 · html 1[0m
   [90m1 issue ignored via equall-ignore[0m
@@ -815,7 +815,7 @@ exports[`terminal report snapshot > renders byte-identically: verbose 1`] = `
 
   [1mSummary[0m
   24 files scanned  ·  [1m15[0m WCAG violations  ·  [90m5 best-practice recommendations[0m  ·  [90m3 advisory (beyond AA)[0m  ·  [90m6 page-level (needs rendered page)[0m
-  [31m[1m■[0m [31m13 critical[0m   [33m[1m▲[0m [33m1 serious[0m   [36m●[0m [36m5 moderate[0m   [90m○[0m [90m1 minor[0m
+  [31m[1m■[0m [31m13 critical[0m   [33m[1m▲[0m [33m1 serious[0m   [36m●[0m [36m1 moderate[0m   [90m○[0m [90m0 minor[0m
   [90mcritical/serious = fix before shipping · moderate/minor = fix in next iteration[0m
   [90m3 routes detected · next-app 2 · html 1[0m
   [90m1 issue ignored via equall-ignore[0m

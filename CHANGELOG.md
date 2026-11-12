@@ -9,13 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Best-practice findings no longer affect the score (`score_model` 3).** Findings with no
+  WCAG criterion (for example axe `region` and `heading-order`) stay in the report, the
+  best-practice recommendations section, the diff's advisory list and CI notices, but carry
+  no weight. Scores rise or stay the same on projects that had best-practice findings and
+  are unchanged elsewhere. Scores from `score_model` 2 and 3 are not comparable: rescan both
+  sides of a before/after. `--min-score` thresholds are now checked against the new score,
+  so a gate that failed only because of best-practice findings now passes. The terminal's
+  severity counts no longer include best-practice findings (the JSON `summary.by_severity`
+  still counts them). Issues, fingerprints, conformance verdicts, coverage and the diff gate
+  are unchanged by this change.
 - **Redundant ARIA roles are best-practice recommendations, no longer WCAG 4.1.2
   violations.** `jsx-a11y/no-redundant-roles` (a role equal to the element's implicit
   role, such as `<button role="button">`) is reported as a minor best practice with an
   explanation and a link to the W3C guidance ("Avoid specifying redundant roles", ARIA in
-  HTML). It no longer fails 4.1.2. It is no longer counted among the 4.1.2 issues but
-  scored as its own minor best practice, so a project's score usually rises and can, in rare
-  cases, move slightly down (a file that already had many heavier 4.1.2 failures).
+  HTML). It no longer fails 4.1.2 and, as a best practice, does not weigh on the score,
+  so a project's score rises or stays the same.
 - **`role="list"` on `ul`/`ol` and `role="listitem"` on `li` are no longer reported.**
   This is the workaround for Safari/VoiceOver dropping list semantics under
   `list-style: none` (https://www.scottohara.me/blog/2019/01/12/lists-and-safari.html).

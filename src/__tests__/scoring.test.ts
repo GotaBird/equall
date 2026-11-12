@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { computeScanResult, isBeyondTarget } from '../scoring/score.js'
-import { runScan } from '../scan.js'
+import { runScan, scanBuffer } from '../scan.js'
 import type { EquallIssue, WcagLevel } from '../types.js'
 
 function makeIssue(overrides: Partial<EquallIssue> = {}): EquallIssue {
@@ -110,18 +110,6 @@ describe('computeScore', () => {
     expect(solo).toBe(inRepo)
   })
 
-  it('unmapped best-practice rules damp per rule, not against each other', () => {
-    const ruleA = Array.from({ length: 3 }, () =>
-      makeIssue({ wcag_criteria: [], wcag_level: null as unknown as WcagLevel, scanner_rule_id: 'rule-a' })
-    )
-    const ruleB = [makeIssue({ wcag_criteria: [], wcag_level: null as unknown as WcagLevel, scanner_rule_id: 'rule-b' })]
-    const together = computeScanResult([...ruleA, ...ruleB], 10, [], 100).score
-    const aOnly = computeScanResult(ruleA, 10, [], 100).score
-    // Adding a distinct rule's issue must penalize at full weight (rank 1 of
-    // its own key), i.e. strictly lower the score below the rule-a-only score.
-    expect(together).toBeLessThan(aOnly)
-  })
-
   it('score never goes below 0', () => {
     const manyIssues = Array.from({ length: 50 }, (_, i) =>
       makeIssue({ severity: 'critical', wcag_criteria: [`${(i % 4) + 1}.1.${i + 1}`] })
@@ -129,6 +117,85 @@ describe('computeScore', () => {
     const result = computeScanResult(manyIssues, 1, [], 100)
     expect(result.score).toBeGreaterThanOrEqual(0)
   })
+})
+
+// Score model 3: a finding with no WCAG criterion is a recommendation. It stays in the
+// result (issues, summary counts) and never weighs on the score (charter, invariant 3).
+describe('best-practice findings never score (model 3)', () => {
+  const bestPractice = (overrides: Partial<EquallIssue> = {}): EquallIssue =>
+    makeIssue({ wcag_criteria: [], wcag_level: null, pour: null, ...overrides })
+
+  const BEST_PRACTICES: EquallIssue[] = [
+    bestPractice({ scanner_rule_id: 'rule-a', severity: 'critical' }),
+    bestPractice({ scanner_rule_id: 'rule-a', severity: 'serious' }),
+    bestPractice({ scanner_rule_id: 'rule-b', severity: 'moderate' }),
+    bestPractice({ scanner: 'other', scanner_rule_id: 'rule-c', severity: 'minor' }),
+  ]
+
+  const WCAG: EquallIssue[] = [
+    makeIssue({ severity: 'critical' }),
+    makeIssue({ severity: 'minor' }),
+    makeIssue({ severity: 'serious', wcag_criteria: ['2.4.4'], pour: 'operable' }),
+    makeIssue({ severity: 'moderate', wcag_criteria: ['1.4.3'], wcag_level: 'AA' }),
+  ]
+
+  it('a set of best-practice findings only scores 100, whatever the rules and severities', () => {
+    const result = computeScanResult(BEST_PRACTICES, 10, [], 100)
+    expect(result.score).toBe(100)
+    // Still reported: the summary counts them.
+    expect(result.summary.total_issues).toBe(BEST_PRACTICES.length)
+    expect(result.summary.by_severity.critical).toBe(1)
+  })
+
+  it('a mixed set scores exactly as its WCAG findings alone', () => {
+    const wcagOnly = computeScanResult(WCAG, 10, [], 100).score
+    const mixed = computeScanResult([...BEST_PRACTICES, ...WCAG], 10, [], 100).score
+    expect(wcagOnly).toBeLessThan(100)
+    expect(mixed).toBe(wcagOnly)
+  })
+
+  it('fix-sensitivity holds for every scored finding, and only for those', () => {
+    const mixed = [...WCAG, ...BEST_PRACTICES]
+    const base = computeScanResult(mixed, 10, [], 100).score
+    // Resolving any single WCAG finding strictly raises the score.
+    for (let i = 0; i < WCAG.length; i++) {
+      const without = mixed.filter((_, index) => index !== i)
+      expect(computeScanResult(without, 10, [], 100).score).toBeGreaterThan(base)
+    }
+    // Resolving any single best-practice finding leaves it equal.
+    for (let i = WCAG.length; i < mixed.length; i++) {
+      const without = mixed.filter((_, index) => index !== i)
+      expect(computeScanResult(without, 10, [], 100).score).toBe(base)
+    }
+  })
+
+  it('stamps score_model 3 on the result', () => {
+    expect(computeScanResult([], 10, [], 100).score_model).toBe(3)
+  })
+
+  it('real pipeline: a page whose only finding is an axe best practice scores 100 and still reports it', async () => {
+    // h1 → h3 skips a heading level: axe `heading-order`, a best practice with no WCAG criterion.
+    const page = `<!DOCTYPE html>
+<html lang="en">
+  <head><title>Fixture</title></head>
+  <body>
+    <main>
+      <h1>Fixture page</h1>
+      <p>Intro</p>
+      <h3>Details</h3>
+    </main>
+  </body>
+</html>`
+    const result = await scanBuffer(page, 'index.html')
+    const active = result.issues.filter(i => !i.ignored && !i.review_only)
+    const headingOrder = active.filter(i => i.scanner_rule_id === 'heading-order')
+    expect(headingOrder).toHaveLength(1)
+    expect(headingOrder[0].wcag_criteria).toEqual([])
+    // The fixture must carry no WCAG finding, or the score assertion proves nothing.
+    expect(active.filter(i => i.wcag_criteria.length > 0)).toEqual([])
+    expect(result.score).toBe(100)
+    expect(result.score_model).toBe(3)
+  }, 30000)
 })
 
 describe('scoring gaming (integration, real pipeline)', () => {
@@ -227,7 +294,7 @@ describe('beyond-target (AAA) exclusion from conformance', () => {
     expect(isBeyondTarget(aaa, 'AAA')).toBe(false)
   })
 
-  it('isBeyondTarget: an issue without a level is always in scope', () => {
+  it('isBeyondTarget: an issue without a level is never beyond target', () => {
     const bp = makeIssue({ wcag_level: null as unknown as WcagLevel, wcag_criteria: [] })
     expect(isBeyondTarget(bp, 'A')).toBe(false)
   })

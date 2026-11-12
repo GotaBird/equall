@@ -3,7 +3,7 @@
 > **Status:** governing document for all score work. Every change to the scoring model, its
 > inputs, its aggregation, or its display must comply with the invariants below, or explicitly
 > amend this charter first (see *Amending this charter*).
-> **Version:** 1.1 · 2026-07-09 · arbitrated by the maintainer.
+> **Version:** 1.2 · 2026-11-12 · arbitrated by the maintainer.
 > This file is the canonical home of the charter — agents and contributors load it from here.
 
 ## What the score is — and is not
@@ -34,17 +34,23 @@ a **separate worst-case indicator** (e.g. "score 78 · ⚠ critical failure pres
 *worst page* KPI). They are never blended into the average — a blended number both dilutes the
 alarm and distorts the trend.
 
-### 3 · The formula is a function of failures only
+### 3 · The formula is a function of WCAG failures only
 
-File count never appears in the formula; the penalty is a function of the deduplicated issue
-multiset only. Opportunities (the elements a criterion applies to — images, controls, links,
-headings, …) inform reporting context and page-level normalization (planned), never the
-repo-level number.
+File count never appears in the formula; the penalty is a function of the deduplicated multiset
+of WCAG failures within the conformance target only. Best-practice findings (no WCAG criterion)
+are recommendations, not failures: they are reported, never scored. Findings above the target
+(e.g. AAA under an AA target) are advisory and never scored either. Opportunities (the elements
+a criterion applies to — images, controls, links, headings, …) inform reporting context and
+page-level normalization (planned), never the repo-level number.
 *Why:* code-quality risk is statistical and averages honestly; accessibility harm is per
 encounter — one blocking failure blocks a person regardless of the clean code around it. Code
 debt averages; inaccessibility is encountered. A density with opportunities in the denominator
 is padding-gameable (verified in simulation: 20 clean form controls raised a score by ~15
 points); the encounter framing survives by keeping opportunities as context, not divisor.
+*Why best practices stay out:* the score shows progression on the failures that block people
+under WCAG. A best-practice finding weighing on it would let advice outweigh conformance work
+and move the trend for reasons no criterion recognizes; it keeps its value in the report as a
+recommendation.
 Consequences: inert files or elements cannot dilute the score; a single-buffer scan
 (`scanBuffer`, the API/MCP path) is not structurally penalized; the user-facing aggregation unit
 is the page/journey (the unit people experience), never the file (the unit developers edit).
@@ -55,7 +61,7 @@ Every candidate scoring model must pass, on a fixed dogfood corpus and in the re
 
 | Property | Test |
 | -- | -- |
-| **Fix-sensitivity** | Resolving any single issue strictly moves the number. |
+| **Fix-sensitivity** | Resolving any single scored issue (WCAG-mapped, within the target) strictly moves the number. Resolving a best-practice or above-target finding does not, by design (invariant 3). |
 | **Padding-resistance** | Adding inert files/elements/engines never raises the number. |
 | **Mono-file fairness** | `scanBuffer` scans are not structurally penalized. |
 | **Continuity** | `score_model` is versioned; deltas are computed and displayed only between identical model versions and comparable scan bases. |
@@ -66,7 +72,8 @@ These are acceptance criteria, not aspirations: each has a named test in the sui
 
 Multi-signal heuristics (alt-quality flags, future confidence rules) live in the advisory layer
 (`confidence_flags`). A heuristic can inform a human or an agent; it can never silently move the
-score or a verdict. Only deterministic, rule-mapped findings score.
+score or a verdict. Only deterministic, rule-mapped WCAG findings within the target score
+(invariant 3).
 *Why:* a heuristic inside an audit-adjacent number is a liability — advisory signals keep their
 value only while they carry no authority.
 
@@ -100,6 +107,7 @@ maintainer. Every adopted change bumps `score_model` and explains the movement i
 | Is this criterion met? | `criterion_conformance` | Absolute, WCAG-aligned, legal-adjacent |
 | What couldn't automation see? | Coverage + "needs a human" | Honesty layer |
 | Might this be a problem? | `confidence_flags` | Advisory, never scores |
+| What would improve usability beyond WCAG? | Best-practice recommendations | Reported, never scores |
 | Better or worse than last scan? | **The score** | Trend, automated basis only |
 | Where is it worst? | Worst-case indicator / worst page | Alarm, separate from the average |
 
@@ -111,6 +119,13 @@ the maintainer and recorded in this file's version history. Silence is not an am
 
 ## Version history
 
+* **1.2** (2026-11-12) — invariant 3 amended from "a function of failures only" to "a function of
+  WCAG failures only": best-practice findings (no WCAG criterion) are reported, never scored.
+  Fix-sensitivity restated accordingly: it holds for every scored issue. Motivation: the score is
+  a progression instrument for conformance work, and best practices weighed on it like failures;
+  on the dogfood corpus they held one full-document site 7.6 points down (axe `region` and
+  `heading-order`) while every other project was unaffected. Adopted together with scoring
+  model 3 (model 2 without best-practice penalties; see CHANGELOG).
 * **1.1** (2026-07-09) — invariant 3 amended from "the denominator is opportunities, never
   files" to "the formula is a function of failures only". Motivation: simulation showed a pure
   opportunity-density model is structurally padding-gameable (raising the opportunity count with
