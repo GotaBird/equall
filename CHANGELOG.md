@@ -28,10 +28,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **The terminal's best-practice section prints each rule's explanation and documentation
   link.** Under a rule, the report now shows the explanation the JSON carries as
   `suggestion` when the rule has one (for example the redundant-role explanation), the
-  short built-in hint otherwise, then a `Learn more:` line with the rule's `help_url`. For
-  axe-core rules the built-in hint is kept, since their `suggestion` describes one element,
-  not the rule; an axe-core rule with no hint prints that summary instead of "See the rule
-  documentation". The JSON output is unchanged.
+  short built-in hint otherwise, then a `Learn more:` line with the rule's `help_url`. axe-core
+  rules keep their built-in hint; an axe-core rule with no hint prints its failure summary
+  instead of "See the rule documentation". The JSON output is unchanged.
 - **`role="list"` on `ul`/`ol` and `role="listitem"` on `li` are no longer reported.**
   This is the workaround for Safari/VoiceOver dropping list semantics under
   `list-style: none` (https://www.scottohara.me/blog/2019/01/12/lists-and-safari.html).
