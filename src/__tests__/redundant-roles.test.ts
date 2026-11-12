@@ -79,14 +79,14 @@ const title = 'x'
     expect(issues[0].severity).toBe('minor')
   })
 
-  it('no longer fails 4.1.2 and costs one minor best practice in the score', async () => {
+  it('no longer fails 4.1.2 and, as a best practice, does not weigh on the score', async () => {
     const result = await scanBuffer(
       component(`      <button role="button" type="button">Go</button>`),
       'One.jsx'
     )
     expect(redundant(result)).toHaveLength(1)
-    // score_model 2: one minor best practice → 100 · exp(-0.01 · 1)
-    expect(result.score).toBe(99.0)
+    // score_model 3: best-practice findings are reported, never scored.
+    expect(result.score).toBe(100)
     const c412 = result.criterion_conformance?.find((c) => c.criterion === '4.1.2')
     expect(c412?.verdict).not.toBe('fail')
   })
