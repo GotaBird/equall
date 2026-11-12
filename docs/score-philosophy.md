@@ -39,9 +39,9 @@ alarm and distorts the trend.
 File count never appears in the formula; the penalty is a function of the deduplicated multiset
 of WCAG failures within the conformance target only. Best-practice findings (no WCAG criterion)
 are recommendations, not failures: they are reported, never scored. Findings above the target
-(e.g. AAA under an AA target) are advisory and never scored either. Opportunities (the elements a criterion applies to — images, controls, links,
-headings, …) inform reporting context and page-level normalization (planned), never the
-repo-level number.
+(e.g. AAA under an AA target) are advisory and never scored either. Opportunities (the elements
+a criterion applies to — images, controls, links, headings, …) inform reporting context and
+page-level normalization (planned), never the repo-level number.
 *Why:* code-quality risk is statistical and averages honestly; accessibility harm is per
 encounter — one blocking failure blocks a person regardless of the clean code around it. Code
 debt averages; inaccessibility is encountered. A density with opportunities in the denominator
@@ -72,10 +72,10 @@ These are acceptance criteria, not aspirations: each has a named test in the sui
 
 Multi-signal heuristics (alt-quality flags, future confidence rules) live in the advisory layer
 (`confidence_flags`). A heuristic can inform a human or an agent; it can never silently move the
-score or a verdict. Only deterministic, rule-mapped findings score.
-*Why:* a heuristic inside an audit-adjacent number is a liability — advisory signals keep their
-value only while they carry no authority. Only WCAG-mapped findings within the target score
+score or a verdict. Only deterministic, rule-mapped WCAG findings within the target score
 (invariant 3).
+*Why:* a heuristic inside an audit-adjacent number is a liability — advisory signals keep their
+value only while they carry no authority.
 
 ### 6 · No per-repo weight customization
 

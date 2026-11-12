@@ -12,8 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Best-practice findings no longer affect the score (`score_model` 3).** Findings with no
   WCAG criterion (for example axe `region` and `heading-order`) stay in the report, the
   best-practice recommendations section, the diff's advisory list and CI notices, but carry
-  no weight. Scores rise on projects that had best-practice findings and are unchanged
-  elsewhere. Scores from `score_model` 2 and 3 are not comparable: rescan both sides of a
+  no weight. Scores rise or stay the same on projects that had best-practice findings and
+  are unchanged elsewhere. Scores from `score_model` 2 and 3 are not comparable: rescan both sides of a
   before/after. `--min-score` thresholds are now checked against the new score, so a gate
   that failed only because of best-practice findings now passes. Issues, fingerprints,
   conformance verdicts, coverage and the diff gate are unchanged by this change.
