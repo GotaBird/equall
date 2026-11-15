@@ -50,7 +50,7 @@ describe('computeScore', () => {
     expect(critical.score).toBeLessThan(minor.score)
   })
 
-  it('fix-sensitivity: resolving one issue in a saturated criterion strictly raises the score', () => {
+  it('fix-sensitivity: resolving one issue in a saturated criterion still raises the score', () => {
     // Model 1 capped per-criterion penalty at 15, so fixing 1 of 30 identical
     // failures moved nothing. Model 2 must credit every single fix.
     const thirty = Array.from({ length: 30 }, () => makeIssue({ severity: 'critical' }))
@@ -154,10 +154,11 @@ describe('best-practice findings never score (model 3)', () => {
     expect(mixed).toBe(wcagOnly)
   })
 
-  it('fix-sensitivity holds for every scored finding, and only for those', () => {
+  it('fix-sensitivity: every scored finding weighs on the penalty, and only those', () => {
     const mixed = [...WCAG, ...BEST_PRACTICES]
     const base = computeScanResult(mixed, 10, [], 100).score
-    // Resolving any single WCAG finding strictly raises the score.
+    // Resolving any single WCAG finding reduces the penalty; at this size the two-decimal
+    // score shows it.
     for (let i = 0; i < WCAG.length; i++) {
       const without = mixed.filter((_, index) => index !== i)
       expect(computeScanResult(without, 10, [], 100).score).toBeGreaterThan(base)

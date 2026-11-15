@@ -136,6 +136,41 @@ describe('the terminal and the JSON agree on the severity breakdown', () => {
     expect(terminalSeverityCounts(result)).toEqual(result.summary.by_severity)
   }, 30000)
 
+  it('real pipeline: ignored and review-only findings are counted nowhere in the summary', async () => {
+    // One file with every kind: counted WCAG failures, an ignored one (equall-ignore) and
+    // findings static analysis cannot confirm (spread props, a link whose content is a
+    // component or an expression), reported as review-only.
+    const component = `export function Card(props: any) {
+  return (
+    <div>
+      <img src="a.png" {...props} />
+      {/* equall-ignore-next-line */}
+      <img src="b.png" />
+      <img src="c.png" />
+      <button {...props}></button>
+      <Link href="/x"><Icon /></Link>
+      <a href="/y">{props.label}</a>
+    </div>
+  )
+}`
+    const result = await scanBuffer(component, 'Card.tsx')
+    const ignored = result.issues.filter(issue => issue.ignored)
+    const reviewOnly = result.issues.filter(issue => issue.review_only && !issue.ignored)
+    const counted = result.issues.filter(issue => !issue.ignored && !issue.review_only)
+    expect(ignored.length).toBeGreaterThan(0)
+    expect(reviewOnly.length).toBeGreaterThan(0)
+    expect(counted.length).toBeGreaterThan(0)
+
+    const expected = { ...ZERO }
+    for (const issue of counted) {
+      if (issue.wcag_criteria.length > 0 && issue.wcag_level !== 'AAA') expected[issue.severity]++
+    }
+    expect(result.summary.by_severity).toEqual(expected)
+    expect(result.summary.total_issues).toBe(counted.length)
+    expect(result.summary.ignored_count).toBe(ignored.length)
+    expect(terminalSeverityCounts(result)).toEqual(result.summary.by_severity)
+  }, 30000)
+
   it('real pipeline: a page whose only finding is a best practice has zero in every bucket', async () => {
     const page = `<!DOCTYPE html>
 <html lang="en">

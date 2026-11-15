@@ -174,8 +174,9 @@ function computeScore(issues: EquallIssue[], targetLevel: WcagLevel): number {
   const score = 100 * Math.exp(-SCORE_DECAY_K * totalPenalty)
 
   // Two-decimal precision: small fixes inside heavily damped criteria move
-  // the score by fractions of a point — integer rounding would absorb them
-  // and break fix-sensitivity.
+  // the score by fractions of a point, which integer rounding would absorb.
+  // At a high total penalty a fix can still fall below two decimals: it
+  // reduces the penalty, the displayed score stays the same.
   return Math.max(0, Math.round(score * 100) / 100)
 }
 

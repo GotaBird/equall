@@ -3,7 +3,7 @@
 > **Status:** governing document for all score work. Every change to the scoring model, its
 > inputs, its aggregation, or its display must comply with the invariants below, or explicitly
 > amend this charter first (see *Amending this charter*).
-> **Version:** 1.2 · 2026-11-12 · arbitrated by the maintainer.
+> **Version:** 1.3 · 2026-11-15 · arbitrated by the maintainer.
 > This file is the canonical home of the charter — agents and contributors load it from here.
 
 ## What the score is — and is not
@@ -119,6 +119,9 @@ the maintainer and recorded in this file's version history. Silence is not an am
 
 ## Version history
 
+* **1.3** (2026-11-15) — fix-sensitivity restated on the penalty, not on the displayed number:
+  resolving a scored issue always reduces the penalty, and the two-decimal score can stay the
+  same when the total penalty is high. No change to the invariants or to the scoring model.
 * **1.2** (2026-11-12) — invariant 3 amended from "a function of failures only" to "a function of
   WCAG failures only": best-practice findings (no WCAG criterion) are reported, never scored.
   Fix-sensitivity restated accordingly: it holds for every scored issue. Motivation: the score is
