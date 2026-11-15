@@ -61,12 +61,12 @@ Every candidate scoring model must pass, on a fixed dogfood corpus and in the re
 
 | Property | Test |
 | -- | -- |
-| **Fix-sensitivity** | Resolving any single scored issue (WCAG-mapped, within the target) strictly moves the number. Resolving a best-practice or above-target finding does not, by design (invariant 3). |
+| **Fix-sensitivity** | Each scored issue (WCAG-mapped and within the target) contributes a positive term to the penalty. Resolving an issue therefore reduces the penalty, although the displayed score may remain unchanged due to two-decimal rounding, particularly when the total penalty is high. Best-practice and above-target findings do not contribute to the penalty (invariant 3). |
 | **Padding-resistance** | Adding inert files/elements/engines never raises the number. |
 | **Mono-file fairness** | `scanBuffer` scans are not structurally penalized. |
 | **Continuity** | `score_model` is versioned; deltas are computed and displayed only between identical model versions and comparable scan bases. |
 
-These are acceptance criteria, not aspirations: each has a named test in the suite.
+Each property is covered by a dedicated test in the suite.
 
 ### 5 · Compound signals advise, they never score
 

@@ -142,9 +142,9 @@ describe('best-practice findings never score (model 3)', () => {
   it('a set of best-practice findings only scores 100, whatever the rules and severities', () => {
     const result = computeScanResult(BEST_PRACTICES, 10, [], 100)
     expect(result.score).toBe(100)
-    // Still reported: the summary counts them.
+    // Still reported: the total counts them. The severity breakdown does not.
     expect(result.summary.total_issues).toBe(BEST_PRACTICES.length)
-    expect(result.summary.by_severity.critical).toBe(1)
+    expect(result.summary.by_severity).toEqual({ critical: 0, serious: 0, moderate: 0, minor: 0 })
   })
 
   it('a mixed set scores exactly as its WCAG findings alone', () => {
