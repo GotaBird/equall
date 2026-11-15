@@ -7,44 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-15
+
+The score now measures WCAG failures only (`score_model` 3). Scores from 0.3.x and 0.4.0 are
+not comparable: rescan both sides of a before/after.
+
 ### Changed
 
 - **Best-practice findings no longer affect the score (`score_model` 3).** Findings with no
   WCAG criterion (for example axe `region` and `heading-order`) stay in the report, the
   best-practice recommendations section, the diff's advisory list and CI notices, but carry
-  no weight. Scores rise or stay the same on projects that had best-practice findings and
-  are unchanged elsewhere. Scores from `score_model` 2 and 3 are not comparable: rescan both
-  sides of a before/after. `--min-score` thresholds are now checked against the new score,
-  so a gate that failed only because of best-practice findings now passes. The terminal's
-  severity counts no longer include best-practice findings. Issues, fingerprints,
+  no weight. The terminal's severity counts no longer include them. Issues, fingerprints,
   conformance verdicts, coverage and the diff gate are unchanged by this change.
-- **The JSON `summary.by_severity` counts scored findings only.** The field keeps its shape;
-  its values change. It covers WCAG failures within the target level, like the terminal's
-  severity line. Best-practice findings and findings above the target (for example a AAA
-  criterion under an AA target) are no longer counted there, so its four values can add up
-  to less than `summary.total_issues`. `summary.total_issues`, `summary.by_scanner` and
-  `summary.criteria_failed` are unchanged: they cover every counted finding (not ignored,
-  not review-only), best-practice and above-target findings included. To count those two
-  kinds by severity, read `issues`: entries with `wcag_criteria: []`, or with a
-  `wcag_level` above the target, leaving out the entries marked `ignored` or `review_only`.
+- **Breaking: `summary.by_severity` now counts scored findings only.** Its four values can
+  add up to less than `summary.total_issues`: best-practice findings and findings above the
+  target level (for example a AAA criterion under an AA target) no longer count there,
+  though they still count in `summary.total_issues`, `summary.by_scanner` and
+  `summary.criteria_failed`, which are unchanged.
+- **To count best-practice and above-target findings by severity, read `issues` directly.**
+  Filter entries with `wcag_criteria: []` or a `wcag_level` above the target, leaving out
+  entries marked `ignored` or `review_only`.
 - **Redundant ARIA roles are best-practice recommendations, no longer WCAG 4.1.2
   violations.** `jsx-a11y/no-redundant-roles` (a role equal to the element's implicit
   role, such as `<button role="button">`) is reported as a minor best practice with an
   explanation and a link to the W3C guidance ("Avoid specifying redundant roles", ARIA in
-  HTML). It no longer fails 4.1.2 and, as a best practice, does not weigh on the score,
-  so a project's score rises or stays the same.
+  HTML). It no longer fails 4.1.2.
+- **`role="list"` on `ul`/`ol` and `role="listitem"` on `li` are no longer reported.**
+  Background: https://www.scottohara.me/blog/2019/01/12/lists-and-safari.html.
 - **The terminal's best-practice section prints each rule's explanation and documentation
   link.** Under a rule, the report now shows the explanation the JSON carries as
   `suggestion` when the rule has one (for example the redundant-role explanation), the
   short built-in hint otherwise, then a `Learn more:` line with the rule's `help_url`. axe-core
   rules keep their built-in hint; an axe-core rule with no hint prints its failure summary
   instead of "See the rule documentation". The JSON output is unchanged.
-- **`role="list"` on `ul`/`ol` and `role="listitem"` on `li` are no longer reported.**
-  This is the workaround for Safari/VoiceOver dropping list semantics under
-  `list-style: none` (https://www.scottohara.me/blog/2019/01/12/lists-and-safari.html).
-- **Fingerprints**: the remaining redundant-role findings get a new fingerprint (their WCAG
-  criteria changed from `4.1.2` to none); the list-role findings disappear. Consumers that
-  track issues by fingerprint see one finding gone and one new per occurrence.
+- **Fixing a scored finding lowers the penalty, even when the displayed two-decimal score
+  does not move.** Documented in the score charter (`docs/score-philosophy.md`).
+- **The GitHub Action stays on 0.3.x.** Its default version range does not include 0.4.0;
+  a release of the Action that moves to 0.4.0 follows. Until then, pull request checks run
+  by the Action keep the 0.3.x findings.
 
 ### Fixed
 
@@ -52,13 +52,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   A comment such as `// no image resource to put in an <img src>` next to the JSX was read
   as an `<img>` without alternative text and reported by axe-core (`image-alt`, on the
   comment's line). A `<` inside a comment (`//`, `/* */` and `{/* */}`) can no longer open
-  an element. These false findings disappear, with their fingerprints.
-- **What else can move in a file that had such a comment**: a real finding the phantom
-  element was hiding can now appear (for example an unlabelled `<input>` after a comment
-  naming a `<label>`), which lowers the score and shows as new in a diff; a finding on an
-  element that contains such a comment gets a new fingerprint; a finding that was reported
-  once without a line, because a comment named the same tag as the real element, is now
-  reported on its line. Files with no `<` inside a comment are unaffected.
+  an element. These false findings disappear.
+
+### Security
+
+- **The bundled `undici` is updated from 7.29.1 to 7.30.2.** It ships inside the package
+  through `cheerio`. 7.29.1 carries eight published advisories on its HTTP, TLS and
+  WebSocket clients, four of them rated high (GHSA-xjj6-f33q-929c, GHSA-4w7w-5xrc-9h26,
+  GHSA-2m5v-pch6-74hx, GHSA-qrxm-fqhp-jwvm), all fixed in 7.30.1. Equall parses markup in
+  memory and makes no network request through it.
+
+### Score and fingerprint impact
+
+- **Scores rise or stay the same on projects that had best-practice or redundant-role
+  findings, and are unchanged elsewhere.** Measured against 0.3.7 on ten projects: seven
+  keep their score; a full-document site with twelve best-practice findings goes from 75.63
+  to 83.25; a public React example app with one `role="list"` goes from 95.12 to 100; a
+  fixture of five redundant roles goes from 89.21 to 100.
+- **A score can fall in one case**: a `.jsx` or `.tsx` file where a comment containing a `<`
+  was hiding a real defect (for example an unlabelled `<input>` after a comment naming a
+  `<label>`). The defect is now reported. None of the ten projects has the case.
+- **`--min-score` is checked against the new score.** A gate that failed only because of
+  best-practice findings now passes.
+- **`--diff` is unaffected by the model change**: it scans base and head with the same
+  engine.
+- **Redundant roles**: the remaining findings get a new fingerprint (their WCAG criteria
+  changed from `4.1.2` to none); the `role="list"` and `role="listitem"` findings
+  disappear. Consumers that track issues by fingerprint see one finding gone and one new
+  per remaining occurrence.
+- **Comments in `.jsx` and `.tsx`** (only in a file with a `<` inside a comment). Gone: the
+  false findings. New: the real finding the phantom element was hiding. New fingerprint: a
+  finding on an element that contains such a comment. Relocated: a finding once reported
+  without a line, because a comment named the same tag as the real element, now reported
+  on its line.
+- **Everything else is unchanged.** On the ten projects, 216 findings: 210 keep their
+  fingerprint, 6 are gone (all redundant roles) and 2 are new (the two redundant roles that
+  remain, as best practices).
 
 ## [0.3.7] - 2026-11-08
 
