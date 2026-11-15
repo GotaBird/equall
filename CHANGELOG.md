@@ -5,6 +5,8 @@ All notable changes to Equall CLI are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
 ## [0.4.0] - 2026-11-15
 
 The score now measures WCAG failures only (`score_model` 3). Scores from 0.3.x and 0.4.0 are
@@ -38,8 +40,8 @@ not comparable: rescan both sides of a before/after.
   short built-in hint otherwise, then a `Learn more:` line with the rule's `help_url`. axe-core
   rules keep their built-in hint; an axe-core rule with no hint prints its failure summary
   instead of "See the rule documentation". The JSON output is unchanged.
-- **Fixing a scored finding always lowers the penalty, even when the displayed two-decimal
-  score does not move.** Documented in the score charter (`docs/score-philosophy.md`).
+- **Fixing a scored finding lowers the penalty, even when the displayed two-decimal score
+  does not move.** Documented in the score charter (`docs/score-philosophy.md`).
 - **The GitHub Action stays on 0.3.x.** Its default version range does not include 0.4.0;
   a release of the Action that moves to 0.4.0 follows. Until then, pull request checks run
   by the Action keep the 0.3.x findings.
