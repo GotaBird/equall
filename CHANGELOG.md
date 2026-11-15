@@ -16,9 +16,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   are unchanged elsewhere. Scores from `score_model` 2 and 3 are not comparable: rescan both
   sides of a before/after. `--min-score` thresholds are now checked against the new score,
   so a gate that failed only because of best-practice findings now passes. The terminal's
-  severity counts no longer include best-practice findings (the JSON `summary.by_severity`
-  still counts them). Issues, fingerprints, conformance verdicts, coverage and the diff gate
-  are unchanged by this change.
+  severity counts no longer include best-practice findings. Issues, fingerprints,
+  conformance verdicts, coverage and the diff gate are unchanged by this change.
+- **The JSON `summary.by_severity` counts scored findings only.** The field keeps its shape;
+  its values change. It covers WCAG failures within the target level, like the terminal's
+  severity line. Best-practice findings and findings above the target (for example a AAA
+  criterion under an AA target) are no longer counted there, so its four values can add up
+  to less than `summary.total_issues`. `summary.total_issues`, `summary.by_scanner` and
+  `summary.criteria_failed` are unchanged: they cover every counted finding (not ignored,
+  not review-only), best-practice and above-target findings included. To count those two
+  kinds by severity, read `issues`: entries with `wcag_criteria: []`, or with a
+  `wcag_level` above the target, leaving out the entries marked `ignored` or `review_only`.
 - **Redundant ARIA roles are best-practice recommendations, no longer WCAG 4.1.2
   violations.** `jsx-a11y/no-redundant-roles` (a role equal to the element's implicit
   role, such as `<button role="button">`) is reported as a minor best practice with an

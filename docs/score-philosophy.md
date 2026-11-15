@@ -3,7 +3,7 @@
 > **Status:** governing document for all score work. Every change to the scoring model, its
 > inputs, its aggregation, or its display must comply with the invariants below, or explicitly
 > amend this charter first (see *Amending this charter*).
-> **Version:** 1.2 · 2026-11-12 · arbitrated by the maintainer.
+> **Version:** 1.3 · 2026-11-15 · arbitrated by the maintainer.
 > This file is the canonical home of the charter — agents and contributors load it from here.
 
 ## What the score is — and is not
@@ -61,12 +61,12 @@ Every candidate scoring model must pass, on a fixed dogfood corpus and in the re
 
 | Property | Test |
 | -- | -- |
-| **Fix-sensitivity** | Resolving any single scored issue (WCAG-mapped, within the target) strictly moves the number. Resolving a best-practice or above-target finding does not, by design (invariant 3). |
+| **Fix-sensitivity** | Each scored issue (WCAG-mapped and within the target) contributes a positive term to the penalty. Resolving an issue therefore reduces the penalty, although the displayed score may remain unchanged due to two-decimal rounding, particularly when the total penalty is high. Best-practice and above-target findings do not contribute to the penalty (invariant 3). |
 | **Padding-resistance** | Adding inert files/elements/engines never raises the number. |
 | **Mono-file fairness** | `scanBuffer` scans are not structurally penalized. |
 | **Continuity** | `score_model` is versioned; deltas are computed and displayed only between identical model versions and comparable scan bases. |
 
-These are acceptance criteria, not aspirations: each has a named test in the suite.
+Each property is covered by a dedicated test in the suite.
 
 ### 5 · Compound signals advise, they never score
 
@@ -119,6 +119,9 @@ the maintainer and recorded in this file's version history. Silence is not an am
 
 ## Version history
 
+* **1.3** (2026-11-15) — fix-sensitivity restated on the penalty, not on the displayed number:
+  resolving a scored issue always reduces the penalty, and the two-decimal score can stay the
+  same when the total penalty is high. No change to the invariants or to the scoring model.
 * **1.2** (2026-11-12) — invariant 3 amended from "a function of failures only" to "a function of
   WCAG failures only": best-practice findings (no WCAG criterion) are reported, never scored.
   Fix-sensitivity restated accordingly: it holds for every scored issue. Motivation: the score is

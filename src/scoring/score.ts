@@ -58,7 +58,7 @@ export function computeScanResult(
   // (early returns, unit tests) get an honest empty exercised set.
   exercised: string[] = []
 ): ScanResult {
-  const summary = computeSummary(issues, filesScanned, exercised)
+  const summary = computeSummary(issues, filesScanned, targetLevel, exercised)
   const score = computeScore(issues, targetLevel)
   const conformanceLevel = computeConformanceLevel(issues, summary, targetLevel)
 
@@ -77,7 +77,20 @@ export function computeScanResult(
   }
 }
 
-function computeSummary(issues: EquallIssue[], filesScanned: number, exercised: string[] = []): ScanSummary {
+// A scored finding: a WCAG failure within the target. Best-practice findings (no WCAG
+// criterion) are recommendations, and beyond-target criteria (e.g. AAA under an AA target)
+// are advisory: both stay in the report, neither weighs on the score nor is counted in the
+// severity breakdown (score charter, invariant 3).
+function isScored(issue: EquallIssue, targetLevel: WcagLevel): boolean {
+  return issue.wcag_criteria.length > 0 && !isBeyondTarget(issue, targetLevel)
+}
+
+function computeSummary(
+  issues: EquallIssue[],
+  filesScanned: number,
+  targetLevel: WcagLevel,
+  exercised: string[] = []
+): ScanSummary {
   const bySeverity: Record<Severity, number> = {
     critical: 0,
     serious: 0,
@@ -88,7 +101,9 @@ function computeSummary(issues: EquallIssue[], filesScanned: number, exercised: 
   const failedCriteriaSet = new Set<string>()
 
   for (const issue of issues) {
-    bySeverity[issue.severity]++
+    // The severity breakdown covers the scored findings only, like the score itself.
+    // total_issues, by_scanner and criteria_failed keep covering every reported finding.
+    if (isScored(issue, targetLevel)) bySeverity[issue.severity]++
     byScanner[issue.scanner] = (byScanner[issue.scanner] ?? 0) + 1
     for (const c of issue.wcag_criteria) {
       failedCriteriaSet.add(c)
@@ -115,10 +130,11 @@ function computeSummary(issues: EquallIssue[], filesScanned: number, exercised: 
 // per-criterion cap, no opportunity denominator. Model 1's file scaling let the
 // score rise by adding clean files (and structurally punished single-buffer
 // scans), and its 15-point cap froze the score while fixes landed inside a
-// saturated criterion. Models 2 and 3 guarantee instead:
-//   fix-sensitivity  — resolving ANY single scored issue strictly raises the
-//                      score (each contributes w/rank > 0); best-practice and
-//                      beyond-target findings are not scored (charter inv. 3);
+// saturated criterion. Models 2 and 3 share the following properties:
+//   fix-sensitivity — each scored issue contributes w/rank > 0 to the penalty.
+//                      Resolving an issue reduces the penalty, but the displayed
+//                      score may remain unchanged after rounding to two decimal
+//                      places, particularly when the total penalty is high.
 //   padding-resistance — adding files/elements/engines that surface no issue
 //                      cannot move the score (nothing else is an input);
 //   mono-file fairness — a single-buffer scan and the same issues inside a
@@ -129,13 +145,8 @@ function computeSummary(issues: EquallIssue[], filesScanned: number, exercised: 
 // critical-dominated criterion moves the score by its minor weight, not the
 // group's maximum.
 function computeScore(issues: EquallIssue[], targetLevel: WcagLevel): number {
-  // Only WCAG failures within the target score. Best-practice findings (no
-  // WCAG criterion) are recommendations, and beyond-target criteria (e.g. AAA
-  // under an AA target) are advisory: both stay in the report, neither drags
-  // the score down (score charter, invariant 3).
-  const scoped = issues.filter(
-    issue => issue.wcag_criteria.length > 0 && !isBeyondTarget(issue, targetLevel)
-  )
+  // Only scored findings weigh: WCAG failures within the target (see isScored).
+  const scoped = issues.filter(issue => isScored(issue, targetLevel))
   if (scoped.length === 0) return 100
 
   // Group issue weights by WCAG criterion.
@@ -163,8 +174,9 @@ function computeScore(issues: EquallIssue[], targetLevel: WcagLevel): number {
   const score = 100 * Math.exp(-SCORE_DECAY_K * totalPenalty)
 
   // Two-decimal precision: small fixes inside heavily damped criteria move
-  // the score by fractions of a point — integer rounding would absorb them
-  // and break fix-sensitivity.
+  // the score by fractions of a point, which integer rounding would absorb.
+  // At a high total penalty a fix can still fall below two decimals: it
+  // reduces the penalty, the displayed score stays the same.
   return Math.max(0, Math.round(score * 100) / 100)
 }
 
