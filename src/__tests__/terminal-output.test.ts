@@ -69,6 +69,129 @@ function render(result: ScanResult, all?: boolean): string {
   return lines.join('\n').replace(ANSI, '')
 }
 
+// The best-practice section prints, once per rule, what the rule means and where to read
+// more: the explanation the scanner attached to the rule (the text the JSON carries as
+// `suggestion`) or the short built-in hint, then the rule's `help_url`.
+describe('best-practice section: explanation and link', () => {
+  const bestPractice = (over: Partial<EquallIssue>): EquallIssue => ({
+    ...issue('x', 'minor', 'src/a.tsx'),
+    wcag_criteria: [],
+    wcag_level: null,
+    pour: null,
+    ...over,
+  })
+  const section = (out: string) => out.slice(out.indexOf('Best-Practice Recommendations'))
+  const withIssues = (issues: EquallIssue[]): ScanResult => ({ ...fixture(), issues })
+
+  const EXPLANATION =
+    'This role repeats the implicit role of the element, so it adds nothing and can have unintended ' +
+    'effects when the element changes later. Remove it, unless the list markers are removed.'
+
+  it('prints the rule explanation from the scanner, wrapped, then the link', () => {
+    const out = section(render(withIssues([
+      bestPractice({
+        scanner: 'eslint-jsx-a11y',
+        scanner_rule_id: 'jsx-a11y/no-redundant-roles',
+        suggestion: EXPLANATION,
+        help_url: 'https://example.test/redundant-roles',
+      }),
+    ])))
+    const lines = out.split('\n')
+    const start = lines.findIndex((l) => l.includes('This role repeats'))
+    const link = lines.findIndex((l) => l.includes('Learn more: https://example.test/redundant-roles'))
+    const file = lines.findIndex((l) => l.includes('↳ src/a.tsx'))
+    // Explanation, then link, then the affected files.
+    expect(start).toBeGreaterThan(0)
+    expect(link).toBeGreaterThan(start)
+    expect(file).toBeGreaterThan(link)
+    // The whole text is there, on indented lines of readable width.
+    const explanation = lines.slice(start, link)
+    expect(explanation.length).toBeGreaterThan(1)
+    expect(explanation.map((l) => l.trim()).join(' ')).toBe(EXPLANATION)
+    for (const l of explanation) {
+      expect(l.startsWith('      ')).toBe(true)
+      expect(l.length).toBeLessThanOrEqual(6 + 88)
+    }
+    // The explanation replaces the short hint; it is not printed twice.
+    expect(out).not.toContain('unnecessary, remove it')
+  })
+
+  it('an axe-core rule keeps its hint (its suggestion is a per-element summary) and gains the link', () => {
+    const out = section(render(withIssues([
+      bestPractice({
+        scanner_rule_id: 'heading-order',
+        suggestion: 'Fix any of the following:\n  Heading order invalid',
+        help_url: 'https://example.test/heading-order',
+      }),
+    ])))
+    expect(out).toContain('Skipping heading levels makes content harder to navigate')
+    expect(out).not.toContain('Heading order invalid')
+    expect(out).toContain('Learn more: https://example.test/heading-order')
+  })
+
+  it('an axe-core rule with no hint prints its failure summary instead of a bare pointer', () => {
+    const out = section(render(withIssues([
+      bestPractice({
+        scanner_rule_id: 'tabindex',
+        suggestion: 'Fix any of the following:\n  Element has a tabindex greater than 0',
+        help_url: 'https://example.test/tabindex',
+      }),
+    ])))
+    expect(out).toContain('· Element has a tabindex greater than 0')
+    expect(out).not.toContain('See the rule documentation for context.')
+    expect(out).toContain('Learn more: https://example.test/tabindex')
+  })
+
+  it('a rule with neither explanation, hint nor link prints the pointer and no empty link line', () => {
+    const out = section(render(withIssues([bestPractice({ scanner_rule_id: 'custom-rule' })])))
+    expect(out).toContain('See the rule documentation for context.')
+    expect(out).not.toContain('Learn more:')
+  })
+
+  it('prints the explanation and the link once per rule, whatever the number of files, and keeps the --all cut', () => {
+    const many = Array.from({ length: 5 }, (_, n) => bestPractice({
+      scanner: 'eslint-jsx-a11y',
+      scanner_rule_id: 'jsx-a11y/no-redundant-roles',
+      file_path: `src/c-${n + 1}.tsx`,
+      suggestion: 'Short explanation.',
+      help_url: 'https://example.test/redundant-roles',
+    }))
+    const def = section(render(withIssues(many)))
+    expect(def.match(/Short explanation\./g)).toHaveLength(1)
+    expect(def.match(/Learn more:/g)).toHaveLength(1)
+    expect(def).toContain('↳ and 3 more files · run with --all to list them')
+    const all = section(render(withIssues(many), true))
+    for (let n = 1; n <= 5; n++) expect(all).toContain(`src/c-${n}.tsx`)
+    expect(all.match(/Learn more:/g)).toHaveLength(1)
+  })
+
+  it('emits no ANSI escape with colors off', () => {
+    const lines: string[] = []
+    const spy = vi.spyOn(console, 'log').mockImplementation((...a: unknown[]) => { lines.push(a.join(' ')) })
+    try {
+      printResult(withIssues([
+        bestPractice({ scanner: 'eslint-jsx-a11y', suggestion: EXPLANATION, help_url: 'https://example.test/x' }),
+        bestPractice({ scanner_rule_id: 'tabindex', suggestion: 'Fix any of the following:\n  Element has a tabindex greater than 0' }),
+      ]), { color: false })
+    } finally {
+      spy.mockRestore()
+    }
+    const out = lines.join('\n')
+    expect(out).toContain('Learn more: https://example.test/x')
+    expect(out).not.toMatch(ANSI)
+  })
+
+  it('real pipeline: <button role="button"> prints the explanation and the W3C link', async () => {
+    const out = section(render(await scanBuffer(
+      `export function C() {\n  return (\n    <div>\n      <button role="button" type="button">Go</button>\n    </div>\n  )\n}\n`,
+      'C.jsx'
+    )))
+    expect(out).toContain('jsx-a11y/no-redundant-roles')
+    expect(out).toContain("This role repeats the element's implicit role")
+    expect(out).toContain('Learn more: https://www.w3.org/TR/html-aria/#avoid-specifying-redundant-roles')
+  }, 30000)
+})
+
 // The severity breakdown and its "fix before shipping" legend cover the scored findings
 // only. A best practice never weighs on the score, so it is never counted there: it is
 // listed in its own section.
