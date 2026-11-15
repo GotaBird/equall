@@ -17,6 +17,8 @@
 // Everything that depends only on the file (line index, source tags) or only on the DOM
 // (signature counts) is built once per file, so each finding costs one lookup.
 
+import { neutralizeCommentMarkup } from './js-comments.js'
+
 export interface SourceLocation {
   line: number   // 1-based
   column: number // 1-based, in UTF-16 code units (like ESLint), not counting a byte-order mark
@@ -123,7 +125,9 @@ export function markupRegion(content: string, type: string): string {
     const m = /return\s*\(\s*([\s\S]*?)\s*\)\s*[;\n}]/d.exec(text)
       ?? /return\s+(<[\s\S]*?>[\s\S]*?<\/[\s\S]*?>)/d.exec(text)
     if (!m?.indices?.[1]) return ''
-    text = keepOnly(text, m.indices[1][0], m.indices[1][1])
+    // Same view as extractHtml: the region is located on the file as written, and a tag
+    // named inside a comment is not a candidate (same offsets in the neutralized copy).
+    text = keepOnly(neutralizeCommentMarkup(text, type), m.indices[1][0], m.indices[1][1])
     text = blankAll(text, /\{\/\*[\s\S]*?\*\/\}/g)
   } else if (type === 'astro') {
     const fm = /^---[\s\S]*?---\n?/.exec(text)
