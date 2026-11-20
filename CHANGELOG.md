@@ -64,14 +64,11 @@ not comparable: rescan both sides of a before/after.
 
 ### Score and fingerprint impact
 
-- **Scores rise or stay the same on projects that had best-practice or redundant-role
-  findings, and are unchanged elsewhere.** Measured against 0.3.7 on ten projects: seven
-  keep their score; a full-document site with twelve best-practice findings goes from 75.63
-  to 83.25; a public React example app with one `role="list"` goes from 95.12 to 100; a
-  fixture of five redundant roles goes from 89.21 to 100.
+- **Scores rise or stay the same on projects with best-practice or redundant-role findings;
+  unchanged elsewhere.**
 - **A score can fall in one case**: a `.jsx` or `.tsx` file where a comment containing a `<`
   was hiding a real defect (for example an unlabelled `<input>` after a comment naming a
-  `<label>`). The defect is now reported. None of the ten projects has the case.
+  `<label>`). The defect is now reported.
 - **`--min-score` is checked against the new score.** A gate that failed only because of
   best-practice findings now passes.
 - **`--diff` is unaffected by the model change**: it scans base and head with the same
@@ -85,9 +82,7 @@ not comparable: rescan both sides of a before/after.
   finding on an element that contains such a comment. Relocated: a finding once reported
   without a line, because a comment named the same tag as the real element, now reported
   on its line.
-- **Everything else is unchanged.** On the ten projects, 216 findings: 210 keep their
-  fingerprint, 6 are gone (all redundant roles) and 2 are new (the two redundant roles that
-  remain, as best practices).
+- **Everything else keeps its fingerprint.**
 
 ## [0.3.7] - 2026-11-08
 
