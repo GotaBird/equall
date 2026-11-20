@@ -121,8 +121,7 @@ not comparable: rescan both sides of a before/after.
 - **Other file types are unchanged**: Astro, Svelte, JSX, TSX and HTML scans give the same
   findings, fingerprints and score.
 - **On Vue files, findings are retired or new, never re-identified.** Retired: the false
-  positives fixed above. New: findings in markup not checked before. Measured on a public
-  Vue application (264 `.vue` files): 60 kept, 6 retired, 39 new, 0 re-identified.
+  positives fixed above. New: findings in markup not checked before.
 - **Vue scores can rise or fall**: retired false positives raise them, newly checked markup
   can lower them. `--diff` is unaffected: it scans base and head with the same engine.
 
@@ -246,8 +245,7 @@ ships in 0.3.1.
 
 - **axe-core is now compiled once per process, not once per document.** It runs as one
   script through jsdom's documented VM context; 0.3.0 evaluated axe's source as a string in
-  each scanned document's window. Findings are identical (measured on 15 real repositories:
-  every fingerprint kept).
+  each scanned document's window. Findings are identical: every fingerprint is kept.
 
 ## [0.3.0] - 2026-09-26
 
@@ -261,9 +259,8 @@ findings leave the score, the counts and the conformance verdicts, and some crit
 reported as partial. Compare scores from before and after 0.3.0 with care. Plain HTML is not
 affected.
 
-No fingerprint change was measured: on 15 real repositories every fingerprint was kept, none
-appeared and none disappeared. One narrow case can change a fingerprint; it is described
-under the `htmlFor` entry below.
+Fingerprints are unchanged, except for one narrow case described under the `htmlFor` entry
+below.
 
 ### Added
 
@@ -300,9 +297,7 @@ under the `htmlFor` entry below.
     score, the violation counts or the conformance verdicts.
   - The terminal report states how many were held back and lists them only with
     `--show-review`.
-  - Measured on a labelled corpus, the share of counted findings that are real rose from
-    about half to more than three quarters, with no real defect dropped and no fingerprint
-    changed.
+  - Counted findings are more often real, with no fingerprint changed.
 
 ### Fixed
 
@@ -338,8 +333,7 @@ under the `htmlFor` entry below.
   and no longer appears.
   - In a narrow case, an axe finding whose element markup is shorter than 300 characters and
     contains a `<label htmlFor>` carries `for` in its snippet instead, which changes its
-    fingerprint. Measured on 15 real repositories (46 uses of `htmlFor`): no fingerprint
-    changed.
+    fingerprint.
 - **The terminal summary counts what the report lists.** The "N WCAG violations" and
   severity counts now include only the issues that affect the score, and ignored and
   review-only findings are stated on their own lines. Ignored issues used to be counted while
@@ -504,7 +498,8 @@ under the `htmlFor` entry below.
   cap are replaced by rank-damped severity summing per criterion, so padding a repo cannot
   move the number. Small repos and single-component scans typically rise; repos with one
   heavily repeated criterion typically drop, as that criterion counts its real size. Every
-  fix strictly raises the score, credited at the severity of the issue fixed.
+  fix lowers the penalty, credited at the severity of the issue fixed; the two-decimal score
+  may not move when the penalty is high.
 - **Scores from different model versions are not comparable.** Results are stamped
   `score_model` `2`. The decay constant changes from 0.02 to 0.01, and the score now carries
   two decimals so small fixes inside a heavily repeated criterion are visible. Rationale:
