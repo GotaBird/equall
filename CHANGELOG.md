@@ -65,13 +65,10 @@ not comparable: rescan both sides of a before/after.
 ### Score and fingerprint impact
 
 - **Scores rise or stay the same on projects that had best-practice or redundant-role
-  findings, and are unchanged elsewhere.** Measured against 0.3.7 on ten projects: seven
-  keep their score; a full-document site with twelve best-practice findings goes from 75.63
-  to 83.25; a public React example app with one `role="list"` goes from 95.12 to 100; a
-  fixture of five redundant roles goes from 89.21 to 100.
+  findings, and are unchanged elsewhere.**
 - **A score can fall in one case**: a `.jsx` or `.tsx` file where a comment containing a `<`
   was hiding a real defect (for example an unlabelled `<input>` after a comment naming a
-  `<label>`). The defect is now reported. None of the ten projects has the case.
+  `<label>`). The defect is now reported.
 - **`--min-score` is checked against the new score.** A gate that failed only because of
   best-practice findings now passes.
 - **`--diff` is unaffected by the model change**: it scans base and head with the same
@@ -85,9 +82,7 @@ not comparable: rescan both sides of a before/after.
   finding on an element that contains such a comment. Relocated: a finding once reported
   without a line, because a comment named the same tag as the real element, now reported
   on its line.
-- **Everything else is unchanged.** On the ten projects, 216 findings: 210 keep their
-  fingerprint, 6 are gone (all redundant roles) and 2 are new (the two redundant roles that
-  remain, as best practices).
+- **Findings outside these two cases keep their fingerprint.**
 
 ## [0.3.7] - 2026-11-08
 
@@ -126,8 +121,7 @@ not comparable: rescan both sides of a before/after.
 - **Other file types are unchanged**: Astro, Svelte, JSX, TSX and HTML scans give the same
   findings, fingerprints and score.
 - **On Vue files, findings are retired or new, never re-identified.** Retired: the false
-  positives fixed above. New: findings in markup not checked before. Measured on a public
-  Vue application (264 `.vue` files): 60 kept, 6 retired, 39 new, 0 re-identified.
+  positives fixed above. New: findings in markup not checked before.
 - **Vue scores can rise or fall**: retired false positives raise them, newly checked markup
   can lower them. `--diff` is unaffected: it scans base and head with the same engine.
 
@@ -251,8 +245,7 @@ ships in 0.3.1.
 
 - **axe-core is now compiled once per process, not once per document.** It runs as one
   script through jsdom's documented VM context; 0.3.0 evaluated axe's source as a string in
-  each scanned document's window. Findings are identical (measured on 15 real repositories:
-  every fingerprint kept).
+  each scanned document's window. Findings and fingerprints are unchanged.
 
 ## [0.3.0] - 2026-09-26
 
@@ -266,9 +259,8 @@ findings leave the score, the counts and the conformance verdicts, and some crit
 reported as partial. Compare scores from before and after 0.3.0 with care. Plain HTML is not
 affected.
 
-No fingerprint change was measured: on 15 real repositories every fingerprint was kept, none
-appeared and none disappeared. One narrow case can change a fingerprint; it is described
-under the `htmlFor` entry below.
+Fingerprints are unchanged, except in one narrow case described under the `htmlFor` entry
+below.
 
 ### Added
 
@@ -305,9 +297,6 @@ under the `htmlFor` entry below.
     score, the violation counts or the conformance verdicts.
   - The terminal report states how many were held back and lists them only with
     `--show-review`.
-  - Measured on a labelled corpus, the share of counted findings that are real rose from
-    about half to more than three quarters, with no real defect dropped and no fingerprint
-    changed.
 
 ### Fixed
 
@@ -343,8 +332,7 @@ under the `htmlFor` entry below.
   and no longer appears.
   - In a narrow case, an axe finding whose element markup is shorter than 300 characters and
     contains a `<label htmlFor>` carries `for` in its snippet instead, which changes its
-    fingerprint. Measured on 15 real repositories (46 uses of `htmlFor`): no fingerprint
-    changed.
+    fingerprint.
 - **The terminal summary counts what the report lists.** The "N WCAG violations" and
   severity counts now include only the issues that affect the score, and ignored and
   review-only findings are stated on their own lines. Ignored issues used to be counted while
