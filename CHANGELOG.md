@@ -64,8 +64,8 @@ not comparable: rescan both sides of a before/after.
 
 ### Score and fingerprint impact
 
-- **Scores rise or stay the same on projects that had best-practice or redundant-role
-  findings, and are unchanged elsewhere.**
+- **Scores rise or stay the same on projects with best-practice or redundant-role findings;
+  unchanged elsewhere.**
 - **A score can fall in one case**: a `.jsx` or `.tsx` file where a comment containing a `<`
   was hiding a real defect (for example an unlabelled `<input>` after a comment naming a
   `<label>`). The defect is now reported.
@@ -82,7 +82,7 @@ not comparable: rescan both sides of a before/after.
   finding on an element that contains such a comment. Relocated: a finding once reported
   without a line, because a comment named the same tag as the real element, now reported
   on its line.
-- **Findings outside these two cases keep their fingerprint.**
+- **Everything else keeps its fingerprint.**
 
 ## [0.3.7] - 2026-11-08
 
@@ -121,7 +121,8 @@ not comparable: rescan both sides of a before/after.
 - **Other file types are unchanged**: Astro, Svelte, JSX, TSX and HTML scans give the same
   findings, fingerprints and score.
 - **On Vue files, findings are retired or new, never re-identified.** Retired: the false
-  positives fixed above. New: findings in markup not checked before.
+  positives fixed above. New: findings in markup not checked before. Measured on a public
+  Vue application (264 `.vue` files): 60 kept, 6 retired, 39 new, 0 re-identified.
 - **Vue scores can rise or fall**: retired false positives raise them, newly checked markup
   can lower them. `--diff` is unaffected: it scans base and head with the same engine.
 
@@ -245,7 +246,8 @@ ships in 0.3.1.
 
 - **axe-core is now compiled once per process, not once per document.** It runs as one
   script through jsdom's documented VM context; 0.3.0 evaluated axe's source as a string in
-  each scanned document's window. Findings and fingerprints are unchanged.
+  each scanned document's window. Findings are identical (measured on 15 real repositories:
+  every fingerprint kept).
 
 ## [0.3.0] - 2026-09-26
 
@@ -259,8 +261,9 @@ findings leave the score, the counts and the conformance verdicts, and some crit
 reported as partial. Compare scores from before and after 0.3.0 with care. Plain HTML is not
 affected.
 
-Fingerprints are unchanged, except in one narrow case described under the `htmlFor` entry
-below.
+No fingerprint change was measured: on 15 real repositories every fingerprint was kept, none
+appeared and none disappeared. One narrow case can change a fingerprint; it is described
+under the `htmlFor` entry below.
 
 ### Added
 
@@ -297,6 +300,9 @@ below.
     score, the violation counts or the conformance verdicts.
   - The terminal report states how many were held back and lists them only with
     `--show-review`.
+  - Measured on a labelled corpus, the share of counted findings that are real rose from
+    about half to more than three quarters, with no real defect dropped and no fingerprint
+    changed.
 
 ### Fixed
 
@@ -332,7 +338,8 @@ below.
   and no longer appears.
   - In a narrow case, an axe finding whose element markup is shorter than 300 characters and
     contains a `<label htmlFor>` carries `for` in its snippet instead, which changes its
-    fingerprint.
+    fingerprint. Measured on 15 real repositories (46 uses of `htmlFor`): no fingerprint
+    changed.
 - **The terminal summary counts what the report lists.** The "N WCAG violations" and
   severity counts now include only the issues that affect the score, and ignored and
   review-only findings are stated on their own lines. Ignored issues used to be counted while
